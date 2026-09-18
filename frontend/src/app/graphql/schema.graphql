@@ -1,0 +1,18 @@
+type Patient {
+    id: Int!
+    nom: String!
+    prenom: String
+    age: Int
+    symtomes: [Symptome]
+}
+
+type Symptome {
+    name: String!
+    description: String
+    date: String
+}
+
+type Query {
+    getPatients: [Patient!]!
+    getPatient(id: Int!): Patient
+}

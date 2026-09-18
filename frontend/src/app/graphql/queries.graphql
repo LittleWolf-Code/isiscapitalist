@@ -1,0 +1,22 @@
+query GetPatients {
+    getPatients {
+    id
+    nom
+    prenom
+    age
+    }
+}
+
+query GetPatient($id: Int!) {
+    getPatient(id: $id) {
+    id
+    nom
+    prenom
+    age
+    symtomes {
+        name
+        description
+        date
+    }
+}
+}

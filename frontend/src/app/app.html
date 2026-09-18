@@ -1,0 +1,77 @@
+<div class="container">
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Liste des patients</h3>
+      @if (patientsQuery.data()?.getPatients; as patients) {
+        <span class="badge">{{ patients.length }} patient(s)</span>
+      }
+    </div>
+
+    @if (patientsQuery.loading()) { <p class="loading">Chargement...</p> }
+    @if (patientsQuery.error(); as error) { <p class="error">{{ error.message }}</p> }
+
+    <div class="patients-grid">
+      @for (patient of patientsQuery.data()?.getPatients; track patient.id) {
+        <div class="patient-card" (click)="onPatientClick(patient)"
+             [class.selected]="patientid() === patient.id">
+          <div class="patient-card-header">
+            <div>
+              <div class="label">PATIENT</div>
+              <div class="patient-nom">{{ patient.nom }}</div>
+            </div>
+            <span class="age-badge">{{ patient.age }} ans</span>
+          </div>
+          <div>
+            <div class="label">PRÉNOM</div>
+            <div>{{ patient.prenom }}</div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (patientQuery.loading()) { <p class="loading">Chargement de la fiche...</p> }
+
+  @if (patientQuery.data()?.getPatient; as p) {
+    <div class="card fiche">
+      <h4 class="fiche-title">Fiche patient complète</h4>
+
+      <div class="fiche-header">
+        <div>
+          <div class="label">PATIENT SÉLECTIONNÉ</div>
+          <h2>{{ p.nom }} {{ p.prenom ?? '' }}</h2>
+        </div>
+        <span class="age-badge">{{ p.age ?? '—' }} ans</span>
+      </div>
+
+      <div class="fiche-grid">
+        <div><div class="label">IDENTIFIANT</div><div>{{ p.id }}</div></div>
+        <div><div class="label">NOM</div><div>{{ p.nom }}</div></div>
+        <div><div class="label">PRÉNOM</div><div>{{ p.prenom ?? '—' }}</div></div>
+        <div><div class="label">ÂGE</div><div>{{ p.age ?? '—' }}</div></div>
+      </div>
+
+      @if (p.symtomes && p.symtomes.length > 0) {
+        <div class="symptomes-section">
+          <div class="symptomes-header">
+            <span class="label">SYMPTÔMES</span>
+            <span class="badge">{{ p.symtomes.length }}</span>
+          </div>
+          @for (s of p.symtomes; track $any(s).name) {
+            @if (s) {
+              <div class="symptome-row">
+                <div>
+                  <strong>{{ s.name }}</strong>
+                  <div class="symptome-desc">{{ s.description }}</div>
+                </div>
+                <span class="symptome-date">{{ s.date }}</span>
+              </div>
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+
+</div>
