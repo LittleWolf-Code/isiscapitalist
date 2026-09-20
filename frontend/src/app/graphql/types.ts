@@ -10,29 +10,114 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
-export type Patient = {
-  __typename?: 'Patient';
-  age: Maybe<Scalars['Int']['output']>;
+export type Mutation = {
+  __typename?: 'Mutation';
+  acheterAngelUpgrade: Maybe<Palier>;
+  acheterCashUpgrade: Maybe<Palier>;
+  acheterQtProduit: Maybe<Product>;
+  basculerManager: Maybe<Product>;
+  engagerManager: Maybe<Palier>;
+  lancerProductionProduit: Maybe<Product>;
+  resetWorld: Maybe<World>;
+};
+
+
+export type MutationAcheterAngelUpgradeArgs = {
+  name: Scalars['String']['input'];
+  user: Scalars['String']['input'];
+};
+
+
+export type MutationAcheterCashUpgradeArgs = {
+  name: Scalars['String']['input'];
+  user: Scalars['String']['input'];
+};
+
+
+export type MutationAcheterQtProduitArgs = {
+  id: Scalars['Int']['input'];
+  quantite: Scalars['Int']['input'];
+  user: Scalars['String']['input'];
+};
+
+
+export type MutationBasculerManagerArgs = {
+  id: Scalars['Int']['input'];
+  user: Scalars['String']['input'];
+};
+
+
+export type MutationEngagerManagerArgs = {
+  name: Scalars['String']['input'];
+  user: Scalars['String']['input'];
+};
+
+
+export type MutationLancerProductionProduitArgs = {
+  id: Scalars['Int']['input'];
+  user: Scalars['String']['input'];
+};
+
+
+export type MutationResetWorldArgs = {
+  user: Scalars['String']['input'];
+};
+
+export type Palier = {
+  __typename?: 'Palier';
+  idcible: Scalars['Int']['output'];
+  logo: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  ratio: Scalars['Int']['output'];
+  seuil: Scalars['Float']['output'];
+  typeratio: RatioType;
+  unlocked: Scalars['Boolean']['output'];
+};
+
+export type Product = {
+  __typename?: 'Product';
+  cout: Scalars['Float']['output'];
+  croissance: Scalars['Float']['output'];
   id: Scalars['Int']['output'];
-  nom: Scalars['String']['output'];
-  prenom: Maybe<Scalars['String']['output']>;
-  symtomes: Maybe<Array<Maybe<Symptome>>>;
+  logo: Scalars['String']['output'];
+  managerUnlocked: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  paliers: Array<Palier>;
+  quantite: Scalars['Int']['output'];
+  revenu: Scalars['Float']['output'];
+  timeleft: Scalars['Int']['output'];
+  vitesse: Scalars['Int']['output'];
 };
 
 export type Query = {
   __typename?: 'Query';
-  getPatient: Maybe<Patient>;
-  getPatients: Array<Patient>;
+  getWorld: Maybe<World>;
 };
 
 
-export type QueryGetPatientArgs = {
-  id: Scalars['Int']['input'];
+export type QueryGetWorldArgs = {
+  user: Scalars['String']['input'];
 };
 
-export type Symptome = {
-  __typename?: 'Symptome';
-  date: Maybe<Scalars['String']['output']>;
-  description: Maybe<Scalars['String']['output']>;
+export enum RatioType {
+  Ange = 'ange',
+  Gain = 'gain',
+  Vitesse = 'vitesse'
+}
+
+export type World = {
+  __typename?: 'World';
+  activeangels: Scalars['Float']['output'];
+  allunlocks: Array<Palier>;
+  angelbonus: Scalars['Int']['output'];
+  angelupgrades: Array<Palier>;
+  lastupdate: Scalars['Float']['output'];
+  logo: Scalars['String']['output'];
+  managers: Array<Palier>;
+  money: Scalars['Float']['output'];
   name: Scalars['String']['output'];
+  products: Array<Product>;
+  score: Scalars['Float']['output'];
+  totalangels: Scalars['Float']['output'];
+  upgrades: Array<Palier>;
 };

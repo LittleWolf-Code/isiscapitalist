@@ -1,0 +1,16 @@
+<section class="settings">
+  <h2 class="pip-title">Paramètres</h2>
+
+  <div class="settings-list pip-frame">
+    <mat-slide-toggle class="setting" [checked]="scanlines()" (change)="scanlines.set($event.checked)">
+      Scanlines
+    </mat-slide-toggle>
+    <mat-slide-toggle class="setting" [checked]="glow()" (change)="glow.set($event.checked)">
+      Halo
+    </mat-slide-toggle>
+    <mat-slide-toggle class="setting" [checked]="flicker()" (change)="flicker.set($event.checked)">
+      Scintillement
+    </mat-slide-toggle>
+    <p class="hint">Scintillement : ignoré si votre système réduit les animations.</p>
+  </div>
+</section>

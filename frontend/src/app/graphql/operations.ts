@@ -3,59 +3,246 @@
 type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+import type * as Types from './types';
+
 import { gql } from '@apollo-orbit/angular';
 import { TypedDocumentNode as DocumentNode } from '@apollo-orbit/angular';
-export type GetPatientsQueryVariables = Exact<{ [key: string]: never; }>;
+export type AcheterQtProduitMutationVariables = Exact<{
+  user: string;
+  id: number;
+  quantite: number;
+}>;
 
 
-export type GetPatientsQueryData = { getPatients: Array<{ id: number, nom: string, prenom: string | null, age: number | null }> };
+export type AcheterQtProduitMutationData = { acheterQtProduit: { id: number, quantite: number, cout: number } | null };
 
-export type GetPatientQueryVariables = Exact<{
+export type LancerProductionProduitMutationVariables = Exact<{
+  user: string;
   id: number;
 }>;
 
 
-export type GetPatientQueryData = { getPatient: { id: number, nom: string, prenom: string | null, age: number | null, symtomes: Array<{ name: string, description: string | null, date: string | null } | null> | null } | null };
+export type LancerProductionProduitMutationData = { lancerProductionProduit: { id: number, timeleft: number } | null };
+
+export type EngagerManagerMutationVariables = Exact<{
+  user: string;
+  name: string;
+}>;
 
 
-export const GET_PATIENTS_QUERY = gql`
-    query GetPatients {
-  getPatients {
+export type EngagerManagerMutationData = { engagerManager: PalierFieldsFragment | null };
+
+export type BasculerManagerMutationVariables = Exact<{
+  user: string;
+  id: number;
+}>;
+
+
+export type BasculerManagerMutationData = { basculerManager: { id: number, managerUnlocked: boolean, timeleft: number } | null };
+
+export type AcheterCashUpgradeMutationVariables = Exact<{
+  user: string;
+  name: string;
+}>;
+
+
+export type AcheterCashUpgradeMutationData = { acheterCashUpgrade: PalierFieldsFragment | null };
+
+export type AcheterAngelUpgradeMutationVariables = Exact<{
+  user: string;
+  name: string;
+}>;
+
+
+export type AcheterAngelUpgradeMutationData = { acheterAngelUpgrade: PalierFieldsFragment | null };
+
+export type ResetWorldMutationVariables = Exact<{
+  user: string;
+}>;
+
+
+export type ResetWorldMutationData = { resetWorld: { money: number, score: number, totalangels: number, activeangels: number } | null };
+
+export type PalierFieldsFragment = { name: string, logo: string, seuil: number, idcible: number, ratio: number, typeratio: Types.RatioType, unlocked: boolean };
+
+export type GetWorldQueryVariables = Exact<{
+  user: string;
+}>;
+
+
+export type GetWorldQueryData = { getWorld: { name: string, logo: string, money: number, score: number, totalangels: number, activeangels: number, angelbonus: number, lastupdate: number, products: Array<{ id: number, name: string, logo: string, cout: number, croissance: number, revenu: number, vitesse: number, quantite: number, timeleft: number, managerUnlocked: boolean, paliers: Array<PalierFieldsFragment> }>, allunlocks: Array<PalierFieldsFragment>, upgrades: Array<PalierFieldsFragment>, angelupgrades: Array<PalierFieldsFragment>, managers: Array<PalierFieldsFragment> } | null };
+
+export const PalierFieldsFragmentDoc = gql`
+    fragment PalierFields on Palier {
+  name
+  logo
+  seuil
+  idcible
+  ratio
+  typeratio
+  unlocked
+}
+    ` as DocumentNode<PalierFieldsFragment, unknown>;
+export const ACHETER_QT_PRODUIT_MUTATION = gql`
+    mutation AcheterQtProduit($user: String!, $id: Int!, $quantite: Int!) {
+  acheterQtProduit(user: $user, id: $id, quantite: $quantite) {
     id
-    nom
-    prenom
-    age
+    quantite
+    cout
   }
 }
-    ` as DocumentNode<GetPatientsQueryData, GetPatientsQueryVariables>;
+    ` as DocumentNode<AcheterQtProduitMutationData, AcheterQtProduitMutationVariables>;
 
-export function gqlGetPatientsQuery(): { query: typeof GET_PATIENTS_QUERY } {
+export function gqlAcheterQtProduitMutation(variables: AcheterQtProduitMutationVariables): { mutation: typeof ACHETER_QT_PRODUIT_MUTATION, variables: typeof variables } {
   return {
-    query: GET_PATIENTS_QUERY
+    mutation: ACHETER_QT_PRODUIT_MUTATION,
+    variables
   };
 }
 
-export const GET_PATIENT_QUERY = gql`
-    query GetPatient($id: Int!) {
-  getPatient(id: $id) {
+export const LANCER_PRODUCTION_PRODUIT_MUTATION = gql`
+    mutation LancerProductionProduit($user: String!, $id: Int!) {
+  lancerProductionProduit(user: $user, id: $id) {
     id
-    nom
-    prenom
-    age
-    symtomes {
+    timeleft
+  }
+}
+    ` as DocumentNode<LancerProductionProduitMutationData, LancerProductionProduitMutationVariables>;
+
+export function gqlLancerProductionProduitMutation(variables: LancerProductionProduitMutationVariables): { mutation: typeof LANCER_PRODUCTION_PRODUIT_MUTATION, variables: typeof variables } {
+  return {
+    mutation: LANCER_PRODUCTION_PRODUIT_MUTATION,
+    variables
+  };
+}
+
+export const ENGAGER_MANAGER_MUTATION = gql`
+    mutation EngagerManager($user: String!, $name: String!) {
+  engagerManager(user: $user, name: $name) {
+    ...PalierFields
+  }
+}
+    ${PalierFieldsFragmentDoc}` as DocumentNode<EngagerManagerMutationData, EngagerManagerMutationVariables>;
+
+export function gqlEngagerManagerMutation(variables: EngagerManagerMutationVariables): { mutation: typeof ENGAGER_MANAGER_MUTATION, variables: typeof variables } {
+  return {
+    mutation: ENGAGER_MANAGER_MUTATION,
+    variables
+  };
+}
+
+export const BASCULER_MANAGER_MUTATION = gql`
+    mutation BasculerManager($user: String!, $id: Int!) {
+  basculerManager(user: $user, id: $id) {
+    id
+    managerUnlocked
+    timeleft
+  }
+}
+    ` as DocumentNode<BasculerManagerMutationData, BasculerManagerMutationVariables>;
+
+export function gqlBasculerManagerMutation(variables: BasculerManagerMutationVariables): { mutation: typeof BASCULER_MANAGER_MUTATION, variables: typeof variables } {
+  return {
+    mutation: BASCULER_MANAGER_MUTATION,
+    variables
+  };
+}
+
+export const ACHETER_CASH_UPGRADE_MUTATION = gql`
+    mutation AcheterCashUpgrade($user: String!, $name: String!) {
+  acheterCashUpgrade(user: $user, name: $name) {
+    ...PalierFields
+  }
+}
+    ${PalierFieldsFragmentDoc}` as DocumentNode<AcheterCashUpgradeMutationData, AcheterCashUpgradeMutationVariables>;
+
+export function gqlAcheterCashUpgradeMutation(variables: AcheterCashUpgradeMutationVariables): { mutation: typeof ACHETER_CASH_UPGRADE_MUTATION, variables: typeof variables } {
+  return {
+    mutation: ACHETER_CASH_UPGRADE_MUTATION,
+    variables
+  };
+}
+
+export const ACHETER_ANGEL_UPGRADE_MUTATION = gql`
+    mutation AcheterAngelUpgrade($user: String!, $name: String!) {
+  acheterAngelUpgrade(user: $user, name: $name) {
+    ...PalierFields
+  }
+}
+    ${PalierFieldsFragmentDoc}` as DocumentNode<AcheterAngelUpgradeMutationData, AcheterAngelUpgradeMutationVariables>;
+
+export function gqlAcheterAngelUpgradeMutation(variables: AcheterAngelUpgradeMutationVariables): { mutation: typeof ACHETER_ANGEL_UPGRADE_MUTATION, variables: typeof variables } {
+  return {
+    mutation: ACHETER_ANGEL_UPGRADE_MUTATION,
+    variables
+  };
+}
+
+export const RESET_WORLD_MUTATION = gql`
+    mutation ResetWorld($user: String!) {
+  resetWorld(user: $user) {
+    money
+    score
+    totalangels
+    activeangels
+  }
+}
+    ` as DocumentNode<ResetWorldMutationData, ResetWorldMutationVariables>;
+
+export function gqlResetWorldMutation(variables: ResetWorldMutationVariables): { mutation: typeof RESET_WORLD_MUTATION, variables: typeof variables } {
+  return {
+    mutation: RESET_WORLD_MUTATION,
+    variables
+  };
+}
+
+export const GET_WORLD_QUERY = gql`
+    query GetWorld($user: String!) {
+  getWorld(user: $user) {
+    name
+    logo
+    money
+    score
+    totalangels
+    activeangels
+    angelbonus
+    lastupdate
+    products {
+      id
       name
-      description
-      date
+      logo
+      cout
+      croissance
+      revenu
+      vitesse
+      quantite
+      timeleft
+      managerUnlocked
+      paliers {
+        ...PalierFields
+      }
+    }
+    allunlocks {
+      ...PalierFields
+    }
+    upgrades {
+      ...PalierFields
+    }
+    angelupgrades {
+      ...PalierFields
+    }
+    managers {
+      ...PalierFields
     }
   }
 }
-    ` as DocumentNode<GetPatientQueryData, GetPatientQueryVariables>;
+    ${PalierFieldsFragmentDoc}` as DocumentNode<GetWorldQueryData, GetWorldQueryVariables>;
 
-export function gqlGetPatientQuery(variables: GetPatientQueryVariables): { query: typeof GET_PATIENT_QUERY, variables: typeof variables };
-export function gqlGetPatientQuery(variables: () => GetPatientQueryVariables | null): { query: typeof GET_PATIENT_QUERY, variables: typeof variables };
-export function gqlGetPatientQuery(variables: any): any {
+export function gqlGetWorldQuery(variables: GetWorldQueryVariables): { query: typeof GET_WORLD_QUERY, variables: typeof variables };
+export function gqlGetWorldQuery(variables: () => GetWorldQueryVariables | null): { query: typeof GET_WORLD_QUERY, variables: typeof variables };
+export function gqlGetWorldQuery(variables: any): any {
   return {
-    query: GET_PATIENT_QUERY,
+    query: GET_WORLD_QUERY,
     variables
   };
 }

@@ -1,0 +1,53 @@
+# Les mutations ne retournent qu'un fragment du monde (Product / Palier) : le client ne s'en sert
+# pas pour mettre à jour l'affichage, il refait getWorld après chaque appel (D14).
+
+mutation AcheterQtProduit($user: String!, $id: Int!, $quantite: Int!) {
+  acheterQtProduit(user: $user, id: $id, quantite: $quantite) {
+    id
+    quantite
+    cout
+  }
+}
+
+mutation LancerProductionProduit($user: String!, $id: Int!) {
+  lancerProductionProduit(user: $user, id: $id) {
+    id
+    timeleft
+  }
+}
+
+mutation EngagerManager($user: String!, $name: String!) {
+  engagerManager(user: $user, name: $name) {
+    ...PalierFields
+  }
+}
+
+# Pause / reprise de l'automatisation d'un manager engagé (D20).
+mutation BasculerManager($user: String!, $id: Int!) {
+  basculerManager(user: $user, id: $id) {
+    id
+    managerUnlocked
+    timeleft
+  }
+}
+
+mutation AcheterCashUpgrade($user: String!, $name: String!) {
+  acheterCashUpgrade(user: $user, name: $name) {
+    ...PalierFields
+  }
+}
+
+mutation AcheterAngelUpgrade($user: String!, $name: String!) {
+  acheterAngelUpgrade(user: $user, name: $name) {
+    ...PalierFields
+  }
+}
+
+mutation ResetWorld($user: String!) {
+  resetWorld(user: $user) {
+    money
+    score
+    totalangels
+    activeangels
+  }
+}

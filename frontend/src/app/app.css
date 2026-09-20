@@ -1,24 +1,71 @@
-.container { max-width: 900px; margin: 2rem auto; font-family: sans-serif; padding: 0 1rem; }
-.card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.card-header h3 { margin: 0; font-size: 1rem; font-weight: 600; }
-.patients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
-.patient-card { border: 1px solid #ddd; border-radius: 6px; padding: 1rem; cursor: pointer; transition: box-shadow .2s; }
-.patient-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
-.patient-card.selected { border-color: #7c3aed; box-shadow: 0 0 0 2px #7c3aed33; }
-.patient-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .5rem; }
-.patient-nom { font-weight: 700; font-size: 1.1rem; }
-.label { font-size: .65rem; color: #888; letter-spacing: .05em; text-transform: uppercase; margin-bottom: .2rem; }
-.age-badge { background: #7c3aed; color: white; border-radius: 999px; padding: .2rem .7rem; font-size: .8rem; white-space: nowrap; }
-.badge { background: #f3f0ff; color: #7c3aed; border-radius: 999px; padding: .2rem .7rem; font-size: .8rem; }
-.fiche-title { font-size: .85rem; color: #7c3aed; margin: 0 0 1rem; }
-.fiche-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
-.fiche-header h2 { margin: .2rem 0 0; }
-.fiche-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; background: #f9f9f9; border-radius: 6px; padding: .75rem; margin-bottom: 1rem; }
-.symptomes-section { border-top: 1px solid #eee; padding-top: 1rem; }
-.symptomes-header { display: flex; justify-content: space-between; margin-bottom: .75rem; }
-.symptome-row { display: flex; justify-content: space-between; align-items: flex-start; padding: .75rem 0; border-bottom: 1px solid #f0f0f0; }
-.symptome-desc { font-size: .85rem; color: #666; margin-top: .2rem; }
-.symptome-date { font-size: .8rem; color: #888; white-space: nowrap; margin-left: 1rem; }
-.loading { color: #888; font-style: italic; }
-.error { color: red; }
+/* Mise en page de la page unique (encapsulation émulée : ne s'applique qu'à App et aux
+   éléments hôtes de ses enfants). Couleurs et effets viennent du thème et de styles.css. */
+
+/* Colonne pleine hauteur : bandeau (+ alerte) en haut, TabBar (écran + barre) prend le reste ;
+   seul l'écran défile, jamais la page. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Bandeau : hauteur libre pour pouvoir passer sur plusieurs lignes en largeur réduite. */
+mat-toolbar.topbar {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 64px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  white-space: normal;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  border-bottom: 1px solid var(--mat-sys-outline);
+}
+.brand { font: var(--mat-sys-title-large); letter-spacing: 0.08em; text-transform: uppercase; }
+/* Logo (32 px) + nom du monde chargé, à côté du titre (D32). */
+.world-name { display: inline-flex; align-items: center; gap: 0.5rem; font: var(--mat-sys-title-medium); }
+.user-field { width: 12rem; font: var(--mat-sys-body-medium); }
+.muted { color: var(--mat-sys-on-surface-variant); }
+.spacer { flex: 1 1 auto; }
+
+/* Cases de stats : libellé en capitales puis valeur, dans un cadre. */
+.stats { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; }
+.stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font: var(--mat-sys-body-medium);
+}
+.stat dt { text-transform: uppercase; letter-spacing: 0.06em; color: var(--mat-sys-on-surface-variant); }
+.stat dd { margin: 0; font: var(--mat-sys-title-medium); }
+
+/* Bandeau d'erreur en vidéo inversée : cliquable pour effacer, message multi-lignes tel que reçu. */
+.alert {
+  flex: 0 0 auto;
+  margin: 0.75rem 1rem 0;
+  padding: 0.5rem 1rem;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  cursor: pointer;
+  white-space: pre-line;
+}
+
+/* Écran de l'onglet actif : prend la hauteur restante, défilement interne. */
+.screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0.75rem;
+}

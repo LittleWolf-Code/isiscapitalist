@@ -1,22 +1,51 @@
-query GetPatients {
-    getPatients {
-    id
-    nom
-    prenom
-    age
-    }
+# Champs d'un Palier, partagés par getWorld (5 listes) et les mutations qui retournent un Palier.
+fragment PalierFields on Palier {
+  name
+  logo
+  seuil
+  idcible
+  ratio
+  typeratio
+  unlocked
 }
 
-query GetPatient($id: Int!) {
-    getPatient(id: $id) {
-    id
-    nom
-    prenom
-    age
-    symtomes {
-        name
-        description
-        date
+# Monde complet : seule source de vérité du client (voir docs/DECISIONS.md, D14).
+query GetWorld($user: String!) {
+  getWorld(user: $user) {
+    name
+    logo
+    money
+    score
+    totalangels
+    activeangels
+    angelbonus
+    lastupdate
+    products {
+      id
+      name
+      logo
+      cout
+      croissance
+      revenu
+      vitesse
+      quantite
+      timeleft
+      managerUnlocked
+      paliers {
+        ...PalierFields
+      }
     }
-}
+    allunlocks {
+      ...PalierFields
+    }
+    upgrades {
+      ...PalierFields
+    }
+    angelupgrades {
+      ...PalierFields
+    }
+    managers {
+      ...PalierFields
+    }
+  }
 }

@@ -8,24 +8,70 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export class Patient {
-    id: number;
-    nom: string;
-    prenom?: Nullable<string>;
-    age?: Nullable<number>;
-    symtomes?: Nullable<Nullable<Symptome>[]>;
+export enum RatioType {
+    gain = "gain",
+    vitesse = "vitesse",
+    ange = "ange"
 }
 
-export class Symptome {
+export class Palier {
     name: string;
-    description?: Nullable<string>;
-    date?: Nullable<string>;
+    logo: string;
+    seuil: number;
+    idcible: number;
+    ratio: number;
+    typeratio: RatioType;
+    unlocked: boolean;
+}
+
+export class Product {
+    id: number;
+    name: string;
+    logo: string;
+    cout: number;
+    croissance: number;
+    revenu: number;
+    vitesse: number;
+    quantite: number;
+    timeleft: number;
+    managerUnlocked: boolean;
+    paliers: Palier[];
+}
+
+export class World {
+    name: string;
+    logo: string;
+    money: number;
+    score: number;
+    totalangels: number;
+    activeangels: number;
+    angelbonus: number;
+    lastupdate: number;
+    products: Product[];
+    allunlocks: Palier[];
+    upgrades: Palier[];
+    angelupgrades: Palier[];
+    managers: Palier[];
 }
 
 export abstract class IQuery {
-    abstract getPatients(): Patient[] | Promise<Patient[]>;
+    abstract getWorld(user: string): Nullable<World> | Promise<Nullable<World>>;
+}
 
-    abstract getPatient(id: number): Nullable<Patient> | Promise<Nullable<Patient>>;
+export abstract class IMutation {
+    abstract acheterQtProduit(user: string, id: number, quantite: number): Nullable<Product> | Promise<Nullable<Product>>;
+
+    abstract lancerProductionProduit(user: string, id: number): Nullable<Product> | Promise<Nullable<Product>>;
+
+    abstract engagerManager(user: string, name: string): Nullable<Palier> | Promise<Nullable<Palier>>;
+
+    abstract basculerManager(user: string, id: number): Nullable<Product> | Promise<Nullable<Product>>;
+
+    abstract acheterCashUpgrade(user: string, name: string): Nullable<Palier> | Promise<Nullable<Palier>>;
+
+    abstract acheterAngelUpgrade(user: string, name: string): Nullable<Palier> | Promise<Nullable<Palier>>;
+
+    abstract resetWorld(user: string): Nullable<World> | Promise<Nullable<World>>;
 }
 
 type Nullable<T> = T | null;

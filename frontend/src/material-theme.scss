@@ -1,0 +1,134 @@
+// Thème Material M3 « écran cathodique vert » (D22). Seule source des couleurs du projet :
+// aucun hex ailleurs (styles.css et les CSS de composants passent par var(--mat-sys-…)).
+// Palette tonale générée par `ng generate @angular/material:theme-color` (seed #1aff80,
+// neutre #0b3d21) dans `_theme-colors.scss` ; les tokens système monochromes sont imposés
+// via $overrides (noms dans node_modules/@angular/material/core/tokens/m3/_md-sys-*.scss).
+@use '@angular/material' as mat;
+@use './theme-colors' as pip;
+
+// Vert phosphore (Fallout 3 / New Vegas), vert atténué (≈ 6:1 sur le fond), fond échantillonné
+// sur l'image de référence, et quatre niveaux de relief pour cartes / tables / champs.
+$pip-green: #1aff80;
+$pip-green-dim: #14a85a;
+$pip-black: #001609;
+$pip-surface-low: #02180b;
+$pip-surface: #041a0d;
+$pip-surface-high: #062211;
+$pip-surface-highest: #082a15;
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: pip.$primary-palette,
+        tertiary: pip.$tertiary-palette,
+        theme-type: dark,
+      ),
+      // VT323 n'a qu'une graisse (400) : les trois poids pointent dessus.
+      typography: (
+        plain-family: 'VT323, monospace',
+        brand-family: 'VT323, monospace',
+        regular-weight: 400,
+        medium-weight: 400,
+        bold-weight: 400,
+      ),
+      density: 0,
+    ),
+    $overrides: (
+      // Fond et relief.
+      surface: $pip-black,
+      background: $pip-black,
+      surface-container-lowest: $pip-black,
+      surface-container-low: $pip-surface-low,
+      surface-container: $pip-surface,
+      surface-container-high: $pip-surface-high,
+      surface-container-highest: $pip-surface-highest,
+      surface-variant: $pip-surface-highest,
+      surface-dim: $pip-black,
+      surface-bright: $pip-surface-highest,
+      surface-tint: $pip-green,
+      // Texte, filets, actions.
+      on-surface: $pip-green,
+      on-background: $pip-green,
+      primary: $pip-green,
+      outline: $pip-green,
+      on-secondary-container: $pip-green,
+      on-surface-variant: $pip-green-dim,
+      outline-variant: $pip-green-dim,
+      secondary: $pip-green-dim,
+      tertiary: $pip-green,
+      inverse-surface: $pip-green,
+      inverse-on-surface: $pip-black,
+      inverse-primary: $pip-black,
+      // Texte sur fond vert.
+      on-primary: $pip-black,
+      on-secondary: $pip-black,
+      on-tertiary: $pip-black,
+      on-error: $pip-black,
+      on-error-container: $pip-black,
+      on-primary-container: $pip-black,
+      on-tertiary-container: $pip-black,
+      // Vidéo inversée : bandeau d'erreur, bouton Reset (warn), sélection.
+      primary-container: $pip-green,
+      tertiary-container: $pip-green,
+      error: $pip-green,
+      error-container: $pip-green,
+      // Fond des états sélectionnés (chips sélectionnés Material ; le toggle du multiplicateur
+      // est traité par button-toggle-overrides, D31).
+      secondary-container: $pip-surface-high,
+      // Angles droits partout.
+      corner-extra-small: 0,
+      corner-extra-small-top: 0,
+      corner-small: 0,
+      corner-medium: 0,
+      corner-large: 0,
+      corner-large-top: 0,
+      corner-large-start: 0,
+      corner-large-end: 0,
+      corner-extra-large: 0,
+      corner-extra-large-top: 0,
+      corner-full: 0,
+      // VT323 paraît ~20 % plus petite que Roboto : tailles du corps relevées ici plutôt que
+      // par des font-size dans les composants.
+      body-small-size: 0.95rem,
+      body-medium-size: 1.1rem,
+      body-large-size: 1.25rem,
+      label-small-size: 0.9rem,
+      label-medium-size: 1rem,
+      label-large-size: 1.15rem,
+      title-small-size: 1.15rem,
+      title-medium-size: 1.35rem,
+      title-large-size: 1.7rem,
+    )
+  );
+
+  // Piste et indicateur seraient tous deux verts : la barre de production doit rester lisible.
+  @include mat.progress-bar-overrides(
+    (
+      track-color: var(--mat-sys-surface-container-highest),
+      active-indicator-color: var(--mat-sys-primary),
+    )
+  );
+
+  // Toggle du multiplicateur : sélectionné en vidéo inversée (secondary-container serait
+  // invisible sur le fond), survol / focus teintés en vert (D31).
+  @include mat.button-toggle-overrides(
+    (
+      selected-state-background-color: var(--mat-sys-primary),
+      selected-state-text-color: var(--mat-sys-on-primary),
+      state-layer-color: var(--mat-sys-primary),
+      hover-state-layer-opacity: 0.12,
+      focus-state-layer-opacity: 0.24,
+    )
+  );
+}
+
+body {
+  color-scheme: dark;
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  margin: 0;
+  height: 100%;
+}

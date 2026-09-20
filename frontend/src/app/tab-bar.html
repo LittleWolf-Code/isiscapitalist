@@ -1,0 +1,34 @@
+<!-- Écran de l'onglet actif (projeté par App), puis la barre : [tabPanel] est obligatoire pour
+     mat-tab-nav-bar (rôle tab / tabpanel), et fait poser mdc-tab--active + aria-selected sur le
+     lien actif. -->
+<mat-tab-nav-panel #screen class="screen">
+  <ng-content />
+</mat-tab-nav-panel>
+
+<!-- Stretch Material (défaut) + flex-basis: 0 dans le .css : les 6 onglets se partagent toute la
+     largeur à parts égales (D26). -->
+<nav mat-tab-nav-bar class="bar" [tabPanel]="screen" aria-label="Écrans">
+  @for (item of items; track item.id) {
+    <a
+      mat-tab-link
+      class="tab"
+      [active]="active() === item.id"
+      [attr.data-tab]="item.id"
+      (click)="onClick(item.id)"
+    >
+      @if (item.id === 'angels') {
+        <!-- Pastille « anges à réclamer » (équivalent de l'onglet Investors d'AdVenture
+             Capitalist), masquée tant qu'un reset ne rapporterait rien. -->
+        <span
+          class="tab-label"
+          [matBadge]="angelsEarned()"
+          [matBadgeHidden]="angelsEarned() === 0"
+          matBadgePosition="above after"
+          matBadgeDescription="anges gagnables par un reset"
+        >{{ item.label }}</span>
+      } @else {
+        <span class="tab-label">{{ item.label }}</span>
+      }
+    </a>
+  }
+</nav>

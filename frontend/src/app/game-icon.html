@@ -1,0 +1,4 @@
+<!-- Aucun <img> sans candidat valide : jamais l'icône « image cassée » du navigateur. -->
+@if (src(); as src) {
+  <img [src]="src" [alt]="alt()" (error)="onError()" />
+}

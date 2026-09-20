@@ -1,0 +1,41 @@
+/* Colonne pleine hauteur : l'écran projeté prend tout, la barre reste collée en bas. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.bar { flex: 0 0 auto; }
+/* Parts égales : base nulle + flex-grow de Material (classe mat-mdc-tab-nav-bar-stretch-tabs,
+   posée par défaut). Sans flex-basis: 0, chaque onglet grandirait depuis sa largeur naturelle
+   et « Paramètres » resterait plus large qu'« Anges ». Marges réduites (Material : 0 24px,
+   min 90 px) pour que les 6 onglets tiennent dès ~450 px ; en dessous, la pagination Material
+   (flèches) prend le relais, aucun onglet sous 72 px (D26). */
+.tab { cursor: pointer; min-width: 72px; flex-basis: 0; }
+.tab-label { font: var(--mat-sys-label-large); letter-spacing: 0.06em; }
+
+/* Pastille des anges gagnables : Material l'ancre en haut à droite du libellé, or le nombre peut
+   avoir 6 chiffres et plus (D20) et le lien (`overflow: hidden`) la rognerait. On la pose
+   au-dessus du libellé, centrée, dans les 8 px réservés par le padding. Le span
+   .mat-badge-content est créé par la directive matBadge, hors encapsulation émulée : ::ng-deep
+   borné à :host, `.mat-badge` dans le sélecteur pour dépasser la spécificité des styles
+   Material. `translate` laisse `transform` à l'animation d'apparition. */
+.tab-label.mat-badge { position: static; }
+.tab { padding: 8px 16px 0; box-sizing: border-box; }
+:host ::ng-deep .tab .mat-badge .mat-badge-content {
+  top: 0;
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  margin: 0;
+  translate: -50% 0;
+  max-width: 100%;
+  padding: 0 6px;
+  font: var(--mat-sys-label-small);
+}

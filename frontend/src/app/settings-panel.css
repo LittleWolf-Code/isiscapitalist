@@ -1,0 +1,9 @@
+/* Liste verticale d'interrupteurs dans un cadre, aide en texte secondaire. */
+.settings { max-width: 480px; }
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+.hint { margin: 0; font: var(--mat-sys-body-small); color: var(--mat-sys-on-surface-variant); }

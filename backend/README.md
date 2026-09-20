@@ -1,114 +1,72 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# ISIS Capitalist — backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API GraphQL du jeu *ISIS Capitalist* (idle game type AdVenture Capitalist, TP ISIS).
+NestJS 12, GraphQL **schema-first** (Apollo), TypeScript en ESM. Pas de base de données :
+le monde de chaque joueur est un fichier JSON dans `userworlds/`.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Prérequis
 
-## Description
+- Node.js ≥ 22 (`node --version`), npm.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## Lancement
 
 ```bash
-$ npm install
+npm install          # dépendances
+npm run icons        # génère les 15 images de public/icones/ (déjà versionnées, optionnel)
+npm run start:dev    # serveur sur http://localhost:3000, rechargement à chaud
 ```
 
-## Compile and run the project
+- Playground GraphQL : http://localhost:3000/graphql
+- Images statiques : http://localhost:3000/icones/item1.png (`public/icones/`)
+- Mondes des joueurs : `userworlds/<user>-world.json`, créé au premier `getWorld`
+  (fichiers ignorés par git). Supprimer le fichier = repartir du monde initial.
+
+Le serveur doit être lancé **depuis `backend/`** (chemins relatifs à `process.cwd()`).
+
+## API
+
+Schéma : `src/schema.graphql` (fourni par le sujet, plus la mutation `basculerManager`, D20). `src/graphql.ts` est **généré** au démarrage,
+ne pas l'éditer. Toute opération prend un `user` (chaîne libre), fait d'abord évoluer le monde
+depuis `lastupdate` (productions terminées créditées), puis sauvegarde le fichier.
+Les erreurs métier arrivent dans `errors[0].message` (en français).
+
+| Opération | Rôle | Exemple |
+|---|---|---|
+| `getWorld` | Lit (et crée) le monde du joueur | `query { getWorld(user: "lucas") { name money score products { id name cout quantite timeleft managerUnlocked } } }` |
+| `acheterQtProduit` | Achète `quantite` exemplaires (coût géométrique), déclenche les unlocks | `mutation { acheterQtProduit(user: "lucas", id: 1, quantite: 1) { id quantite cout } }` |
+| `lancerProductionProduit` | Lance une production (`timeleft = vitesse`) | `mutation { lancerProductionProduit(user: "lucas", id: 1) { id timeleft } }` |
+| `engagerManager` | Engage un manager (production automatique du produit cible) | `mutation { engagerManager(user: "lucas", name: "Manager 1") { name unlocked } }` |
+| `basculerManager` | Met en pause / reprend l'automatisation d'un manager engagé (hors sujet, D20) | `mutation { basculerManager(user: "lucas", id: 1) { id managerUnlocked timeleft } }` |
+| `acheterCashUpgrade` | Achète un upgrade payé en argent | `mutation { acheterCashUpgrade(user: "lucas", name: "Upgrade 1") { name unlocked } }` |
+| `acheterAngelUpgrade` | Achète un upgrade payé en anges actifs | `mutation { acheterAngelUpgrade(user: "lucas", name: "Angel Upgrade 1") { name unlocked } }` |
+| `resetWorld` | Reset « prestige » : anges gagnés selon le score, monde initial | `mutation { resetWorld(user: "lucas") { score totalangels activeangels money } }` |
+
+Le monde initial (`src/origworld.ts`) démarre à 0 $ avec un exemplaire d'`Item 1` : lancer une
+production puis rappeler `getWorld` après 500 ms pour voir l'argent arriver.
+
+En ligne de commande (bash) :
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+curl -s -X POST http://localhost:3000/graphql -H 'Content-Type: application/json' -d '{"query":"{ getWorld(user: \"lucas\") { money } }"}'
 ```
 
-## Run tests
+## Vérification
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run lint         # oxlint
+npm run build        # compile dans dist/
+npm test             # tests unitaires vitest (moteur du jeu : production, unlocks, upgrades, reset)
+npm run test:e2e     # test HTTP → Apollo → resolver → fichier, sur un joueur jetable
 ```
 
-## Deployment
+## Organisation
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```
+src/schema.graphql   schéma fourni      src/origworld.ts     monde initial
+src/resolver.ts      query + 7 mutations src/app.service.ts   lecture/écriture des mondes
+src/world-engine.ts  règles du jeu (fonctions pures, testées)
+public/icones/       images             userworlds/          un JSON par joueur
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Règles du jeu, architecture, décisions techniques et avancement : voir [`../docs/`](../docs/)
+(`GAME-RULES.md`, `ARCHITECTURE.md`, `DECISIONS.md`, `ROADMAP.md`, `SPEC-backend.md`).

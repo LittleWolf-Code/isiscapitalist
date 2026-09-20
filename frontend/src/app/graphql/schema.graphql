@@ -1,18 +1,64 @@
-type Patient {
-    id: Int!
-    nom: String!
-    prenom: String
-    age: Int
-    symtomes: [Symptome]
+# Schéma GraphQL FOURNI par le sujet (backend.pdf, p.2-3). Approche schema-first.
+# Copie de docs/reference/schema.graphql — trois écarts : lastupdate: Float! (voir docs/DECISIONS.md, D6),
+# la mutation basculerManager (D20) et totalangels / activeangels: Float! (D27).
+
+enum RatioType {
+  gain
+  vitesse
+  ange
 }
 
-type Symptome {
-    name: String!
-    description: String
-    date: String
+type Palier {
+  name: String!
+  logo: String!
+  seuil: Float!
+  idcible: Int!
+  ratio: Int!
+  typeratio: RatioType!
+  unlocked: Boolean!
+}
+
+type Product {
+  id: Int!
+  name: String!
+  logo: String!
+  cout: Float!
+  croissance: Float!
+  revenu: Float!
+  vitesse: Int!
+  quantite: Int!
+  timeleft: Int!
+  managerUnlocked: Boolean!
+  paliers: [Palier!]!
+}
+
+type World {
+  name: String!
+  logo: String!
+  money: Float!
+  score: Float!
+  totalangels: Float!
+  activeangels: Float!
+  angelbonus: Int!
+  lastupdate: Float!
+  products: [Product!]!
+  allunlocks: [Palier!]!
+  upgrades: [Palier!]!
+  angelupgrades: [Palier!]!
+  managers: [Palier!]!
 }
 
 type Query {
-    getPatients: [Patient!]!
-    getPatient(id: Int!): Patient
+  getWorld(user: String!): World
+}
+
+type Mutation {
+  acheterQtProduit(user: String!, id: Int!, quantite: Int!): Product
+  lancerProductionProduit(user: String!, id: Int!): Product
+  engagerManager(user: String!, name: String!): Palier
+  # Hors sujet : pause / reprise de l'automatisation d'un manager déjà engagé (D20).
+  basculerManager(user: String!, id: Int!): Product
+  acheterCashUpgrade(user: String!, name: String!): Palier
+  acheterAngelUpgrade(user: String!, name: String!): Palier
+  resetWorld(user: String!): World
 }

@@ -1,0 +1,15 @@
+/* Liste de paliers en mat-table : pleine largeur, ligne débloquée mise en avant. */
+/* Titre d'écran (classe globale .pip-title de styles.css) ; compteur en texte secondaire. */
+.muted { font: var(--mat-sys-body-medium); color: var(--mat-sys-on-surface-variant); text-transform: none; letter-spacing: 0; }
+
+.palier-list { overflow-x: auto; }
+table { width: 100%; }
+.palier-list td, .palier-list th { padding: 0 0.5rem; }
+/* Colonne logo : largeur de l'icône seule (32 px, game-icon.css), sans padding à gauche. */
+.palier-list .logo-cell { width: 32px; padding-left: 0; padding-right: 0.25rem; line-height: 0; }
+
+/* Ligne débloquée : couleur du thème + gras sur toutes les cellules. */
+tr.unlocked td { color: var(--mat-sys-primary); }
+/* Une seule graisse (VT323) : la ligne débloquée se distingue par sa couleur seule, les autres
+   sont en vert atténué. */
+tr:not(.unlocked) td { color: var(--mat-sys-on-surface-variant); }

@@ -1,0 +1,40 @@
+<section class="angels-panel">
+  <h2>Anges</h2>
+
+  <mat-tab-group>
+    <mat-tab label="Reset">
+      <div class="tab-body">
+        <p class="earned">
+          Anges gagnables : <b>{{ angelsEarned() }}</b>
+        </p>
+        <dl class="stats">
+          <dt>Anges actifs</dt>
+          <dd>{{ activeangels() }} / total : {{ totalangels() }}</dd>
+          <dt>Bonus par ange</dt>
+          <dd>{{ angelbonus() }} %</dd>
+          <dt>Score</dt>
+          <dd>{{ fmt(score()) }}</dd>
+        </dl>
+        <!-- Jamais désactivé : un reset à 0 ange est permis (comme dans le jeu original). -->
+        <button matButton="filled" type="button" class="reset warn" (click)="resetRequested.emit()">
+          Reset
+        </button>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Bonus">
+      <div class="tab-body">
+        <app-palier-list
+          title="Angel upgrades"
+          [paliers]="angelupgrades()"
+          actionLabel="Acheter"
+          costUnit="anges"
+          [balance]="activeangels()"
+          [products]="products()"
+          [worldLogo]="worldLogo()"
+          (action)="buyAngelUpgrade.emit($event)"
+        />
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</section>

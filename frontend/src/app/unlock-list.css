@@ -1,0 +1,16 @@
+/* Section « Par produit » de l'onglet Unlocks : mat-table pleine largeur, barre de progression
+   dans la dernière colonne. Titre : classe globale .pip-title (styles.css). */
+.unlock-list { overflow-x: auto; margin-bottom: 1.5rem; }
+table { width: 100%; }
+.unlock-list td, .unlock-list th { padding: 0 0.5rem; }
+td.palier { white-space: nowrap; }
+td.palier app-game-icon { margin-right: 0.5rem; }
+
+/* Barre + compteur, comme le bloc .product-owned de la carte. */
+.progression { display: flex; align-items: center; gap: 0.75rem; min-width: 10rem; }
+.progression mat-progress-bar { flex: 1 1 auto; }
+.progression .muted { flex: 0 0 auto; opacity: 0.7; font: var(--mat-sys-body-small); }
+
+/* Produit dont tous les paliers sont débloqués : couleur du thème, comme les lignes de PalierList. */
+tr.unlocked td { color: var(--mat-sys-primary); }
+tr:not(.unlocked) td { color: var(--mat-sys-on-surface-variant); }

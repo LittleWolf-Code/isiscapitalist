@@ -1,77 +1,134 @@
-<div class="container">
+<mat-toolbar class="topbar">
+  <span class="brand">ISIS Capitalist</span>
 
-  <div class="card">
-    <div class="card-header">
-      <h3>Liste des patients</h3>
-      @if (patientsQuery.data()?.getPatients; as patients) {
-        <span class="badge">{{ patients.length }} patient(s)</span>
-      }
-    </div>
-
-    @if (patientsQuery.loading()) { <p class="loading">Chargement...</p> }
-    @if (patientsQuery.error(); as error) { <p class="error">{{ error.message }}</p> }
-
-    <div class="patients-grid">
-      @for (patient of patientsQuery.data()?.getPatients; track patient.id) {
-        <div class="patient-card" (click)="onPatientClick(patient)"
-             [class.selected]="patientid() === patient.id">
-          <div class="patient-card-header">
-            <div>
-              <div class="label">PATIENT</div>
-              <div class="patient-nom">{{ patient.nom }}</div>
-            </div>
-            <span class="age-badge">{{ patient.age }} ans</span>
-          </div>
-          <div>
-            <div class="label">PRÉNOM</div>
-            <div>{{ patient.prenom }}</div>
-          </div>
-        </div>
-      }
-    </div>
-  </div>
-
-  @if (patientQuery.loading()) { <p class="loading">Chargement de la fiche...</p> }
-
-  @if (patientQuery.data()?.getPatient; as p) {
-    <div class="card fiche">
-      <h4 class="fiche-title">Fiche patient complète</h4>
-
-      <div class="fiche-header">
-        <div>
-          <div class="label">PATIENT SÉLECTIONNÉ</div>
-          <h2>{{ p.nom }} {{ p.prenom ?? '' }}</h2>
-        </div>
-        <span class="age-badge">{{ p.age ?? '—' }} ans</span>
-      </div>
-
-      <div class="fiche-grid">
-        <div><div class="label">IDENTIFIANT</div><div>{{ p.id }}</div></div>
-        <div><div class="label">NOM</div><div>{{ p.nom }}</div></div>
-        <div><div class="label">PRÉNOM</div><div>{{ p.prenom ?? '—' }}</div></div>
-        <div><div class="label">ÂGE</div><div>{{ p.age ?? '—' }}</div></div>
-      </div>
-
-      @if (p.symtomes && p.symtomes.length > 0) {
-        <div class="symptomes-section">
-          <div class="symptomes-header">
-            <span class="label">SYMPTÔMES</span>
-            <span class="badge">{{ p.symtomes.length }}</span>
-          </div>
-          @for (s of p.symtomes; track $any(s).name) {
-            @if (s) {
-              <div class="symptome-row">
-                <div>
-                  <strong>{{ s.name }}</strong>
-                  <div class="symptome-desc">{{ s.description }}</div>
-                </div>
-                <span class="symptome-date">{{ s.date }}</span>
-              </div>
-            }
-          }
-        </div>
-      }
-    </div>
+  <!-- Logo et nom du monde chargé (D32) ; rien sans monde (« aucun monde chargé » plus bas). -->
+  @if (game.world(); as world) {
+    <span class="world-name">
+      <app-game-icon [candidates]="[world.logo]" />
+      {{ world.name }}
+    </span>
   }
 
-</div>
+  <mat-form-field class="user-field" appearance="outline" subscriptSizing="dynamic">
+    <mat-label>user</mat-label>
+    <input matInput type="text" [value]="game.user()" (change)="onUserChange($event)" placeholder="lucas" />
+  </mat-form-field>
+
+  <!-- [value] piloté par le signal ; $event.value rend la valeur du toggle telle quelle (D17). -->
+  <mat-button-toggle-group
+    class="multiplier"
+    name="multiplier"
+    aria-label="Quantité d'achat"
+    hideSingleSelectionIndicator
+    [value]="game.multiplier()"
+    (change)="onMultiplierChange($event.value)"
+  >
+    @for (m of multipliers; track m) {
+      <mat-button-toggle [value]="m">{{ m === 'max' ? 'max' : 'x' + m }}</mat-button-toggle>
+    }
+  </mat-button-toggle-group>
+
+  <span class="spacer"></span>
+
+  <!-- Cases de stats (comme HP / AP / XP de l'image de référence), mêmes valeurs qu'avant. -->
+  @if (game.world(); as world) {
+    <dl class="stats">
+      <div class="stat pip-frame"><dt>money</dt><dd>{{ fmt(world.money) }}</dd></div>
+      <div class="stat pip-frame"><dt>score</dt><dd>{{ fmt(world.score) }}</dd></div>
+      <div class="stat pip-frame"><dt>anges</dt><dd>{{ world.activeangels }} / {{ world.totalangels }}</dd></div>
+      <div class="stat pip-frame"><dt>bonus</dt><dd>{{ world.angelbonus }} %</dd></div>
+    </dl>
+  } @else {
+    <span class="muted">aucun monde chargé</span>
+  }
+</mat-toolbar>
+
+@if (game.errorMessage(); as message) {
+  <div class="alert" role="alert" (click)="game.clearError()" title="Cliquer pour effacer">
+    {{ message }}
+  </div>
+}
+
+<!-- Barre du bas toujours affichée ; les écrans Produits → Unlocks n'existent que si un monde est
+     chargé, Paramètres ne dépend pas du monde. -->
+<app-tab-bar [active]="game.activeTab()" [angelsEarned]="angelsEarned()" (select)="game.selectTab($event)">
+  <main class="screen">
+    @if (game.activeTab() === 'settings') {
+      <app-settings-panel [(scanlines)]="game.scanlines" [(glow)]="game.glow" [(flicker)]="game.flicker" />
+    } @else if (game.world(); as world) {
+      @switch (game.activeTab()) {
+        @case ('products') {
+          <section class="products">
+            <h2 class="pip-title">Produits ({{ world.products.length }})</h2>
+            <div class="product-grid">
+              @for (product of world.products; track product.id) {
+                <app-product-card
+                  [product]="product"
+                  [activeangels]="world.activeangels"
+                  [angelbonus]="world.angelbonus"
+                  [multiplier]="game.multiplier()"
+                  [money]="world.money"
+                  [managerOwned]="managerOwned(world, product)"
+                  (buy)="game.buy(product.id, $event)"
+                  (launch)="game.launch(product.id)"
+                  (toggleManager)="game.toggleManager(product.id)"
+                />
+              }
+            </div>
+          </section>
+        }
+        @case ('managers') {
+          <app-palier-list
+            title="Managers"
+            [paliers]="world.managers"
+            actionLabel="Engager"
+            costUnit="$"
+            [balance]="world.money"
+            [blockedNames]="blockedManagers()"
+            [products]="world.products"
+            [worldLogo]="world.logo"
+            (action)="game.hireManager($event)"
+          />
+        }
+        @case ('upgrades') {
+          <app-palier-list
+            title="Upgrades"
+            [paliers]="world.upgrades"
+            actionLabel="Acheter"
+            costUnit="$"
+            [balance]="world.money"
+            [products]="world.products"
+            [worldLogo]="world.logo"
+            (action)="game.buyUpgrade($event)"
+          />
+        }
+        @case ('angels') {
+          <app-angels-panel
+            [score]="world.score"
+            [totalangels]="world.totalangels"
+            [activeangels]="world.activeangels"
+            [angelbonus]="world.angelbonus"
+            [angelsEarned]="angelsEarned()"
+            [angelupgrades]="world.angelupgrades"
+            [products]="world.products"
+            [worldLogo]="world.logo"
+            (resetRequested)="onReset(angelsEarned())"
+            (buyAngelUpgrade)="game.buyAngelUpgrade($event)"
+          />
+        }
+        @case ('unlocks') {
+          <!-- Prochain palier de chaque produit (D23), puis la table brute des all unlocks. -->
+          <section class="unlocks">
+            <app-unlock-list [products]="world.products" [worldLogo]="world.logo" />
+            <app-palier-list
+              title="All unlocks"
+              [paliers]="world.allunlocks"
+              [products]="world.products"
+              [worldLogo]="world.logo"
+            />
+          </section>
+        }
+      }
+    }
+  </main>
+</app-tab-bar>

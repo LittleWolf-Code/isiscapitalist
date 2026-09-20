@@ -1,12 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service.js';
+import { Controller, Get, Redirect } from '@nestjs/common';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
+  // La racine redirige vers le playground GraphQL (Apollo Sandbox).
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
+  @Redirect('/graphql', 302)
+  root() {}
 }

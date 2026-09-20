@@ -1,0 +1,60 @@
+<section class="palier-list">
+  <h2>{{ title() }} <span class="muted">({{ paliers().length }})</span></h2>
+
+  <table mat-table [dataSource]="paliers()" [trackBy]="trackByName">
+    <!-- Icône du palier avec repli sur le produit ciblé / le monde (D32) ; en-tête vide. -->
+    <ng-container matColumnDef="logo">
+      <th mat-header-cell *matHeaderCellDef class="logo-cell"></th>
+      <td mat-cell *matCellDef="let palier" class="logo-cell">
+        <app-game-icon [candidates]="icons(palier)" />
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>name</th>
+      <td mat-cell *matCellDef="let palier">{{ palier.name }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="seuil">
+      <th mat-header-cell *matHeaderCellDef>seuil</th>
+      <td mat-cell *matCellDef="let palier">
+        {{ costUnit() ? fmt(palier.seuil) : palier.seuil }} {{ costUnit() ?? '' }}
+      </td>
+    </ng-container>
+
+    <!-- Cible en toutes lettres à la place de l'id brut : Item N / Global / Anges (D32). -->
+    <ng-container matColumnDef="produit">
+      <th mat-header-cell *matHeaderCellDef>produit</th>
+      <td mat-cell *matCellDef="let palier">{{ target(palier) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="ratio">
+      <th mat-header-cell *matHeaderCellDef>ratio</th>
+      <td mat-cell *matCellDef="let palier">{{ palier.ratio }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="typeratio">
+      <th mat-header-cell *matHeaderCellDef>typeratio</th>
+      <td mat-cell *matCellDef="let palier">{{ palier.typeratio }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="unlocked">
+      <th mat-header-cell *matHeaderCellDef>unlocked</th>
+      <td mat-cell *matCellDef="let palier">{{ palier.unlocked ? 'true' : 'false' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="action">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let palier">
+        <!-- Désactivé si déjà débloqué (le backend refuse un double achat), si le solde
+             (balance) est inférieur au seuil (D17), ou si le palier est dans blockedNames (D24). -->
+        <button matButton type="button" [disabled]="isDisabled(palier)" (click)="action.emit(palier.name)">
+          {{ actionLabel() }}
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+    <tr mat-row *matRowDef="let palier; columns: displayedColumns()" [class.unlocked]="palier.unlocked"></tr>
+  </table>
+</section>

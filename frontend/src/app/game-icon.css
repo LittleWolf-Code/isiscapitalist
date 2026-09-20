@@ -1,0 +1,15 @@
+/* Place réservée de 32 px, image ou non : les cellules et la toolbar ne bougent pas quand une
+   image manque. Taille surchargeable par l'hôte (width / height sur app-game-icon). */
+:host {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  vertical-align: middle;
+  flex: 0 0 auto;
+}
+img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

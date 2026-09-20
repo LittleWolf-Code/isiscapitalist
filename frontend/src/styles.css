@@ -1,1 +1,93 @@
-/* You can add global styles to this file, and also import other style files */
+/* Peau « écran cathodique » globale (D22) : cadres, titres d'écran et effets CRT. Les couleurs
+   viennent des tokens du thème (material-theme.scss), jamais en dur. Les classes sont globales
+   pour atteindre l'intérieur des composants Material sans ::ng-deep, et parce que le budget
+   anyComponentStyle interdirait ces règles dans app.css. */
+
+/* Cadre en filet vert (bandeau de stats, écran, panneaux). */
+.pip-frame {
+  border: 1px solid var(--mat-sys-outline);
+  background: var(--mat-sys-surface);
+}
+
+/* Titre d'écran : capitales, espacement, filet horizontal à droite (comme « STATS »). Les h2 de
+   PalierList et AngelsPanel (templates inchangés) sont ciblés ici plutôt que par une classe. */
+.pip-title,
+app-palier-list h2,
+app-angels-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+  font: var(--mat-sys-title-large);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mat-sys-primary);
+}
+/* Liste imbriquée dans l'écran Anges (sous-onglet Bonus) : titre secondaire. */
+app-angels-panel app-palier-list h2 { font: var(--mat-sys-title-medium); }
+.pip-title::after,
+app-palier-list h2::after,
+app-angels-panel h2::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--mat-sys-outline);
+}
+
+/* Scanlines : overlay fixe au-dessus de tout, transparent aux clics. */
+app-root.crt-scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.25) 2px 3px);
+}
+
+/* Halo : hérité par tout le texte (Material compris) + léger rayonnement des cadres. */
+app-root.crt-glow {
+  text-shadow: 0 0 0.35rem currentColor;
+}
+app-root.crt-glow .pip-frame {
+  box-shadow: 0 0 0.5rem color-mix(in srgb, var(--mat-sys-primary) 35%, transparent);
+}
+/* Toggle du multiplicateur sélectionné (D31) : halo comme les cadres. Le groupe Material
+   est en overflow: hidden (angles arrondis) ; nos angles sont à 0, on libère le halo. */
+.multiplier.mat-button-toggle-group { overflow: visible; }
+app-root.crt-glow .multiplier .mat-button-toggle-checked {
+  box-shadow: 0 0 0.5rem color-mix(in srgb, var(--mat-sys-primary) 35%, transparent);
+}
+/* Focus clavier : anneau en currentColor (lisible sur fond noir comme sur fond vert) ;
+   Material met outline: none sur le bouton interne. */
+.multiplier .mat-button-toggle-button:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: -2px;
+}
+
+/* Scintillement : voile vert très bref, une fois toutes les 4 s. */
+app-root.crt-flicker::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1001;
+  background: var(--mat-sys-primary);
+  opacity: 0;
+  animation: pip-flicker 4s steps(1) infinite;
+}
+@keyframes pip-flicker {
+  0%, 97% { opacity: 0; }
+  98% { opacity: 0.04; }
+  99% { opacity: 0; }
+}
+/* Le réglage reste « on » en stockage, mais l'animation est coupée si le système réduit
+   les animations. */
+@media (prefers-reduced-motion: reduce) {
+  app-root.crt-flicker::before { animation: none; }
+}
+
+/* Onglet actif encadré (l'image de référence encadre « Status »), en plus de la barre d'encre
+   Material. Lien créé par mat-tab-link, hors encapsulation : règle globale. */
+.mat-mdc-tab-link.mdc-tab--active {
+  box-shadow: inset 0 0 0 1px var(--mat-sys-primary);
+}
