@@ -1,18 +1,27 @@
+import { BigvaluePipe } from './bigvalue.pipe';
 import {
+  advanceProduction,
+  affordableCount,
   angelsEarned,
-  blockedManagerNames,
+  applyBonus,
+  applyUnlocks,
+  bigValue,
+  bonusLabel,
   buyCost,
   FAST_CYCLE_MS,
   formatDuration,
-  formatNumber,
   logoCandidates,
+  MAX_INT32,
   maxAffordable,
   nextUnlock,
   productionGain,
   productionProgress,
-  SCORE_PER_ANGEL,
   targetLabel,
+  totalAngelsFor,
 } from './game-math';
+import { RatioType } from './graphql';
+import { SecondPipe } from './second.pipe';
+import { makeWorld, palier as makePalier } from './test-world';
 
 // Valeurs d'Item 1 dans backend/src/origworld.ts (monde neuf).
 const item1 = { cout: 4, croissance: 1.07 };
@@ -72,142 +81,206 @@ describe('productionGain', () => {
   });
 });
 
-describe('formatNumber', () => {
-  it('0 → 0.00', () => {
-    expect(formatNumber(0)).toBe('0.00');
-  });
-
-  it('999.5 → 999.50 (pas encore de suffixe)', () => {
-    expect(formatNumber(999.5)).toBe('999.50');
-  });
-
-  it('1234 → 1.23 k', () => {
-    expect(formatNumber(1234)).toBe('1.23 k');
-  });
-
-  it('1234567 → 1.23 M', () => {
-    expect(formatNumber(1234567)).toBe('1.23 M');
-  });
-
-  it('1e9 / 1e12 → G / T', () => {
-    expect(formatNumber(1e9)).toBe('1.00 G');
-    expect(formatNumber(2.5e12)).toBe('2.50 T');
-  });
-
-  // D29 : suffixes SI jusqu'à Y (10²⁴), puis notation scientifique sans « + » dès 10²⁷.
+// Pipe bigvalue du sujet (F-09) : 2 décimales sous 1000, entier sous 10⁶, puis 4 chiffres
+// significatifs et une puissance de dix en HTML.
+describe('bigValue / BigvaluePipe', () => {
   it.each([
+    [0, '0.00'],
     [999.5, '999.50'],
-    [1234, '1.23 k'],
-    [2.5e12, '2.50 T'],
-    [1e15, '1.00 P'],
-    [3.854e17, '385.40 P'], // cout d'Item 1 chez l'user lucas
-    [1.5e18, '1.50 E'],
-    [2e21, '2.00 Z'],
-    [7.25e24, '7.25 Y'],
-    [9.9999e26, '999.99 Y'], // dernier cas en suffixe
-    [1e27, '1.00e27'], // toExponential(2) donne 1.00e+27 : « + » retiré
-    [1.234e30, '1.23e30'],
-    [-3.2e17, '-320.00 P'], // signe conservé
-    [Infinity, 'Infinity'], // garde-fou existant
+    [1234, '1234'],
+    [999_999, '999999'],
+    [1_234_567, '1.235 × 10<sup>6</sup>'],
+    [1e15, '1.000 × 10<sup>15</sup>'],
+    [3.854e27, '3.854 × 10<sup>27</sup>'],
+    [-3.2e17, '-3.200 × 10<sup>17</sup>'],
+    [Infinity, 'Infinity'],
   ])('%s → %s', (value, expected) => {
-    expect(formatNumber(value)).toBe(expected);
+    expect(bigValue(value)).toBe(expected);
+    expect(new BigvaluePipe().transform(value)).toBe(expected);
   });
 });
 
-// Barre de production (D29) : 0 si vitesse ≤ 0, pleine sous FAST_CYCLE_MS (4 ticks de 100 ms),
-// sinon 100 × (vitesse − timeleft) / vitesse.
+// Barre de production (D29) : 0 si vitesse ≤ 0 ou au repos, pleine sous FAST_CYCLE_MS (4 ticks de
+// 100 ms) quand le produit tourne, sinon 100 × (vitesse − timeleft) / vitesse.
 describe('productionProgress', () => {
-  it('FAST_CYCLE_MS = 400 (4 × le tick de 100 ms de GameService, D15)', () => {
+  it('FAST_CYCLE_MS = 400 (4 × le tick de 100 ms de calcScore)', () => {
     expect(FAST_CYCLE_MS).toBe(400);
   });
 
   it.each([
-    [1000, 250, 75], // test existant de la carte
-    [0, 0, 0], // garde-fou
-    [500, 0, 100], // au repos : plein
-    [500, 500, 0], // cycle qui démarre : part de 0
-    [400, 200, 50], // seuil strict : 400 ms = 4 pas, barre normale
-    [399, 200, 100], // trop rapide : plein
-    [125, 25, 100], // Item 1 chez lucas
-  ])('vitesse %s, timeleft %s → %s', (vitesse, timeleft, expected) => {
-    expect(productionProgress({ vitesse, timeleft })).toBe(expected);
+    [1000, 250, false, 75],
+    [0, 0, false, 0], // garde-fou
+    [500, 0, false, 0], // au repos : vide (le sujet remet la barre à 0 en fin de production)
+    [500, 500, false, 0], // cycle qui démarre : part de 0
+    [400, 200, false, 50], // seuil strict : 400 ms = 4 pas, barre normale
+    [399, 200, false, 100], // trop rapide et en cours : plein
+    [125, 0, true, 100], // trop rapide, automatisé : plein en continu
+    [125, 0, false, 0], // trop rapide mais au repos : vide
+  ])('vitesse %s, timeleft %s, manager %s → %s', (vitesse, timeleft, managerUnlocked, expected) => {
+    expect(productionProgress({ vitesse, timeleft, managerUnlocked })).toBe(expected);
   });
 });
 
-// Chrono de la carte produit (D28) : seconde SUPÉRIEURE (jamais 00:00 pendant une production),
-// mm:ss jusqu'à 59:59 puis h:mm:ss, heures non bornées.
-describe('formatDuration', () => {
-  it('0 → 00:00', () => {
-    expect(formatDuration(0)).toBe('00:00');
-  });
-
-  it('1 ms et 500 ms (Item 1 au repos) → 00:01 (ceil)', () => {
-    expect(formatDuration(1)).toBe('00:01');
-    expect(formatDuration(500)).toBe('00:01');
-  });
-
-  it('2950 → 00:03 (ceil, pas round) ; 3000 → 00:03', () => {
-    expect(formatDuration(2950)).toBe('00:03');
-    expect(formatDuration(3000)).toBe('00:03');
-  });
-
-  it('61001 → 01:02 (ceil(61.001) = 62 s)', () => {
-    expect(formatDuration(61001)).toBe('01:02');
-  });
-
-  it('120000 (Item 6 au repos) → 02:00', () => {
-    expect(formatDuration(120000)).toBe('02:00');
-  });
-
-  it('3599000 → 59:59 ; 3599001 → 1:00:00 (bascule en h:mm:ss)', () => {
-    expect(formatDuration(3_599_000)).toBe('59:59');
-    expect(formatDuration(3_599_001)).toBe('1:00:00');
-  });
-
-  it('90000000 → 25:00:00 (heures non bornées à 24)', () => {
-    expect(formatDuration(90_000_000)).toBe('25:00:00');
-  });
-
-  it('négatif, NaN, Infinity → 00:00 (garde-fou)', () => {
-    expect(formatDuration(-5)).toBe('00:00');
-    expect(formatDuration(NaN)).toBe('00:00');
-    expect(formatDuration(Infinity)).toBe('00:00');
+// Pipe second du sujet (F-09) : heures:minutes:secondes.dixièmes, dixième SUPÉRIEUR (jamais
+// 00:00:00.0 pendant une production).
+describe('formatDuration / SecondPipe', () => {
+  it.each([
+    [0, '00:00:00.0'],
+    [1, '00:00:00.1'],
+    [500, '00:00:00.5'],
+    [2950, '00:00:03.0'],
+    [61_001, '00:01:01.1'],
+    [120_000, '00:02:00.0'],
+    [3_599_000, '00:59:59.0'],
+    [3_600_000, '01:00:00.0'],
+    [90_000_000, '25:00:00.0'],
+    [-5, '00:00:00.0'],
+    [NaN, '00:00:00.0'],
+    [Infinity, '00:00:00.0'],
+  ])('%s ms → %s', (ms, expected) => {
+    expect(formatDuration(ms)).toBe(expected);
+    expect(new SecondPipe().transform(ms)).toBe(expected);
   });
 });
 
-// Formule de world-engine.ts (D20) : max(0, floor(score / SCORE_PER_ANGEL) − totalangels), avec
-// SCORE_PER_ANGEL = 50. Mêmes cas chiffrés que backend/src/world-engine.spec.ts : le badge (client)
-// et le résultat de resetWorld (serveur) doivent coïncider.
-describe('angelsEarned', () => {
-  it('SCORE_PER_ANGEL = 50 (2 % du score)', () => {
-    expect(SCORE_PER_ANGEL).toBe(50);
+// Formule du sujet (RG-09), mêmes cas chiffrés que backend/src/world-engine.spec.ts : le badge
+// Investors (client) et le résultat de resetWorld (serveur) doivent coïncider.
+describe('angelsEarned / totalAngelsFor', () => {
+  it('10¹⁵ → 150, 4·10¹⁵ → 300, 10¹⁷ → 1500', () => {
+    expect(totalAngelsFor(1e15)).toBe(150);
+    expect(totalAngelsFor(4e15)).toBe(300);
+    expect(totalAngelsFor(1e17)).toBe(1500);
   });
 
-  it('score 0 → 0', () => {
+  it('premier ange vers 4,45·10¹⁰ ; plafond MAX_INT32 ; score négatif → 0', () => {
+    expect(totalAngelsFor(4.4e10)).toBe(0);
+    expect(totalAngelsFor(4.45e10)).toBe(1);
+    expect(totalAngelsFor(1e40)).toBe(MAX_INT32);
+    expect(totalAngelsFor(-1)).toBe(0);
+  });
+
+  it('anges supplémentaires = total − déjà gagnés, jamais négatif', () => {
     expect(angelsEarned({ score: 0, totalangels: 0 })).toBe(0);
-  });
-
-  it('exemple 1 (monde réel) : score 8 019 386, totalangels 0 → 160387', () => {
-    expect(angelsEarned({ score: 8_019_386, totalangels: 0 })).toBe(160_387);
-  });
-
-  it('exemple 2 : score 12 000, totalangels 100 → 240 − 100 = 140', () => {
-    expect(angelsEarned({ score: 12_000, totalangels: 100 })).toBe(140);
-  });
-
-  it('exemple 3 (seuils) : 49 → 0, 50 → 1, 99 → 1, 100 → 2', () => {
-    expect(angelsEarned({ score: 49, totalangels: 0 })).toBe(0);
-    expect(angelsEarned({ score: 50, totalangels: 0 })).toBe(1);
-    expect(angelsEarned({ score: 99, totalangels: 0 })).toBe(1);
-    expect(angelsEarned({ score: 100, totalangels: 0 })).toBe(2);
-  });
-
-  it('score inchangé après un reset (totalangels déjà à 160387) → 0', () => {
+    expect(angelsEarned({ score: 4e15, totalangels: 100 })).toBe(200);
+    expect(angelsEarned({ score: 4e15, totalangels: 300 })).toBe(0);
     expect(angelsEarned({ score: 8_019_386, totalangels: 160_387 })).toBe(0);
   });
+});
 
-  it("jamais négatif : totalangels supérieur à la formule (mondes de l'ancienne formule) → 0", () => {
-    expect(angelsEarned({ score: 1000, totalangels: 300 })).toBe(0);
+// Même calcul que le serveur (copie d'advanceProduction, cas de world-engine.spec.ts).
+describe('advanceProduction', () => {
+  const p = (timeleft: number, managerUnlocked = false) => ({ timeleft, vitesse: 500, managerUnlocked });
+
+  it('sans manager : inactif, partiel, terminé', () => {
+    expect(advanceProduction(p(0), 1000)).toEqual({ timeleft: 0, produced: 0 });
+    expect(advanceProduction(p(800), 300)).toEqual({ timeleft: 500, produced: 0 });
+    expect(advanceProduction(p(300), 300)).toEqual({ timeleft: 0, produced: 1 });
+    expect(advanceProduction(p(300), 5000)).toEqual({ timeleft: 0, produced: 1 });
+  });
+
+  it('avec manager : n cycles, inactif = vient de démarrer', () => {
+    expect(advanceProduction(p(200, true), 1700)).toEqual({ timeleft: 500, produced: 4 });
+    expect(advanceProduction(p(0, true), 1200)).toEqual({ timeleft: 300, produced: 2 });
+    expect(advanceProduction(p(0, true), 100)).toEqual({ timeleft: 400, produced: 0 });
+  });
+});
+
+// Application des bonus (RG-07) : nouveau monde, l'ancien intact.
+describe('applyBonus', () => {
+  it('gain sur un produit : revenu × ratio, les autres et le monde d’origine inchangés', () => {
+    const world = makeWorld();
+    const next = applyBonus(world, { idcible: 2, ratio: 3, typeratio: RatioType.Gain });
+    expect(next.products[1].revenu).toBe(180);
+    expect(next.products[0]).toBe(world.products[0]);
+    expect(world.products[1].revenu).toBe(60);
+  });
+
+  it('gain global (idcible 0) : tous les produits', () => {
+    const next = applyBonus(makeWorld(), { idcible: 0, ratio: 2, typeratio: RatioType.Gain });
+    expect(next.products.map((p) => p.revenu)).toEqual([2, 120]);
+  });
+
+  it('vitesse : vitesse ÷ ratio, production en cours accélérée (timeleft ÷ ratio, arrondi supérieur)', () => {
+    const world = makeWorld();
+    world.products[0].timeleft = 401;
+    const next = applyBonus(world, { idcible: 1, ratio: 2, typeratio: RatioType.Vitesse });
+    expect(next.products[0].vitesse).toBe(250);
+    expect(next.products[0].timeleft).toBe(201);
+  });
+
+  it('vitesse : jamais sous 1 ms, un produit au repos reste au repos', () => {
+    const world = makeWorld();
+    world.products[0].vitesse = 3;
+    const next = applyBonus(world, { idcible: 1, ratio: 10, typeratio: RatioType.Vitesse });
+    expect(next.products[0].vitesse).toBe(1);
+    expect(next.products[0].timeleft).toBe(0);
+  });
+
+  it('ange : angelbonus + ratio, produits inchangés', () => {
+    const world = makeWorld();
+    const next = applyBonus(world, { idcible: -1, ratio: 1, typeratio: RatioType.Ange });
+    expect(next.angelbonus).toBe(3);
+    expect(next.products).toBe(world.products);
+  });
+});
+
+// Unlocks après un achat (RG-05, RG-06, F-26).
+describe('applyUnlocks', () => {
+  it('seuils 25 et 50 franchis d’un coup : deux paliers débloqués, bonus appliqués dans l’ordre', () => {
+    const world = makeWorld();
+    world.products[0].quantite = 60;
+    const { world: next, unlocked } = applyUnlocks(world, 1);
+    expect(unlocked.map((p) => p.name)).toEqual(['Unlock 1.1', 'Unlock 1.2']);
+    expect(next.products[0].paliers.every((p) => p.unlocked)).toBe(true);
+    expect(next.products[0].vitesse).toBe(250);
+    expect(next.products[0].revenu).toBe(2);
+    // Monde d'origine intact.
+    expect(world.products[0].paliers.some((p) => p.unlocked)).toBe(false);
+  });
+
+  it('palier déjà débloqué : jamais appliqué deux fois', () => {
+    const world = makeWorld();
+    world.products[0].quantite = 30;
+    const first = applyUnlocks(world, 1).world;
+    const second = applyUnlocks(first, 1);
+    expect(second.unlocked).toEqual([]);
+    expect(second.world.products[0].vitesse).toBe(250);
+  });
+
+  it('allunlock : seulement quand TOUS les produits atteignent le seuil, bonus sur tous', () => {
+    const world = makeWorld();
+    world.products[0].quantite = 25;
+    expect(applyUnlocks(world, 1).world.allunlocks[0].unlocked).toBe(false);
+    world.products[1].quantite = 25;
+    const { world: next, unlocked } = applyUnlocks(world, 2);
+    expect(unlocked.map((p) => p.name)).toEqual(['Unlock 2.1', 'All 1']);
+    expect(next.allunlocks[0].unlocked).toBe(true);
+    expect(next.products.map((p) => p.revenu)).toEqual([2, 120]);
+  });
+
+  it('seuil non atteint → rien', () => {
+    const { world, unlocked } = applyUnlocks(makeWorld(), 1);
+    expect(unlocked).toEqual([]);
+    expect(world.products[0].vitesse).toBe(500);
+  });
+});
+
+describe('bonusLabel / affordableCount', () => {
+  it('effet en toutes lettres', () => {
+    expect(bonusLabel({ ratio: 3, typeratio: RatioType.Gain })).toBe('revenus ×3');
+    expect(bonusLabel({ ratio: 2, typeratio: RatioType.Vitesse })).toBe('vitesse ×2');
+    expect(bonusLabel({ ratio: 1, typeratio: RatioType.Ange })).toBe('anges +1 %');
+  });
+
+  it('compte les paliers verrouillés payables (seuil ≤ solde)', () => {
+    const paliers = [
+      makePalier('a', 1000, 1, 1, RatioType.Gain),
+      makePalier('b', 15000, 2, 1, RatioType.Gain),
+      { ...makePalier('c', 10, 1, 1, RatioType.Gain), unlocked: true },
+    ];
+    expect(affordableCount(paliers, 999)).toBe(0);
+    expect(affordableCount(paliers, 1000)).toBe(1);
+    expect(affordableCount(paliers, 1e6)).toBe(2);
   });
 });
 
@@ -237,47 +310,6 @@ describe('nextUnlock', () => {
     const first = { name: 'a', ...palier(25) };
     const second = { name: 'b', ...palier(25) };
     expect(nextUnlock({ paliers: [first, second] })).toBe(first);
-  });
-});
-
-// Monde neuf de backend/src/origworld.ts : 6 managers (Manager i cible Item i), seul Item 1 a un
-// exemplaire. blockedManagerNames liste les managers non possédés dont le produit est à 0 (D24).
-describe('blockedManagerNames', () => {
-  const freshWorld = () => ({
-    managers: [1, 2, 3, 4, 5, 6].map((i) => ({
-      name: `Manager ${i}`,
-      idcible: i,
-      unlocked: false,
-    })),
-    products: [1, 2, 3, 4, 5, 6].map((i) => ({ id: i, quantite: i === 1 ? 1 : 0 })),
-  });
-
-  it('monde neuf → tous sauf Manager 1', () => {
-    expect(blockedManagerNames(freshWorld())).toEqual([
-      'Manager 2',
-      'Manager 3',
-      'Manager 4',
-      'Manager 5',
-      'Manager 6',
-    ]);
-  });
-
-  it('Item 2 acheté (quantite 1) → Manager 2 sort de la liste', () => {
-    const world = freshWorld();
-    world.products[1].quantite = 1;
-    expect(blockedManagerNames(world)).not.toContain('Manager 2');
-    expect(blockedManagerNames(world)).toHaveLength(4);
-  });
-
-  it('Manager 2 déjà unlocked avec Item 2 à 0 → absent (déjà grisé par palier.unlocked)', () => {
-    const world = freshWorld();
-    world.managers[1].unlocked = true;
-    expect(blockedManagerNames(world)).toEqual([
-      'Manager 3',
-      'Manager 4',
-      'Manager 5',
-      'Manager 6',
-    ]);
   });
 });
 

@@ -973,3 +973,184 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
   spec modifié (les hauteurs ne se mesurent pas en jsdom). **Hors périmètre** : les barres
   d'`UnlockList` et toute autre `mat-progress-bar`, la taille de l'icône, des boutons, du nom et
   du chip, les tokens de `material-theme.scss`.
+
+## D34 — Frontend : réglages CRT réalistes (vignette, grille, grain, bande, bruit, teinte, curseurs, reset)
+
+- **Contexte** (phase 9.19, 2026-09-20) : l'onglet Paramètres (D22) n'avait que trois
+  interrupteurs (Scanlines, Halo, Scintillement). L'utilisateur veut un écran plus proche d'un
+  vrai tube cathodique de Pip-Boy, avec des réglages fins à la manière du panneau « Effects » de
+  cool-retro-term. Affichage seul : aucune règle de jeu, aucune opération GraphQL, rien dans
+  `backend/`.
+- **Décision** :
+  1. **Modèle pur `display-settings.ts`** (comme `game-math.ts`) : `DisplaySettings` (12 champs :
+     `scanlines` / `glow` / `vignette` + leur niveau 0-100, `grid`, `grain`, `flicker`, `roll`,
+     `noise`, `tint` parmi `TINTS` = green / amber / blue / white), `DEFAULT_DISPLAY` (statique
+     actif, animé inactif, teinte verte, niveaux à 50), `normalizeDisplay(raw)` (jamais
+     d'exception : non-objet / champ absent ou de mauvais type → défaut du champ, niveau borné
+     0-100, NaN → défaut, teinte inconnue → `'green'`), `readStoredDisplay()`.
+     `SettingsPanel` importe `DEFAULT_DISPLAY` d'ici, jamais de `game.service.ts` : il reste
+     présentationnel et testable sans Apollo. `readStoredFlag` (D22) déménage dans ce fichier.
+  2. **Une seule clé localStorage `isiscapitalist.display`** (JSON de `DisplaySettings`), écart à
+     la convention « une clé par préférence » de D22 : douze réglages, un reset atomique, un seul
+     `effect` (try/catch, comme `user` / `tab`). Les trois clés D22 (`isiscapitalist.scanlines` /
+     `.glow` / `.flicker`) ne sont plus écrites ; `readStoredDisplay` les lit une fois en
+     **migration** si la nouvelle clé est absente, puis les supprime (`removeItem`) dans tous les
+     cas. JSON illisible → défauts. `GameService` : les trois signaux `scanlines` / `glow` /
+     `flicker` et leurs trois `effect` sont remplacés par `readonly display =
+     signal<DisplaySettings>(readStoredDisplay())`.
+  3. **`SettingsPanel`** : un seul `model.required<DisplaySettings>()` (App lie
+     `[(display)]="game.display"`), helper `patch(partial)`. Trois sections `h3` dans le
+     `.pip-frame` : Écran (Teinte en `mat-button-toggle-group` Vert / Ambre / Bleu / Blanc,
+     Vignette + curseur, Grille de pixels, Grain), Lumière (Scanlines + curseur, Halo + curseur),
+     Animations (Scintillement, Bande de balayage, Bruit animé + aide « ignorées si votre système
+     réduit les animations »), puis bouton `matButton="outlined"` « Réinitialiser les réglages »
+     (`display.set({ ...DEFAULT_DISPLAY })`, jamais désactivé). Curseurs = `mat-slider` 0-100 pas
+     5, `discrete`, `displayWith` « N % », `aria-label` sur l'`input matSliderThumb`, `[disabled]`
+     quand le toggle est off (la valeur est conservée). Ordre DOM des 8 `mat-slide-toggle` figé
+     (specs) : Vignette, Grille, Grain, Scanlines, Halo, Scintillement, Bande, Bruit. Teinte en
+     `mat-button-toggle-group` et non `mat-select` : un overlay CDK monté sur `<body>` sortirait
+     du filtre et resterait vert.
+  4. **`App`** : host bindings `[class.crt-*]` (8 classes), `[attr.data-tint]` et
+     `[style.--crt-scanlines]` / `--crt-glow` / `--crt-vignette` = niveau / 100 ; un
+     `<div class="crt-overlay" aria-hidden="true">` en dernier enfant d'`app-root` porte (avec ses
+     deux pseudo-éléments) les couches nouvelles ; les deux pseudo-éléments d'`app-root` restent
+     aux scanlines (`::after`) et au scintillement (`::before`).
+  5. **Effets dans `styles.css`** (global, D22 ; noir / transparent et `--mat-sys-primary` via
+     `color-mix` seulement) :
+     - scanlines : gradient inchangé, `opacity: min(1, calc(var(--crt-scanlines) * 2))` ; halo :
+       `text-shadow 0 0 calc(0.7rem * var(--crt-glow))`, `box-shadow` des cadres et du toggle
+       (D31) de rayon `calc(1rem * var(--crt-glow))` — **50 % = rendu D22** (0.25 / 0.35 rem /
+       0.5 rem), un joueur qui n'a rien touché ne voit aucune différence sur ces deux effets ;
+     - `.crt-overlay` : `position: fixed; inset: 0; pointer-events: none; z-index: 999` (sous
+       1000 / 1001), masqué (`display: none`) si aucune des cinq classes n'est posée ;
+       `background-image` à deux couches pilotées par des variables (`--crt-vignette-layer`,
+       `--crt-roll-layer`, `none` par défaut) ;
+     - vignette : `radial-gradient(ellipse, transparent 55%, rgb(0 0 0 / calc(0.9 *
+       var(--crt-vignette))))`, `border-radius: calc(24px * var(--crt-vignette))` et
+       `box-shadow: 0 0 0 4rem #000, inset 0 0 calc(4rem * var(--crt-vignette)) rgb(0 0 0 / 0.6)`
+       **sur l'overlay** et non sur `app-root` comme d'abord envisagé : `body` et `app-root` ont
+       la même surface (arrondir `app-root` ne montrerait rien) et une ombre interne sur
+       `app-root` serait recouverte par les fonds de ses enfants ; l'ombre externe de l'overlay
+       peint en noir les coins hors de l'arrondi ;
+     - grille : `.crt-overlay::before`, `repeating-linear-gradient(to right, transparent 0 2px,
+       rgba(0,0,0,0.12) 2px 3px)` ; grain : `.crt-overlay::after`, SVG `feTurbulence`
+       (`baseFrequency` 0.8, `feColorMatrix saturate 0`, tuile 200 px) en data URI, opacité 0.06 ;
+       bruit animé : le même pseudo-élément, `@keyframes pip-noise` 0.4 s `steps(4)` sur
+       `background-position` (un seul calque quand grain et bruit sont actifs) ;
+     - bande : seconde couche `linear-gradient(transparent, color-mix(primary 8 %), transparent)`
+       de `100% 20vh`, `@keyframes pip-roll` sur `background-position-y` (−20 vh → 100 vh, 8 s,
+       linéaire, infini) ;
+     - `prefers-reduced-motion: reduce` : `pip-roll` et `pip-noise` coupés, la bande disparaît
+       (`--crt-roll-layer: none`), le bruit animé se comporte comme le grain ;
+     - **teinte** : `filter` sur `app-root[data-tint]` — ambre `hue-rotate(-105deg)`, **bleu
+       `hue-rotate(70deg)`** (le +51° proposé donnait un cyan à 197° ; vert #1aff80 = 146°, +70°
+       ≈ 216°), blanc `saturate(0) brightness(1.25)` ; vert = aucune règle (le filtre
+       recomposite tout l'écran à chaque tick de 100 ms, le défaut ne doit rien coûter).
+       `app-root:not([data-tint='green'])` reçoit `background: var(--mat-sys-surface)` : sans
+       cela le fond de `body` (même couleur, mais hors du filtre) restait vert sous les zones
+       transparentes d'`app-root`. Un `filter` fait d'`app-root` le bloc conteneur de ses
+       descendants `fixed` : sans effet, `app-root` fait déjà `100dvh`.
+- **Conséquences** : vérifié sur le serveur 4200 d'une autre session (mêmes sources), localStorage
+  vidé : classes `crt-glow crt-grain crt-grid crt-scanlines crt-vignette`, `data-tint="green"`,
+  `style="--crt-scanlines: 0.5; --crt-glow: 0.5; --crt-vignette: 0.5"`, `filter: none`, gradient
+  de vignette à alpha 0.45, `text-shadow` de `.brand` 5.6 px (0.35 rem) ; curseur Vignette à 100
+  → alpha 0.9, rayon 24 px ; Halo à 100 → 11.2 px ; Ambre → `hue-rotate(-105deg)`, icônes ambre
+  aussi ; Réinitialiser → JSON des défauts ; `isiscapitalist.flicker = 'on'` + `.glow = 'off'`
+  sans nouvelle clé → au rechargement `crt-flicker` posé, `crt-glow` absent, les trois anciennes
+  clés à `null`. Onglet Produits, tout actif et curseurs à 100 : texte 16 px des barres lisible,
+  `scrollWidth === clientWidth` = 1280 sur `app-root`. `npm run build` : 948 kB (warning de budget
+  D18 ; +46 kB pour `MatSliderModule` / `MatButtonToggleModule` dans le panneau),
+  `settings-panel.css` 1 kB ; `npm test` : 160 tests verts (12 fichiers, dont
+  `display-settings.spec.ts`). Aucune valeur fixe baissée au point de contrôle. **Hors
+  périmètre** : déformation réelle (`feDisplacementMap`, 3D), burn-in, aberration chromatique,
+  jitter, sons, palettes Material alternatives ; `material-theme.scss`, `product-card.*`,
+  `tab-bar.*` et les icônes sont intouchés.
+
+## D35 — Icônes « écran Pip-Boy » rendues par le frontend (canvas)
+
+- **Contexte** (20/09/2026, prompt `docs/prompts/frontend-pixel-icons-canvas.md`) : les icônes du
+  thème « Nuka Capitalist » étaient converties en 96 × 96 et 4 verts par un script Python côté
+  backend ; l'utilisateur voulait garder les images d'origine et laisser le frontend les pixeliser
+  et les colorier.
+- **Décision** : le backend sert les sources couleur 512 × 512 (`public/icones/`), avec CORS posé
+  **avant** les fichiers statiques (`main.ts`) pour que le canvas ne soit pas « tainted ».
+  `frontend/src/app/pixel-art.ts` porte à l'identique l'ancien script (réduction lissée → alpha
+  binarisé → luminance → autocontraste 2 % → gamma 0,65 → seuils 0 / 60 / 130 / 205 → 4 verts) et
+  produit une data URL ; `GameIcon` l'affiche (input `pixelIcons`, défaut vrai, `image-rendering:
+  pixelated`), et retombe sur l'image couleur si le canvas est indisponible (jsdom).
+- **Conséquences** : les 4 verts de `PIPBOY_GREENS` sont la seule couleur écrite hors de
+  `material-theme.scss` (un canvas ne lit pas les tokens CSS). `pixel-art.spec.ts` teste les
+  fonctions pures. Pas de réglage utilisateur pour revenir à la couleur (input seulement).
+
+## D36 — Conformité au sujet : le cahier des charges prime sur les choix de la phase 9
+
+- **Contexte** (05/10/2026) : le sujet frontend (`frontendangularsignal.pdf`) est arrivé après la
+  phase 9, construite sans lui. La recette (`docs/RECETTE.md`) contre le cahier des charges
+  (`docs/CAHIER-DES-CHARGES.md`) classait 1 exigence backend et 25 exigences frontend « Partiel »
+  ou « Non conforme ». Consigne de l'utilisateur : **se conformer au cahier des charges**.
+- **Règle générale** : une décision antérieure qui contredit une exigence est remplacée ; un ajout
+  hors sujet qui ne contredit rien est gardé (thème cathodique D22 / D34, rendu Pip-Boy D35).
+- **Backend (phase 10.1)** :
+  - **Anges** : `floor(150 × √(score / 10¹⁵)) − totalangels` (RG-09) remplace la formule linéaire
+    de **D20** (anges). Total plafonné à 2 147 483 647 (`MAX_INT32`), atteint au-delà d'un score de
+    ~2·10²⁹ seulement.
+  - **Schéma** : retour au schéma du sujet. `totalangels` / `activeangels` redeviennent `Int!`
+    (**D27 annulée** : la racine carrée les garde petits) ; la mutation `basculerManager` et la
+    pause des managers (**D20**, pause) sont retirées, le sujet n'en parle pas et un client conforme
+    ne pourrait pas s'en servir sur un autre serveur. Seul écart restant : `lastupdate: Float!`
+    (D6), le sujet lui-même hésitant entre `String!` et `Int!` (ambiguïté A1).
+  - **Règles ajoutées retirées** : `engagerManager` n'exige plus d'exemplaire du produit (**D24
+    annulée**) et `lancerProductionProduit` n'est plus refusé à 0 exemplaire (**D12**, première
+    moitié) : un client écrit d'après le sujet ne connaît pas ces règles et divergerait. Le no-op
+    pendant une production en cours (D12, seconde moitié) est gardé.
+  - **Accélération** (RG-07, « la barre de progression accélère ») : un bonus de vitesse divise
+    aussi le temps restant d'une production en cours (`ceil(timeleft / ratio)`, borné à la
+    nouvelle vitesse) au lieu de le plafonner.
+  - **Même calcul des deux côtés** : `advanceProduction(product, elapsed)` est extraite
+    d'`updateWorld` et recopiée à l'identique dans le client (le sujet le recommande).
+  - **Sécurité** (défaut D-01 de la recette) : le pseudo passe par `encodeURIComponent` (et `*` →
+    `%2A`) avant de devenir un nom de fichier ; `getWorld(user: "../x")` reste dans `userworlds/`.
+- **Frontend, logique (phase 10.2)** — **D14 et D15 remplacées** : le client n'interroge plus le
+  serveur toutes les 2 s et ne se contente plus d'animer `timeleft`. Il est autonome comme le
+  demande le sujet : `world` est un `linkedSignal` de la réponse de `getWorld` (chargée au
+  démarrage, au changement de pseudo, sur Refresh, après un reset et après un échec de
+  transmission) ; la boucle `calcScore` (100 ms, `performance.now`) avance chaque produit avec
+  `advanceProduction` et crédite argent et score par `productionDone` ; chaque action (production,
+  achat + unlocks / allunlocks, manager, cash upgrade, angel upgrade) est appliquée au monde local
+  par des fonctions immuables de `game-math.ts` (`replaceProduct`, `applyBonus`, `applyUnlocks`),
+  puis transmise par la mutation du sujet. Un refus du serveur affiche son message dans le
+  snack-bar et recharge le monde (le serveur fait foi). Le bandeau d'erreur est remplacé par le
+  snack-bar `snackmessage` (F-16, F-20). Pseudo : formulaire signal `form()` + `[formField]`,
+  `commitName` sur Entrée, clé `username` (l'ancienne `isiscapitalist.user` est migrée), défaut
+  `Captain<n>` aléatoire, bouton Refresh (`refreshWorld`). Adresse du serveur en un seul endroit
+  (`server.ts`, signal `SERVER`, exposé comme `GameService.server`).
+- **Frontend, interface (phase 10.3)** — **D19, D22 (barre d'onglets), D23 / D25 (barre d'achat de
+  la carte), D26, D28 (chrono mm:ss), D29 (`formatNumber`), D30 et D31 remplacées** par la mise en
+  page du sujet : en-tête (logo + nom du monde, argent, bouton multiplicateur unique « Buy x1 →
+  x10 → x100 → Max », champ « Your ID » + Refresh), bandeau gauche de boutons (Unlocks, Cash
+  Upgrades, Angel Upgrades, Managers, Investors, plus Paramètres) badgés par `matBadge` (nombre
+  d'éléments achetables ; anges à réclamer pour Investors), produits sur deux colonnes, fenêtres
+  superposées `Modal` (Close, Échap, clic sur le fond, `cdkTrapFocus`) qui ne listent que les
+  paliers non débloqués. Carte produit du sujet : image ronde cliquable (production, F-10) avec la
+  quantité superposée, barre de production avec le gain, bouton « x<n> — <coût> » et temps restant
+  à côté. Pipes `bigvalue` (4 chiffres significatifs et `10ⁿ`) et `second` (`hh:mm:ss.d`). Le
+  thème cathodique (D22 couleurs / police, D34) et le rendu Pip-Boy (D35) restent : le sujet laisse
+  le design libre. Sur téléphone (< 700 px), le menu passe au-dessus des produits et la page entière
+  défile.
+- **Monde final (phase 10.4, F-33)** : le casting validé de `docs/THEME.md` est appliqué à
+  `origworld.ts` (noms et images ; chiffres inchangés), avec des noms *proposés* pour les cases
+  restantes et deux icônes dessinées (`global.png`, `bobblehead.png`). Équilibrage vérifié par
+  `backend/scripts/simulate-balance.mjs` (règles réelles du moteur, joueur actif, pas de 100 ms) :
+  6 managers en 8 min 34 s, score 10⁹ en 17 min, premier ange en 28 min, 10¹² en 58 min, tous les
+  upgrades en moins d'une heure ; sans reset, 150 anges en 57 h ; avec un reset dès que les anges
+  doublent, 10 anges à 1 h 30, puis 20, 40, 80, et 150 en 32 h. Début rapide, puis courbe d'idle
+  game classique ; aucun chiffre n'a été modifié.
+- **Budget du bundle** (défaut D-04) : 987 kB après l'ajout du formulaire signal, du badge et du
+  CDK a11y (Material + Apollo forment l'essentiel) ; budget initial relevé à 1,1 Mo (avertissement)
+  / 1,5 Mo (erreur) dans `angular.json`.
+- **Conséquences** : les parties créées sous D20 dont les anges dépassent 2^31 (seule `lucas`, à
+  4,6·10²³) ne peuvent plus être servies (`Int cannot represent…`) : à réinitialiser à la main.
+  Tests : `world-engine.spec.ts` (advanceProduction, accélération, nouvelle formule) et
+  `world.e2e-spec.ts` (manager sans exemplaire, production à 0, `basculerManager` absent, pseudo
+  « ../ », reset à 300 anges pour un score de 4·10¹⁵) ; les noms du monde y sont lus dans
+  `origworld`.

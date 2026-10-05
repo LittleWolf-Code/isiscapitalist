@@ -70,13 +70,13 @@ describe('UnlockList', () => {
     expect(icon!.querySelector('img')?.getAttribute('src')).toBe('http://localhost:3000/icones/item1.png');
   });
 
-  it('Unlock 1.1 débloqué, quantite 32 → « Unlock 1.2 | gain ×2 | 32 / 50 », barre à 64', async () => {
+  it('Unlock 1.1 débloqué, quantite 32 → « Unlock 1.2 | revenus ×2 | 32 / 50 », barre à 64', async () => {
     const fixture = TestBed.createComponent(Host);
     const [p1, ...rest] = paliers(false);
     fixture.componentInstance.products.set([{ ...item1, quantite: 32, paliers: [{ ...p1, unlocked: true }, ...rest] }]);
     await fixture.whenStable();
     const row = (fixture.nativeElement as HTMLElement).querySelector('tr[mat-row]')!;
-    expect(rowCells(row)).toEqual(['Item 1', 'Unlock 1.2', 'gain ×2', '32 / 50']);
+    expect(rowCells(row)).toEqual(['Item 1', 'Unlock 1.2', 'revenus ×2', '32 / 50']);
     expect(row.querySelector('mat-progress-bar')!.getAttribute('aria-valuenow')).toBe('64');
   });
 

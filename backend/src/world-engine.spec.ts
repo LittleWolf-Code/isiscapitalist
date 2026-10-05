@@ -4,15 +4,17 @@ import { describe, expect, it } from 'vitest';
 import { origworld } from './origworld.js';
 import { Palier, RatioType, World } from './graphql.js';
 import {
+  advanceProduction,
   angelsEarned,
   applyBonus,
   buyCost,
   buyUpgrade,
   checkAllUnlocks,
   checkProductUnlocks,
+  MAX_INT32,
   productionGain,
   resetWorld,
-  SCORE_PER_ANGEL,
+  totalAngelsFor,
   updateWorld,
 } from './world-engine.js';
 
@@ -47,6 +49,35 @@ describe('productionGain', () => {
     world.activeangels = 300;
     world.angelbonus = 2;
     expect(productionGain(world, world.products[0])).toBe(77);
+  });
+});
+
+// Phase 10 — avancement d'un produit, partagé avec le client (frontend/src/app/game-math.ts,
+// mêmes cas dans game-math.spec.ts).
+describe('advanceProduction', () => {
+  const p = (timeleft: number, managerUnlocked = false) => ({
+    timeleft,
+    vitesse: 500,
+    managerUnlocked,
+  });
+
+  it('sans manager : inactif, partiel, terminé', () => {
+    expect(advanceProduction(p(0), 1000)).toEqual({ timeleft: 0, produced: 0 });
+    expect(advanceProduction(p(800), 300)).toEqual({ timeleft: 500, produced: 0 });
+    expect(advanceProduction(p(300), 300)).toEqual({ timeleft: 0, produced: 1 });
+    expect(advanceProduction(p(300), 5000)).toEqual({ timeleft: 0, produced: 1 });
+  });
+
+  it('avec manager : n cycles, inactif = vient de démarrer', () => {
+    expect(advanceProduction(p(200, true), 1700)).toEqual({ timeleft: 500, produced: 4 });
+    expect(advanceProduction(p(0, true), 1200)).toEqual({ timeleft: 300, produced: 2 });
+    expect(advanceProduction(p(0, true), 100)).toEqual({ timeleft: 400, produced: 0 });
+  });
+
+  it('ne mute pas le produit reçu', () => {
+    const product = p(300, true);
+    advanceProduction(product, 1000);
+    expect(product.timeleft).toBe(300);
   });
 });
 
@@ -201,7 +232,7 @@ describe('unlocks', () => {
       expect(world.products[0].revenu).toBe(1);
     });
 
-    it('vitesse, cible id : vitesse = floor(vitesse / ratio), timeleft plafonné', () => {
+    it('vitesse, cible id : vitesse = floor(vitesse / ratio), production en cours accélérée (timeleft / ratio)', () => {
       const world = freshWorld();
       world.products[0].timeleft = 400;
       applyBonus(
@@ -209,17 +240,32 @@ describe('unlocks', () => {
         palier({ typeratio: RatioType.vitesse, idcible: 1, ratio: 2 }),
       );
       expect(world.products[0].vitesse).toBe(250);
-      expect(world.products[0].timeleft).toBe(250);
+      expect(world.products[0].timeleft).toBe(200);
     });
 
-    it('vitesse : un timeleft déjà inférieur à la nouvelle vitesse est conservé', () => {
+    it('vitesse : arrondi supérieur, une production en cours ne tombe jamais à 0', () => {
       const world = freshWorld();
-      world.products[0].timeleft = 100;
+      world.products[0].timeleft = 1;
       applyBonus(
         world,
         palier({ typeratio: RatioType.vitesse, idcible: 1, ratio: 2 }),
       );
-      expect(world.products[0].timeleft).toBe(100);
+      expect(world.products[0].timeleft).toBe(1);
+      world.products[0].timeleft = 101;
+      applyBonus(
+        world,
+        palier({ typeratio: RatioType.vitesse, idcible: 1, ratio: 2 }),
+      );
+      expect(world.products[0].timeleft).toBe(51);
+    });
+
+    it('vitesse : un produit au repos reste au repos (timeleft 0)', () => {
+      const world = freshWorld();
+      applyBonus(
+        world,
+        palier({ typeratio: RatioType.vitesse, idcible: 1, ratio: 2 }),
+      );
+      expect(world.products[0].timeleft).toBe(0);
     });
 
     it('vitesse : ne descend jamais sous 1 ms', () => {
@@ -312,7 +358,7 @@ describe('unlocks', () => {
       const item = world.products[0];
       item.quantite = 25;
       const unlocked = checkProductUnlocks(world, item);
-      expect(unlocked.map((p) => p.name)).toEqual(['Unlock 1.1']);
+      expect(unlocked.map((p) => p.name)).toEqual([origworld.products[0].paliers[0].name]);
       expect(item.paliers[0].unlocked).toBe(true);
       expect(item.paliers[1].unlocked).toBe(false);
       expect(item.paliers[2].unlocked).toBe(false);
@@ -334,11 +380,9 @@ describe('unlocks', () => {
       const item = world.products[0];
       item.quantite = 120;
       const unlocked = checkProductUnlocks(world, item);
-      expect(unlocked.map((p) => p.name)).toEqual([
-        'Unlock 1.1',
-        'Unlock 1.2',
-        'Unlock 1.3',
-      ]);
+      expect(unlocked.map((p) => p.name)).toEqual(
+        origworld.products[0].paliers.map((p) => p.name),
+      );
       expect(item.vitesse).toBe(125); // 500 → 250 → 125
       expect(item.revenu).toBe(2);
     });
@@ -393,7 +437,7 @@ describe('unlocks', () => {
       const world = freshWorld();
       for (const p of world.products) p.quantite = 25;
       const unlocked = checkAllUnlocks(world);
-      expect(unlocked.map((p) => p.name)).toEqual(['All Unlock 1']);
+      expect(unlocked.map((p) => p.name)).toEqual([origworld.allunlocks[0].name]);
       expect(world.allunlocks[0].unlocked).toBe(true);
       expect(world.allunlocks[1].unlocked).toBe(false);
       expect(world.products.map((p) => p.revenu)).toEqual([
@@ -436,9 +480,16 @@ describe('unlocks', () => {
   });
 });
 
-// Phase 6 — upgrades. origworld : Upgrade 1 (1000 $, Item 1 gain ×3), Upgrade 6 (3.1e8 $) ;
-// Angel Upgrade 1 (10 anges, ange +1), Angel Upgrade 2 (100 anges, tous gain ×2).
+// Phase 6 — upgrades. origworld : upgrade 1 (1000 $, produit 1 gain ×3), upgrade 6 (3.1e8 $) ;
+// angel upgrade 1 (10 anges, ange +1), angel upgrade 2 (100 anges, tous gain ×2).
 describe('buyUpgrade', () => {
+  // Noms lus dans origworld : le thème du monde peut changer sans casser ces tests.
+  const UPGRADE_1 = origworld.upgrades[0].name;
+  const UPGRADE_6 = origworld.upgrades[5].name;
+  const ANGEL_1 = origworld.angelupgrades[0].name;
+  const ANGEL_2 = origworld.angelupgrades[1].name;
+  const MANAGER_1 = origworld.managers[0].name;
+
   // Joueur du prompt : money 2000, activeangels 300, totalangels 300, angelbonus 2.
   function richWorld(): World {
     const world = structuredClone(origworld);
@@ -451,7 +502,7 @@ describe('buyUpgrade', () => {
 
   it('succès argent : Upgrade 1 → money 1000, Item 1 revenu 3, unlocked, palier retourné', () => {
     const world = richWorld();
-    const palier = buyUpgrade(world, world.upgrades, 'Upgrade 1', 'money');
+    const palier = buyUpgrade(world, world.upgrades, UPGRADE_1, 'money');
     expect(palier).toBe(world.upgrades[0]);
     expect(palier.unlocked).toBe(true);
     expect(world.money).toBe(1000);
@@ -465,7 +516,7 @@ describe('buyUpgrade', () => {
     const palier = buyUpgrade(
       world,
       world.angelupgrades,
-      'Angel Upgrade 1',
+      ANGEL_1,
       'activeangels',
     );
     expect(palier.unlocked).toBe(true);
@@ -480,11 +531,11 @@ describe('buyUpgrade', () => {
 
   it('exemple du prompt : Upgrade 1 puis Angel Upgrade 1 → gain 21 → 29.1', () => {
     const world = richWorld();
-    buyUpgrade(world, world.upgrades, 'Upgrade 1', 'money');
+    buyUpgrade(world, world.upgrades, UPGRADE_1, 'money');
     expect(productionGain(world, world.products[0])).toBe(21);
-    buyUpgrade(world, world.angelupgrades, 'Angel Upgrade 1', 'activeangels');
+    buyUpgrade(world, world.angelupgrades, ANGEL_1, 'activeangels');
     expect(productionGain(world, world.products[0])).toBeCloseTo(29.1, 10);
-    buyUpgrade(world, world.angelupgrades, 'Angel Upgrade 2', 'activeangels');
+    buyUpgrade(world, world.angelupgrades, ANGEL_2, 'activeangels');
     expect(world.activeangels).toBe(190);
     expect(world.products.map((p) => p.revenu)).toEqual(
       origworld.products.map((p, i) => p.revenu * (i === 0 ? 6 : 2)),
@@ -493,10 +544,10 @@ describe('buyUpgrade', () => {
 
   it("déjà achetée : second achat → erreur, rien n'est débité ni réappliqué", () => {
     const world = richWorld();
-    buyUpgrade(world, world.upgrades, 'Upgrade 1', 'money');
+    buyUpgrade(world, world.upgrades, UPGRADE_1, 'money');
     expect(() =>
-      buyUpgrade(world, world.upgrades, 'Upgrade 1', 'money'),
-    ).toThrow("L'upgrade Upgrade 1 est déjà achetée");
+      buyUpgrade(world, world.upgrades, UPGRADE_1, 'money'),
+    ).toThrow(`L'upgrade ${UPGRADE_1} est déjà achetée`);
     expect(world.money).toBe(1000);
     expect(world.products[0].revenu).toBe(3);
   });
@@ -504,10 +555,10 @@ describe('buyUpgrade', () => {
   it("ressource insuffisante : Upgrade 6 → « Pas assez d'argent », monde intact", () => {
     const world = richWorld();
     expect(() =>
-      buyUpgrade(world, world.upgrades, 'Upgrade 6', 'money'),
+      buyUpgrade(world, world.upgrades, UPGRADE_6, 'money'),
     ).toThrow("Pas assez d'argent");
     expect(world.money).toBe(2000);
-    expect(world.upgrades.find((u) => u.name === 'Upgrade 6')?.unlocked).toBe(
+    expect(world.upgrades.find((u) => u.name === UPGRADE_6)?.unlocked).toBe(
       false,
     );
   });
@@ -526,31 +577,31 @@ describe('buyUpgrade', () => {
   it('ressource exactement égale au seuil : accepté, solde 0', () => {
     const world = richWorld();
     world.money = 1000;
-    buyUpgrade(world, world.upgrades, 'Upgrade 1', 'money');
+    buyUpgrade(world, world.upgrades, UPGRADE_1, 'money');
     expect(world.money).toBe(0);
     world.activeangels = 10;
-    buyUpgrade(world, world.angelupgrades, 'Angel Upgrade 1', 'activeangels');
+    buyUpgrade(world, world.angelupgrades, ANGEL_1, 'activeangels');
     expect(world.activeangels).toBe(0);
   });
 
   it("nom inconnu ou d'une autre liste : « n'existe pas » (chaque mutation ne cherche que dans sa liste)", () => {
     const world = richWorld();
     expect(() =>
-      buyUpgrade(world, world.upgrades, 'Angel Upgrade 1', 'money'),
-    ).toThrow("L'upgrade Angel Upgrade 1 n'existe pas");
+      buyUpgrade(world, world.upgrades, ANGEL_1, 'money'),
+    ).toThrow(`L'upgrade ${ANGEL_1} n'existe pas`);
     expect(() =>
-      buyUpgrade(world, world.angelupgrades, 'Upgrade 1', 'activeangels'),
-    ).toThrow("L'upgrade Upgrade 1 n'existe pas");
+      buyUpgrade(world, world.angelupgrades, UPGRADE_1, 'activeangels'),
+    ).toThrow(`L'upgrade ${UPGRADE_1} n'existe pas`);
     expect(() =>
-      buyUpgrade(world, world.upgrades, 'Manager 1', 'money'),
-    ).toThrow("L'upgrade Manager 1 n'existe pas");
+      buyUpgrade(world, world.upgrades, MANAGER_1, 'money'),
+    ).toThrow(`L'upgrade ${MANAGER_1} n'existe pas`);
     expect(world.money).toBe(2000);
     expect(world.activeangels).toBe(300);
   });
 });
 
-// Phase 7 — reset et anges. Formule (D20) : floor(score / 50) − totalangels, borné à 0
-// (« 2 % du score », SCORE_PER_ANGEL = 50). Mêmes cas chiffrés que frontend/src/app/game-math.spec.ts.
+// Phase 7 — reset et anges. Formule du sujet (RG-09, D36) : floor(150 × √(score / 10¹⁵)) −
+// totalangels, borné à 0. Mêmes cas chiffrés que frontend/src/app/game-math.spec.ts.
 describe('angelsEarned', () => {
   // Monde « joué » : argent, produits, paliers, upgrades, manager — tout doit disparaître au reset.
   function playedWorld(
@@ -577,45 +628,47 @@ describe('angelsEarned', () => {
     return world;
   }
 
-  it('SCORE_PER_ANGEL = 50 (2 % du score)', () => {
-    expect(SCORE_PER_ANGEL).toBe(50);
+  it('totalAngelsFor : 10¹⁵ → 150, 4·10¹⁵ → 300, 10¹⁷ → 1500', () => {
+    expect(totalAngelsFor(1e15)).toBe(150);
+    expect(totalAngelsFor(4e15)).toBe(300);
+    expect(totalAngelsFor(1e17)).toBe(1500);
   });
 
-  it('exemple 1 (monde réel) : score 8 019 386, totalangels 0 → 160387', () => {
-    expect(angelsEarned(playedWorld(8_019_386, 0, 0))).toBe(160_387);
+  it('totalAngelsFor : premier ange vers 4,45·10¹⁰ de score', () => {
+    expect(totalAngelsFor(4.4e10)).toBe(0);
+    expect(totalAngelsFor(4.45e10)).toBe(1);
   });
 
-  it('exemple 2 : score 12 000, totalangels 100 → 240 − 100 = 140', () => {
-    expect(angelsEarned(playedWorld(12_000, 100, 60))).toBe(140);
+  it('totalAngelsFor : 0 ou négatif → 0, plafonné à MAX_INT32 (type Int du schéma)', () => {
+    expect(totalAngelsFor(0)).toBe(0);
+    expect(totalAngelsFor(-5)).toBe(0);
+    expect(totalAngelsFor(1e40)).toBe(MAX_INT32);
   });
 
-  it('exemple 3 (seuils) : 49 → 0, 50 → 1, 99 → 1, 100 → 2', () => {
-    expect(angelsEarned(playedWorld(49, 0, 0))).toBe(0);
-    expect(angelsEarned(playedWorld(50, 0, 0))).toBe(1);
-    expect(angelsEarned(playedWorld(99, 0, 0))).toBe(1);
-    expect(angelsEarned(playedWorld(100, 0, 0))).toBe(2);
+  it('exemple : score 4·10¹⁵, totalangels 100 → 300 − 100 = 200', () => {
+    expect(angelsEarned(playedWorld(4e15, 100, 60))).toBe(200);
   });
 
   it('score 0 → 0', () => {
     expect(angelsEarned(playedWorld(0, 0, 0))).toBe(0);
   });
 
-  it('score inchangé après un reset (totalangels déjà à 160387) → 0', () => {
-    expect(angelsEarned(playedWorld(8_019_386, 160_387, 160_387))).toBe(0);
+  it('score inchangé après un reset (totalangels déjà à 300) → 0', () => {
+    expect(angelsEarned(playedWorld(4e15, 300, 300))).toBe(0);
   });
 
-  it("jamais négatif : totalangels supérieur à la formule (mondes de l'ancienne formule) → 0", () => {
+  it("jamais négatif : totalangels supérieur à la formule (mondes de l'ancienne formule D20) → 0", () => {
+    expect(angelsEarned(playedWorld(8_019_386, 160_387, 160_387))).toBe(0);
     expect(angelsEarned(playedWorld(1000, 300, 300))).toBe(0);
-    expect(angelsEarned(playedWorld(49, 5, 5))).toBe(0);
   });
 
   describe('resetWorld', () => {
-    it('exemple 1 : score 8 019 386, 0 ange → 160387/160387, money 0, produits et paliers réinitialisés', () => {
-      const old = playedWorld(8_019_386, 0, 0);
+    it('exemple 1 : score 4·10¹⁵, 0 ange → 300/300, money 0, produits et paliers réinitialisés', () => {
+      const old = playedWorld(4e15, 0, 0);
       const fresh = resetWorld(old, 20_000);
-      expect(fresh.score).toBe(8_019_386);
-      expect(fresh.totalangels).toBe(160_387);
-      expect(fresh.activeangels).toBe(160_387);
+      expect(fresh.score).toBe(4e15);
+      expect(fresh.totalangels).toBe(300);
+      expect(fresh.activeangels).toBe(300);
       expect(fresh.money).toBe(0);
       expect(fresh.lastupdate).toBe(20_000);
       expect(fresh.angelbonus).toBe(origworld.angelbonus);
@@ -631,19 +684,19 @@ describe('angelsEarned', () => {
     });
 
     it('second reset immédiat → 0 gagné, anges inchangés', () => {
-      const first = resetWorld(playedWorld(8_019_386, 0, 0), 20_000);
+      const first = resetWorld(playedWorld(4e15, 0, 0), 20_000);
       const second = resetWorld(first, 30_000);
-      expect(second.totalangels).toBe(160_387);
-      expect(second.activeangels).toBe(160_387);
-      expect(second.score).toBe(8_019_386);
+      expect(second.totalangels).toBe(300);
+      expect(second.activeangels).toBe(300);
+      expect(second.score).toBe(4e15);
       expect(second.money).toBe(0);
     });
 
-    it('exemple 2 : score 12 000, 100 total / 60 actifs (40 dépensés) → 240 / 200', () => {
-      const fresh = resetWorld(playedWorld(12_000, 100, 60), 20_000);
-      expect(fresh.totalangels).toBe(240);
-      expect(fresh.activeangels).toBe(200);
-      expect(fresh.score).toBe(12_000);
+    it('exemple 2 : score 4·10¹⁵, 100 total / 60 actifs (40 dépensés) → 300 / 260', () => {
+      const fresh = resetWorld(playedWorld(4e15, 100, 60), 20_000);
+      expect(fresh.totalangels).toBe(300);
+      expect(fresh.activeangels).toBe(260);
+      expect(fresh.score).toBe(4e15);
     });
 
     it('score 0 : reset possible, tout à zéro, aucun ange', () => {
@@ -656,7 +709,7 @@ describe('angelsEarned', () => {
     });
 
     it("retourne un nouvel objet : l'ancien monde n'est pas muté", () => {
-      const old = playedWorld(8_019_386, 0, 0);
+      const old = playedWorld(4e15, 0, 0);
       const snapshot = structuredClone(old);
       const fresh = resetWorld(old, 20_000);
       expect(fresh).not.toBe(old);
@@ -665,7 +718,7 @@ describe('angelsEarned', () => {
     });
 
     it('ne partage rien avec origworld : un achat après reset ne le corrompt pas', () => {
-      const fresh = resetWorld(playedWorld(8_019_386, 0, 0), 20_000);
+      const fresh = resetWorld(playedWorld(4e15, 0, 0), 20_000);
       expect(fresh.products).not.toBe(origworld.products);
       fresh.products[0].quantite = 99;
       fresh.products[0].paliers[0].unlocked = true;
@@ -675,21 +728,21 @@ describe('angelsEarned', () => {
 
     it('lastupdate = Date.now() par défaut', () => {
       const before = Date.now();
-      const fresh = resetWorld(playedWorld(8_019_386, 0, 0));
+      const fresh = resetWorld(playedWorld(4e15, 0, 0));
       expect(fresh.lastupdate).toBeGreaterThanOrEqual(before);
     });
 
     // 7.2 : la formule de gain (phase 4) applique bien activeangels × angelbonus / 100 sur le
-    // monde issu du reset. Score 5000 → 100 anges ; Item 1 : quantite 1, revenu 1,
-    // 100 anges × 2 % → 1 × (1 + 2) = 3.
-    it("7.2 : après reset avec 100 anges, une production d'Item 1 rapporte 3 au lieu de 1", () => {
-      const fresh = resetWorld(playedWorld(5000, 0, 0), 20_000);
-      expect(fresh.activeangels).toBe(100);
-      expect(productionGain(fresh, fresh.products[0])).toBe(3);
+    // monde issu du reset. Score 10¹⁵ → 150 anges ; produit 1 : quantite 1, revenu 1,
+    // 150 anges × 2 % → 1 × (1 + 3) = 4.
+    it('7.2 : après reset avec 150 anges, une production du produit 1 rapporte 4 au lieu de 1', () => {
+      const fresh = resetWorld(playedWorld(1e15, 0, 0), 20_000);
+      expect(fresh.activeangels).toBe(150);
+      expect(productionGain(fresh, fresh.products[0])).toBe(4);
       fresh.products[0].timeleft = 500;
       updateWorld(fresh, 20_500);
-      expect(fresh.money).toBe(3);
-      expect(fresh.score).toBe(5003);
+      expect(fresh.money).toBe(4);
+      expect(fresh.score).toBe(1e15 + 4);
     });
   });
 });

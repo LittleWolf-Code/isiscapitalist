@@ -6,11 +6,14 @@ Monorepo avec deux applications indépendantes :
 - `backend/`  — API GraphQL **NestJS 12** (schema-first, Apollo), stockage des mondes en fichiers JSON.
 - `frontend/` — **Angular 22** (standalone, signals) + `@apollo-orbit/angular` + graphql-codegen.
 
-Le sujet officiel du backend est dans `backend.pdf` ; sa transcription structurée est dans
-`docs/SPEC-backend.md`. **Toujours lire `docs/` avant de coder** :
+Les sujets officiels sont `backend.pdf` et `frontendangularsignal.pdf` (hors dépôt, sur le
+Bureau) ; leurs exigences numérotées sont dans `docs/CAHIER-DES-CHARGES.md`, qui **prime** sur
+toute décision antérieure (D36). **Toujours lire `docs/` avant de coder** :
 
 | Fichier | Contenu |
 |---|---|
+| `docs/CAHIER-DES-CHARGES.md` | Exigences numérotées tirées des deux sujets (`backend.pdf` + `frontendangularsignal.pdf`) |
+| `docs/RECETTE.md` | Dernière recette de l'application contre le cahier des charges (05/10/2026, après la phase 10) |
 | `docs/SPEC-backend.md` | Sujet du TP backend (schéma GraphQL, étapes, contraintes) |
 | `docs/GAME-RULES.md` | Règles métier du jeu (production, unlocks, upgrades, anges, reset, formules) |
 | `docs/ARCHITECTURE.md` | Organisation des fichiers, flux de données, stockage |
@@ -21,50 +24,21 @@ Le sujet officiel du backend est dans `backend.pdf` ; sa transcription structur�
 
 Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`backend/CLAUDE.md`, `frontend/CLAUDE.md`).
 
-## État actuel (19/09/2026)
+## État actuel (05/10/2026)
 
-- **Backend terminé** : phases 0 à 8 de `docs/ROADMAP.md` cochées (schéma, monde, 6 mutations,
-  moteur temporel, unlocks, upgrades, reset, tests unitaires + e2e, README).
-- **Frontend** : le sujet officiel (`frontend.pdf`) n'existe pas encore ; un **front générique de
-  test** (une page) exerce toutes les opérations du schéma (phase 9.1 + 9.2). Depuis 9.3, il
-  propose un mode d'achat « max » et grise les boutons d'achat faute d'argent (D17). Depuis 9.4,
-  il est habillé avec **Angular Material 22.1** (toolbar, cards, progress bars, tables — D18),
-  sans changement de comportement. Depuis 9.5, il a la navigation d'un jeu idle : barre latérale
-  à onglets Managers / Upgrades / Anges (sous-onglets Reset et Bonus) / Unlocks, panneau à côté
-  des produits, pastille « anges gagnables » sur l'onglet Anges (D19).
-  Depuis 9.6, le bouton Produire d'une carte dont le manager est engagé devient Arrêter /
-  Reprendre : nouvelle mutation `basculerManager` (D20, deuxième écart au schéma du sujet après D6).
-  Depuis 9.8, il a l'esthétique d'un écran cathodique vert monochrome (D22) : thème M3 + police
-  VT323 dans `material-theme.scss`, barre d'onglets en bas (Produits / Managers / Upgrades /
-  Anges / Unlocks / Paramètres), un écran par onglet, réglages scanlines / halo / scintillement
-  persistés, effets CSS dans `styles.css`. Depuis 9.9, la carte produit est allégée (revenu,
-  gain, barre d'achat « quantite / seuil du prochain palier », barre de production, boutons) et
-  l'onglet Unlocks montre le prochain palier de chaque produit (`UnlockList`, `nextUnlock`, D23).
-  Depuis 9.10, les deux barres de la carte font 24 px et la barre d'achat est dans un en-tête
-  maison, à droite de l'icône (64 px) sous le nom, avec « quantite / seuil » centré dedans (D25).
-  Depuis 9.12, la barre d'onglets du bas occupe toute la largeur (6 onglets à parts égales,
-  pagination Material en fenêtre étroite) et le bouton Acheter de la carte est collé au bord
-  droit, Produire / Arrêter / Reprendre restant à gauche (D26).
-  Depuis 9.13, la carte n'affiche plus le revenu : le gain d'une production est écrit dans la
-  barre de production et un chrono encadré de 24 px (`mm:ss`, seconde supérieure,
-  `formatDuration`) est collé à sa droite — temps restant, ou durée d'un cycle au repos (D28).
-  Depuis 9.14, `formatNumber` continue en P / E / Z / Y puis en notation scientifique (« 1.23e27 »),
-  les deux boutons de la carte restent toujours sur une ligne (`nowrap`), et la barre de
-  production suit exactement le tick 100 ms (transition Material retirée) et reste pleine pour
-  un produit dont `vitesse` < 400 ms (`productionProgress`, `FAST_CYCLE_MS`, D29).
-  Depuis 9.15, la chip manager de la carte garde le texte `manager` en pause (D30).
-  Depuis 9.16, le toggle x1 / x10 / x100 / max sélectionné est en vidéo inversée (vert plein,
-  texte noir, `mat.button-toggle-overrides`), avec halo sous `crt-glow`, survol / focus teintés
-  et anneau de focus clavier en `currentColor` (D31).
-  Depuis 9.17, la toolbar montre le logo et le nom du monde, les quatre tables `PalierList` ont une
-  colonne logo et une colonne « produit » (Item N / Global / Anges) à la place d'`idcible`, la table
-  « Par produit » a l'icône du prochain palier, le tout via un composant `GameIcon` à liste de
-  candidats avec repli (logo du palier → produit ciblé → monde ; `targetLabel`, `logoCandidates`, D32).
-  Depuis 9.18, les deux barres de la carte et le chrono font 24 px (variable
-  `--product-bar-height` dans `product-card.css`) et leur texte est en body-large 16 px (D33).
-  Depuis D27, `totalangels` / `activeangels` sont en `Float!` dans les deux schémas (troisième écart
-  au sujet) : la formule linéaire D20 dépasse l'Int 32 bits dès score ≈ 1,07e11.
-  L'exercice « patients » a été entièrement retiré des deux sous-projets.
+- **Phases 0 à 10 de `docs/ROADMAP.md` cochées.** La phase 10 a mis l'application en conformité
+  avec le cahier des charges (D36) ; la dernière recette est `docs/RECETTE.md`.
+- **Backend** : schéma du sujet (seul écart `lastupdate: Float!`, D6), 6 mutations, moteur en
+  fonctions pures (`world-engine.ts`, D10), anges `150 × √(score / 10¹⁵)`, pseudo encodé avant de
+  devenir un nom de fichier, monde « Nuka Capitalist » (`docs/THEME.md`), simulation
+  d'équilibrage `backend/scripts/simulate-balance.mjs`.
+- **Frontend** : client autonome du sujet (boucle `calcScore` 100 ms, actions appliquées
+  localement puis transmises, rechargement sur refus), mise en page du sujet (en-tête, bandeau
+  gauche badgé, fenêtres superposées, carte produit à image cliquable), snack-bar, pseudo en
+  formulaire signal, pipes `bigvalue` / `second` ; thème « écran cathodique » (D22 / D34) et
+  icônes Pip-Boy (D35) conservés. Détail : `frontend/CLAUDE.md`.
+- Les décisions D14, D15, D19, D20, D23 à D31 décrivent la phase 9 et sont **remplacées** (D36) ;
+  les relire seulement pour l'historique.
 - `node_modules/` **par sous-projet** (`backend/`, `frontend/`), pas de `package.json` racine (D16).
 - Prérequis : Node ≥ 22.22.3 (exigé par le CLI Angular 22).
 
@@ -106,6 +80,5 @@ Pour lancer les serveurs dans Claude Code, utiliser les configurations `backend`
 - Le backend est en **ESM** (`"type": "module"`) : les imports relatifs doivent finir par `.js`
   (`./app.service.js`). Les extraits du PDF n'ont pas ce suffixe — l'ajouter.
 - `__dirname` n'existe pas en ESM : pour `useStaticAssets`, utiliser `join(process.cwd(), 'public')`.
-- `app.service.ts` importe actuellement `path/win32` — utiliser `path`.
 - `origworld` ne doit jamais être muté : toujours en retourner une **copie profonde**
   (`structuredClone`) quand on le sert à un nouvel utilisateur ou lors d'un reset.

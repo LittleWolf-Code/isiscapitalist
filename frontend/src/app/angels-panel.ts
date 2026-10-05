@@ -1,17 +1,15 @@
-// Panneau Anges : deux sous-onglets, Reset (anges gagnables, stats, bouton Reset) et Bonus
-// (angel upgrades via PalierList). Purement présentationnel : ne connaît ni l'utilisateur ni
-// Apollo ; le confirm() du reset est fait par App, qui seule connaît `user`.
+// Contenu de la fenêtre « Investors » (F-29, fig. 11 du sujet) : anges actifs et accumulés, bonus
+// par ange, et le nombre d'anges supplémentaires que rapporterait un reset, sur le bouton qui le
+// déclenche. Purement présentationnel : le confirm() et la mutation sont faits par App /
+// GameService. Les angel upgrades ont leur propre fenêtre.
 import { Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTabsModule } from '@angular/material/tabs';
-import { formatNumber } from './game-math';
-import { PalierData, ProductData } from './game.service';
-import { PalierList } from './palier-list';
+import { BigvaluePipe } from './bigvalue.pipe';
 
 @Component({
   selector: 'app-angels-panel',
   standalone: true,
-  imports: [MatTabsModule, MatButtonModule, PalierList],
+  imports: [MatButtonModule, BigvaluePipe],
   templateUrl: './angels-panel.html',
   styleUrl: './angels-panel.css',
 })
@@ -20,18 +18,10 @@ export class AngelsPanel {
   readonly totalangels = input.required<number>();
   readonly activeangels = input.required<number>();
   readonly angelbonus = input.required<number>();
-  // Calculé une fois dans App (angelsEarned de game-math.ts) et partagé avec la barre latérale.
+  // Anges supplémentaires gagnés par la partie en cours (angelsEarned, RG-09), calculé par App.
   readonly angelsEarned = input.required<number>();
-  readonly angelupgrades = input.required<readonly PalierData[]>();
-  // Transmis tels quels à la PalierList des angel upgrades (colonne « produit », repli d'image,
-  // D32) : le panneau reste sans injection.
-  readonly products = input<readonly ProductData[]>([]);
-  readonly worldLogo = input<string>('');
 
-  // Clic sur Reset : App confirme puis appelle game.reset(). Jamais désactivé (reset à 0 permis).
+  // Clic sur le bouton de reset : App confirme puis appelle game.reset(). Jamais désactivé
+  // (un reset à 0 ange est permis, comme dans le jeu original).
   readonly resetRequested = output<void>();
-  // Relayé depuis la PalierList des angel upgrades (name du palier).
-  readonly buyAngelUpgrade = output<string>();
-
-  protected readonly fmt = formatNumber;
 }

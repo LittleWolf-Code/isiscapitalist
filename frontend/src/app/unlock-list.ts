@@ -1,12 +1,12 @@
-// Onglet Unlocks, section « Par produit » (D23) : pour chaque produit, le prochain palier
-// verrouillé, son effet et la progression quantite / seuil. Purement présentationnel (input,
-// aucun output, aucune injection) ; le backend seul débloque les paliers (GAME-RULES.md §Unlocks),
-// on ne fait qu'afficher product.paliers[].unlocked via nextUnlock (même formule que la carte).
+// Fenêtre Unlocks, section « Par produit » (D23, option « prochain seuil de chaque produit » du
+// sujet, F-25) : pour chaque produit, le prochain palier verrouillé, son effet en toutes lettres et
+// la progression quantite / seuil. Purement présentationnel (input, aucun output, aucune
+// injection) ; les paliers sont débloqués par GameService (applyUnlocks) et par le serveur.
 import { Component, computed, input } from '@angular/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { GameIcon } from './game-icon';
-import { logoCandidates, nextUnlock } from './game-math';
+import { bonusLabel, logoCandidates, nextUnlock } from './game-math';
 import { PalierData, ProductData } from './game.service';
 
 // Une ligne de la table : le produit, son prochain palier (null = tout débloqué) et la
@@ -30,11 +30,12 @@ export class UnlockList {
   readonly products = input.required<readonly ProductData[]>();
   // Logo du monde : repli d'image d'un palier à idcible 0 (D32) ; '' = pas de repli.
   readonly worldLogo = input<string>('');
+  // Rendu Pip-Boy des icônes (D35), relayé à GameIcon.
+  readonly pixelIcons = input(true);
 
   protected readonly displayedColumns = COLUMNS;
 
-  // Lignes dérivées des produits reçus (getWorld, D14) : rien n'est animé par le timer (D15).
-  // Progression bornée à 0-100 et 100 si seuil <= 0, comme ownedProgress sur la carte.
+  // Lignes dérivées des produits du monde. Progression bornée à 0-100, et 100 si seuil <= 0.
   protected readonly rows = computed<readonly UnlockRow[]>(() =>
     this.products().map((product) => {
       const next = nextUnlock(product);
@@ -45,6 +46,8 @@ export class UnlockList {
       return { product, next, progress };
     }),
   );
+
+  protected readonly bonus = bonusLabel;
 
   // Candidats d'image du prochain palier (logo, puis produit ciblé ou monde, D32).
   protected icons(palier: PalierData): readonly string[] {

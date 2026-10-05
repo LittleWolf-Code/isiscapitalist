@@ -1,9 +1,10 @@
 # Thème « Nuka Capitalist » — casting et lexique
 
 Habillage Fallout du monde de départ (`backend/src/origworld.ts`). Ce fichier fige les choix faits
-en brainstorming ; les cases **validées** sont à reporter telles quelles dans `origworld.ts` et dans
-`backend/public/icones/`, les cases **proposées** restent à confirmer, les cases **à faire** sont
-vides. Source de départ : `Nuka Capitalist.pdf` (6 objets + images produit déjà choisies).
+en brainstorming. **Appliqué le 05/10/2026 (phase 10.4, F-33)** : le casting validé, les paliers
+proposés et des noms proposés pour les cases restantes sont dans `origworld.ts` (noms et images
+seulement, chiffres inchangés) ; les cases marquées *proposé* restent à confirmer. Source de
+départ : `Nuka Capitalist.pdf` (6 objets + images produit déjà choisies).
 
 ## Lexique (correspondance AdVenture Capitalist → Fallout) — proposé
 
@@ -20,7 +21,7 @@ vides. Source de départ : `Nuka Capitalist.pdf` (6 objets + images produit déj
 
 ## Casting — validé (20/09/2026)
 
-| Case | Mascotte / image | Fichier `icones/` (proposé) |
+| Case | Mascotte / image | Fichier `icones/` |
 |---|---|---|
 | Logo du monde | **Vault Boy** (pouce levé) | `world.png` |
 | Produit 1 | **Nuka-Cola** (bouteille, image du PDF) | `nuka-cola.png` |
@@ -42,7 +43,7 @@ vides. Source de départ : `Nuka Capitalist.pdf` (6 objets + images produit déj
 Vault Boy apparaît trois fois (logo, Pip-Boy, Armes) volontairement, dans trois poses différentes.
 Repli envisagé si ça gêne : Protectron (RobCo) en manager Pip-Boy.
 
-## Paliers produit — proposé
+## Paliers produit — proposé, appliqué
 
 | Produit | 25 (vitesse ×2) | 50 (gain ×2) | 100 (vitesse ×2) |
 |---|---|---|---|
@@ -56,17 +57,69 @@ Repli envisagé si ça gêne : Protectron (RobCo) en manager Pip-Boy.
 Le `logo` d'un palier peut pointer vers l'image du produit si on ne veut pas 18 images de plus
 (le `GameIcon` du frontend a déjà le repli palier → produit → monde, D32).
 
-## À faire
+## Cases restantes — proposé, appliqué (05/10/2026)
 
-- Upgrades produit **Stimpak**, **Armes**, **Armures** (3 cases).
-- Paliers globaux (3), upgrades globaux (4), icône anges, upgrades d'anges (3).
-- Mascottes encore disponibles : Festus, Mothman, Red Rocket, Jangles the Moon Monkey,
-  Giddyup Buttercup, Mr. Pebbles, Captain Cosmos, Manta Man, The Mechanist, Mister Handy,
-  Protectron, One-Eyed Ike / Mad Mulligan / Doc Phosphate (Dry Rock Gulch), bobblehead, l'Atome.
+| Case | Nom dans `origworld.ts` | Image |
+|---|---|---|
+| Upgrade Stimpak (×3) | **Doc Phosphate** (médecin de Dry Rock Gulch) | `stimpak.png` (repli produit) |
+| Upgrade Armes (×3) | **One-Eyed Ike** (hors-la-loi de Dry Rock Gulch) | `armes.png` |
+| Upgrade Armures (×3) | **The Mechanist** | `armure.png` |
+| Upgrades globaux (magazines, ×2) | **Tales of a Junktown Jerky Vendor**, **Grognak the Barbarian**, **Guns and Bullets**, **Astoundingly Awesome Tales** | `global.png` |
+| Paliers globaux (lieux) | **Sanctuary** (25), **Diamond City** (50), **Nuka-World** (100) | `global.png` |
+| Upgrades d'anges (perks) | **Fortune Finder** (+1 %), **Cap Collector** (gain ×2), **Troc** (+2 %) | `bobblehead.png` |
+| Logo du monde | nom **Nuka Capitalist** | `world.png` (inchangé) |
+
+Mascottes encore disponibles : Festus, Mothman, Red Rocket, Jangles the Moon Monkey, Giddyup
+Buttercup, Mr. Pebbles, Captain Cosmos, Manta Man, Mister Handy, Protectron, Mad Mulligan, l'Atome.
+
+Lexique non appliqué (*proposé*, à confirmer) : argent → bouchons, reset → « Activer le G.E.C.K. ».
 
 ## Images
 
-- Source : Nukapedia (fallout.fandom.com), PNG à fond transparent pour tout ce qui est listé.
-  Assets © Bethesda — usage pédagogique, à mentionner dans le README.
-- Format cible : PNG carré (256×256), le frontend les affiche en 64 px dans la carte produit.
+### Images produits et symboles (05/10/2026)
+
+- `nuka-cola.png`, `stimpak.png`, `pip-boy.png`, `armes.png`, `armure.png`, `nuke.png` : images de
+  `Nuka Capitalist.pdf` (xref 6, 9, 13, 14, 18, 22), fond uni détouré par remplissage depuis les
+  coins (tolérance 40), recadrées puis centrées dans un carré 512 × 512 transparent (marge 8 %).
+- `global.png` (symbole radioactif jaune et noir) et `bobblehead.png` (figurine Vault-Tec stylisée)
+  : dessinés en 1024 px puis réduits, faute d'image dans le PDF.
+- Le rendu « écran Pip-Boy » est fait par le frontend (D35) à partir de ces sources couleur.
+- Les icônes unies de démonstration (`item1..6`, `manager1..6`, `all`, `angel`, `npm run icons`) ne
+  sont plus référencées par `origworld.ts` ; elles restent servies pour les anciennes parties.
+
+### Pipeline (fait le 20/09/2026 pour les 10 cases validées)
+
+- Sources couleur recadrées en carrés 512×512 (fond transparent) dans `backend/scripts/icon-sources/`.
+- `python backend/scripts/pipboy-icons.py` les convertit en icônes « écran Pip-Boy » dans
+  `backend/public/icones/` : grille **96×96**, luminance → **4 niveaux de vert** (sombre `#002d16`,
+  moyen `#006e37`, primary `#1aff80`, pâle `#c4ffcb`), gamma 0,65, seuils 0 / 60 / 130 / 205,
+  pas de tramage, alpha binarisé. Choix validés : grille 96 (contre 64 et 48), sans Floyd-Steinberg
+  (trop de bruit), gamma relevé (les combinaisons bleues des Vault Boy tombaient dans le noir).
+- `world.png` a été retiré de `make-icons.mjs` (`npm run icons`) pour ne plus être écrasé par
+  l'icône unie de démonstration. Les autres icônes de démo (`item1..6`, `manager1..6`, `all`,
+  `angel`) restent en place tant qu'`origworld.ts` les référence.
+- Les mêmes réglages doivent servir aux images restantes (paliers, upgrades, anges) : déposer la
+  source 512×512 dans `icon-sources/` et relancer le script.
+
+### Sources Nukapedia (fallout.fandom.com, assets © Bethesda — usage pédagogique, à citer dans le README)
+
+| Fichier | Fichier wiki (`File:…`) | Retouche |
+|---|---|---|
+| `world.png` | `VaultBoy AnimationsOk.png` | pose clin d'œil + pouce découpée dans la planche (x 860–1380, y 505–952) |
+| `manager-cappy.png` | `FO4NW Cappy.png` | — |
+| `manager-mister-orderly.png` | `Mister Handy.png` | pas de rendu propre de Mister Orderly sur le wiki ; Mister Handy de base (quasi identique) |
+| `manager-vault-boy-pipboy.png` | `Vault-Tec cardboard Vault Boy.png` | pas de Vault Boy « montrant son Pip-Boy » ; silhouette carton FO76 pointant du doigt |
+| `manager-vault-boy-gunslinger.png` | `Fo4 Gunslinger.png` | recadré sur le personnage (x 75–270, y 55–287) |
+| `manager-confrerie.png` | `BOS Fo4 Classic Logo.png` | — |
+| `manager-nuka-girl.png` | `FO4 Nuka Girl prewar.png` | recadré sur le buste (x 100–940, y 0–840) : en pied, la combinaison noire disparaissait |
+| `upgrade-bottle.png` | `FO4NW Cappy and Bottle (2).png` | Bottle isolé (x 80–555), main de Cappy effacée en haut à droite |
+| `upgrade-vault-girl.png` | `Fo4 Vault Girl.png` | — |
+| `upgrade-sugar-bombs.png` | `Fo4 pre-War Sugar Bombs.png` | — |
+
+Alternatives écartées mais disponibles : `FO76 Gunslinger perk.png` (carte de perk, illisible en
+64 px), `Gunslinger.png` (dessin N&B 158 px), `FO76 Vault boy Excited.png` (autre pose pour le
+manager Pip-Boy), `Doctor Orderly in Action.png` (vrai Mister Orderly, capture in-game sombre).
+
+- Format d'affichage : 64 px dans la carte produit, donc 96 px natifs restent nets (`image-rendering:
+  pixelated` à prévoir côté frontend pour éviter le lissage à l'agrandissement).
 - Convention de nommage : slugs minuscules, préfixe `manager-` / `upgrade-` / `palier-`.

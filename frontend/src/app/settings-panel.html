@@ -1,16 +1,71 @@
 <section class="settings">
   <h2 class="pip-title">Paramètres</h2>
 
+  <!-- Ordre des mat-slide-toggle figé (les specs comptent dessus) : Vignette, Grille, Grain,
+       Scanlines, Halo, Scintillement, Bande, Bruit. Un curseur est désactivé quand son toggle
+       est off mais garde sa valeur. -->
   <div class="settings-list pip-frame">
-    <mat-slide-toggle class="setting" [checked]="scanlines()" (change)="scanlines.set($event.checked)">
-      Scanlines
+    <h3 class="section-title">Écran</h3>
+    <div class="setting-row">
+      <span class="setting-label">Teinte</span>
+      <mat-button-toggle-group
+        class="tint"
+        name="tint"
+        aria-label="Teinte"
+        hideSingleSelectionIndicator
+        [value]="display().tint"
+        (change)="onTintChange($event.value)"
+      >
+        @for (t of tints; track t.value) {
+          <mat-button-toggle [value]="t.value">{{ t.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
+    <div class="setting-row">
+      <mat-slide-toggle class="setting" [checked]="display().vignette" (change)="patch({ vignette: $event.checked })">
+        Vignette
+      </mat-slide-toggle>
+      <mat-slider class="level" min="0" max="100" step="5" discrete [displayWith]="percent" [disabled]="!display().vignette">
+        <input matSliderThumb aria-label="Intensité de la vignette" [value]="display().vignetteLevel" (valueChange)="patch({ vignetteLevel: $event })" />
+      </mat-slider>
+    </div>
+    <mat-slide-toggle class="setting" [checked]="display().grid" (change)="patch({ grid: $event.checked })">
+      Grille de pixels
     </mat-slide-toggle>
-    <mat-slide-toggle class="setting" [checked]="glow()" (change)="glow.set($event.checked)">
-      Halo
+    <mat-slide-toggle class="setting" [checked]="display().grain" (change)="patch({ grain: $event.checked })">
+      Grain
     </mat-slide-toggle>
-    <mat-slide-toggle class="setting" [checked]="flicker()" (change)="flicker.set($event.checked)">
+
+    <h3 class="section-title">Lumière</h3>
+    <div class="setting-row">
+      <mat-slide-toggle class="setting" [checked]="display().scanlines" (change)="patch({ scanlines: $event.checked })">
+        Scanlines
+      </mat-slide-toggle>
+      <mat-slider class="level" min="0" max="100" step="5" discrete [displayWith]="percent" [disabled]="!display().scanlines">
+        <input matSliderThumb aria-label="Intensité des scanlines" [value]="display().scanlinesLevel" (valueChange)="patch({ scanlinesLevel: $event })" />
+      </mat-slider>
+    </div>
+    <div class="setting-row">
+      <mat-slide-toggle class="setting" [checked]="display().glow" (change)="patch({ glow: $event.checked })">
+        Halo
+      </mat-slide-toggle>
+      <mat-slider class="level" min="0" max="100" step="5" discrete [displayWith]="percent" [disabled]="!display().glow">
+        <input matSliderThumb aria-label="Intensité du halo" [value]="display().glowLevel" (valueChange)="patch({ glowLevel: $event })" />
+      </mat-slider>
+    </div>
+
+    <h3 class="section-title">Animations</h3>
+    <mat-slide-toggle class="setting" [checked]="display().flicker" (change)="patch({ flicker: $event.checked })">
       Scintillement
     </mat-slide-toggle>
-    <p class="hint">Scintillement : ignoré si votre système réduit les animations.</p>
+    <mat-slide-toggle class="setting" [checked]="display().roll" (change)="patch({ roll: $event.checked })">
+      Bande de balayage
+    </mat-slide-toggle>
+    <mat-slide-toggle class="setting" [checked]="display().noise" (change)="patch({ noise: $event.checked })">
+      Bruit animé
+    </mat-slide-toggle>
+    <p class="hint">Animations : ignorées si votre système réduit les animations.</p>
+
+    <button matButton="outlined" class="reset" type="button" (click)="reset()">Réinitialiser les réglages</button>
   </div>
 </section>

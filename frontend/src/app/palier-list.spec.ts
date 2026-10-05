@@ -1,47 +1,51 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { RatioType } from './graphql';
+import { CostUnit, PalierList } from './palier-list';
 import { PalierData, ProductData } from './game.service';
-import { PalierList } from './palier-list';
+import { makeWorld } from './test-world';
 
-// Manager 1 de backend/src/origworld.ts (seuil 1000 $).
-const manager1: PalierData = {
-  name: 'Manager 1',
-  logo: 'icones/manager1.png',
-  seuil: 1000,
-  idcible: 1,
-  ratio: 1,
-  typeratio: RatioType.Gain,
-  unlocked: false,
-};
+const world = makeWorld();
 
-// Item 1 d'origworld, réduit à ce que la liste utilise (id, name, logo).
-const item1 = { id: 1, name: 'Item 1', logo: 'icones/item1.png' } as ProductData;
-
-// Hôte de test : fournit les inputs et enregistre l'output.
+// Hôte de test : liste des managers par défaut, inputs modifiables.
 @Component({
   standalone: true,
   imports: [PalierList],
   template: `
     <app-palier-list
-      title="Managers"
       [paliers]="paliers()"
-      actionLabel="Engager"
-      costUnit="$"
+      [actionLabel]="actionLabel()"
+      [costUnit]="costUnit()"
       [balance]="balance()"
-      [blockedNames]="blocked()"
-      [products]="products()"
-      worldLogo="icones/world.png"
-      (action)="actions.push($event)"
+      [showEffect]="showEffect()"
+      emptyText="Tous les managers sont engagés."
+      [products]="products"
+      [worldLogo]="'icones/world.png'"
+      (action)="clicked.push($event)"
     />
   `,
 })
 class Host {
-  readonly paliers = signal<PalierData[]>([manager1]);
-  readonly products = signal<readonly ProductData[]>([item1]);
-  readonly balance = signal<number | null>(null);
-  readonly blocked = signal<readonly string[]>([]);
-  readonly actions: string[] = [];
+  readonly paliers = signal<readonly PalierData[]>(world.managers);
+  readonly actionLabel = signal<string | null>('Hire !');
+  readonly costUnit = signal<CostUnit>('$');
+  readonly balance = signal<number | null>(1000);
+  readonly showEffect = signal(false);
+  readonly products: readonly ProductData[] = world.products;
+  readonly clicked: PalierData[] = [];
+}
+
+async function render() {
+  const fixture = TestBed.createComponent(Host);
+  await fixture.whenStable();
+  const el = fixture.nativeElement as HTMLElement;
+  return {
+    fixture,
+    host: fixture.componentInstance,
+    el,
+    rows: () => Array.from(el.querySelectorAll('tr.mat-mdc-row')) as HTMLTableRowElement[],
+    headers: () => Array.from(el.querySelectorAll('th')).map((th) => th.textContent!.trim()),
+    buttons: () => Array.from(el.querySelectorAll('tr.mat-mdc-row button')) as HTMLButtonElement[],
+  };
 }
 
 describe('PalierList', () => {
@@ -49,117 +53,72 @@ describe('PalierList', () => {
     await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
   });
 
-  async function actionButton(fixture: { nativeElement: unknown; whenStable(): Promise<unknown> }) {
+  it('managers (F-18) : logo, nom, produit géré, coût, bouton — pas de colonne effet', async () => {
+    const { headers, rows } = await render();
+    expect(headers()).toEqual(['', 'nom', 'produit', 'coût', '']);
+    const cells = Array.from(rows()[0].querySelectorAll('td')).map((td) => td.textContent!.trim());
+    expect(cells).toEqual(['', 'Manager 1', 'Item 1', '1000 $', 'Hire !']);
+    expect(rows()[0].querySelector('app-game-icon img')?.getAttribute('src')).toBe(
+      'http://localhost:3000/icones/manager1.png',
+    );
+  });
+
+  it('seuls les paliers NON débloqués sont affichés', async () => {
+    const { host, fixture, rows } = await render();
+    host.paliers.set([{ ...world.managers[0], unlocked: true }, world.managers[1]]);
     await fixture.whenStable();
-    return (fixture.nativeElement as HTMLElement).querySelector('button')!;
-  }
-
-  it('balance 999 < seuil 1000 → désactivé', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.balance.set(999);
-    expect((await actionButton(fixture)).disabled).toBe(true);
+    expect(rows().map((r) => r.querySelector('td.name')!.textContent!.trim())).toEqual(['Manager 2']);
   });
 
-  it('balance 1000 = seuil → actif, clic → action émise avec le name', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.balance.set(1000);
-    const button = await actionButton(fixture);
-    expect(button.disabled).toBe(false);
-    button.click();
-    expect(fixture.componentInstance.actions).toEqual(['Manager 1']);
-  });
-
-  it('balance null → pas de vérification, actif', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.balance.set(null);
-    expect((await actionButton(fixture)).disabled).toBe(false);
-  });
-
-  it('mat-table : cellules name / seuil rendues, ligne marquée unlocked', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.paliers.set([{ ...manager1, unlocked: true }]);
+  it('tout débloqué → message, pas de tableau', async () => {
+    const { host, fixture, el } = await render();
+    host.paliers.set(world.managers.map((m) => ({ ...m, unlocked: true })));
     await fixture.whenStable();
-    const el = fixture.nativeElement as HTMLElement;
-    const cells = Array.from(el.querySelectorAll('td')).map((td) => td.textContent?.replace(/\s+/g, ' ').trim());
-    expect(cells).toContain('Manager 1');
-    expect(cells).toContain('1.00 k $');
-    expect(el.querySelector('tr.unlocked')).not.toBeNull();
+    expect(el.querySelector('table')).toBeNull();
+    expect(el.querySelector('.empty')?.textContent?.trim()).toBe('Tous les managers sont engagés.');
   });
 
-  // D32 : colonne « produit » (cible en toutes lettres) à la place d'idcible, colonne logo.
-  it("colonne « produit » : Item 1, Global, Anges, #9 ; plus d'en-tête idcible", async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.paliers.set([
-      manager1,
-      { ...manager1, name: 'All Unlock 1', logo: 'icones/all.png', idcible: 0 },
-      { ...manager1, name: 'Angel Upgrade 1', logo: 'icones/angel.png', idcible: -1 },
-      { ...manager1, name: 'Orphelin', logo: '', idcible: 9 },
-    ]);
+  it('bouton actif seulement si le solde suffit (seuil ≤ solde), clic → palier émis', async () => {
+    const { buttons, host } = await render();
+    expect(buttons().map((b) => b.disabled)).toEqual([false, true]);
+    buttons()[0].click();
+    expect(host.clicked.map((p) => p.name)).toEqual(['Manager 1']);
+  });
+
+  it('upgrades (F-27) : colonne effet en toutes lettres, cible Global, coût en puissance de dix', async () => {
+    const { host, fixture, headers, rows } = await render();
+    host.paliers.set(world.upgrades);
+    host.showEffect.set(true);
+    host.actionLabel.set('Buy !');
     await fixture.whenStable();
-    const el = fixture.nativeElement as HTMLElement;
-    const headers = Array.from(el.querySelectorAll('th')).map((th) => th.textContent?.trim());
-    expect(headers).toContain('produit');
-    expect(headers).not.toContain('idcible');
-    const produit = headers.indexOf('produit');
-    const rows = Array.from(el.querySelectorAll('tr[mat-row]'));
-    expect(rows.map((row) => row.querySelectorAll('td')[produit].textContent?.trim())).toEqual([
-      'Item 1',
-      'Global',
-      'Anges',
-      '#9',
-    ]);
-    expect(el.textContent).not.toMatch(/-1/);
+    expect(headers()).toEqual(['', 'nom', 'produit', 'effet', 'coût', '']);
+    const cells = Array.from(rows()[1].querySelectorAll('td')).map((td) => td.textContent!.trim());
+    expect(cells).toEqual(['', 'Upgrade 7', 'Global', 'revenus ×2', '1.000 × 106 $', 'Buy !']);
+    expect(rows()[1].querySelector('td.seuil sup')?.textContent).toBe('6');
   });
 
-  it('colonne logo : un app-game-icon par ligne, premier candidat = logo du palier, repli produit', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.paliers.set([manager1, { ...manager1, name: 'Manager sans logo', logo: '' }]);
+  it('angel upgrades (F-31) : coût en anges, cible Anges', async () => {
+    const { host, fixture, rows, buttons } = await render();
+    host.paliers.set(world.angelupgrades);
+    host.costUnit.set('anges');
+    host.balance.set(10);
+    host.showEffect.set(true);
     await fixture.whenStable();
-    const el = fixture.nativeElement as HTMLElement;
-    const icons = Array.from(el.querySelectorAll('tr[mat-row] app-game-icon'));
-    expect(icons.length).toBe(2);
-    expect(icons[0].querySelector('img')?.getAttribute('src')).toBe('http://localhost:3000/icones/manager1.png');
-    expect(icons[1].querySelector('img')?.getAttribute('src')).toBe('http://localhost:3000/icones/item1.png');
+    const cells = Array.from(rows()[0].querySelectorAll('td')).map((td) => td.textContent!.trim());
+    expect(cells).toEqual(['', 'Angel Upgrade 1', 'Anges', 'anges +1 %', '10.00 anges', 'Hire !']);
+    expect(buttons().map((b) => b.disabled)).toEqual([false, true]);
   });
 
-  it('products vide → « #1 », sans exception', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.products.set([]);
+  it('all unlocks en lecture seule : seuil en quantité, pas de bouton', async () => {
+    const { host, fixture, headers, rows, buttons } = await render();
+    host.paliers.set(world.allunlocks);
+    host.actionLabel.set(null);
+    host.costUnit.set(null);
+    host.balance.set(null);
+    host.showEffect.set(true);
     await fixture.whenStable();
-    const el = fixture.nativeElement as HTMLElement;
-    const cells = Array.from(el.querySelectorAll('td')).map((td) => td.textContent?.trim());
-    expect(cells).toContain('#1');
-  });
-
-  it('palier déjà unlocked → désactivé même avec le solde', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.balance.set(5000);
-    fixture.componentInstance.paliers.set([{ ...manager1, unlocked: true }]);
-    expect((await actionButton(fixture)).disabled).toBe(true);
-  });
-
-  // D24 : le parent peut bloquer un palier par son nom (manager dont le produit est à 0).
-  it('blockedNames contient le palier → désactivé malgré le solde, clic sans effet', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.balance.set(20000);
-    fixture.componentInstance.blocked.set(['Manager 1']);
-    const button = await actionButton(fixture);
-    expect(button.disabled).toBe(true);
-    button.click();
-    expect(fixture.componentInstance.actions).toEqual([]);
-  });
-
-  it('blockedNames vide → actif', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.balance.set(20000);
-    fixture.componentInstance.blocked.set([]);
-    expect((await actionButton(fixture)).disabled).toBe(false);
-  });
-
-  it('blockedNames avec un nom inconnu → sans effet', async () => {
-    const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.balance.set(20000);
-    fixture.componentInstance.blocked.set(['Manager 99']);
-    expect((await actionButton(fixture)).disabled).toBe(false);
+    expect(headers()).toEqual(['', 'nom', 'produit', 'effet', 'seuil']);
+    expect(rows()[0].querySelector('td.seuil')!.textContent!.trim()).toBe('25 exemplaires de chaque produit');
+    expect(buttons()).toEqual([]);
   });
 });

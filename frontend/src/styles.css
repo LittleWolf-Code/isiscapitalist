@@ -9,11 +9,8 @@
   background: var(--mat-sys-surface);
 }
 
-/* Titre d'écran : capitales, espacement, filet horizontal à droite (comme « STATS »). Les h2 de
-   PalierList et AngelsPanel (templates inchangés) sont ciblés ici plutôt que par une classe. */
-.pip-title,
-app-palier-list h2,
-app-angels-panel h2 {
+/* Titre de fenêtre : capitales, espacement, filet horizontal à droite (comme « STATS »). */
+.pip-title {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -23,18 +20,23 @@ app-angels-panel h2 {
   text-transform: uppercase;
   color: var(--mat-sys-primary);
 }
-/* Liste imbriquée dans l'écran Anges (sous-onglet Bonus) : titre secondaire. */
-app-angels-panel app-palier-list h2 { font: var(--mat-sys-title-medium); }
-.pip-title::after,
-app-palier-list h2::after,
-app-angels-panel h2::after {
+.pip-title::after {
   content: '';
   flex: 1 1 auto;
   height: 1px;
   background: var(--mat-sys-outline);
 }
 
-/* Scanlines : overlay fixe au-dessus de tout, transparent aux clics. */
+/* Intensités 0-1 des trois effets réglables (D34), posées par App en variables de style sur
+   <app-root> ; 0.5 = rendu D22. Valeurs de repli identiques si App ne les pose pas. */
+app-root {
+  --crt-scanlines: 0.5;
+  --crt-glow: 0.5;
+  --crt-vignette: 0.5;
+}
+
+/* Scanlines : overlay fixe au-dessus de tout, transparent aux clics. Intensité par l'opacité
+   de l'overlay (0.5 → 1 = alpha 0.25 d'origine ; 1 → alpha équivalente 0.5). */
 app-root.crt-scanlines::after {
   content: '';
   position: fixed;
@@ -42,28 +44,17 @@ app-root.crt-scanlines::after {
   pointer-events: none;
   z-index: 1000;
   background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.25) 2px 3px);
+  opacity: min(1, calc(var(--crt-scanlines) * 2));
 }
 
-/* Halo : hérité par tout le texte (Material compris) + léger rayonnement des cadres. */
+/* Halo : hérité par tout le texte (Material compris) + léger rayonnement des cadres. Rayons
+   proportionnels à --crt-glow (0.5 → 0.35rem / 0.5rem = rendu D22). */
 app-root.crt-glow {
-  text-shadow: 0 0 0.35rem currentColor;
+  text-shadow: 0 0 calc(0.7rem * var(--crt-glow)) currentColor;
 }
 app-root.crt-glow .pip-frame {
-  box-shadow: 0 0 0.5rem color-mix(in srgb, var(--mat-sys-primary) 35%, transparent);
+  box-shadow: 0 0 calc(1rem * var(--crt-glow)) color-mix(in srgb, var(--mat-sys-primary) 35%, transparent);
 }
-/* Toggle du multiplicateur sélectionné (D31) : halo comme les cadres. Le groupe Material
-   est en overflow: hidden (angles arrondis) ; nos angles sont à 0, on libère le halo. */
-.multiplier.mat-button-toggle-group { overflow: visible; }
-app-root.crt-glow .multiplier .mat-button-toggle-checked {
-  box-shadow: 0 0 0.5rem color-mix(in srgb, var(--mat-sys-primary) 35%, transparent);
-}
-/* Focus clavier : anneau en currentColor (lisible sur fond noir comme sur fond vert) ;
-   Material met outline: none sur le bouton interne. */
-.multiplier .mat-button-toggle-button:focus-visible {
-  outline: 1px solid currentColor;
-  outline-offset: -2px;
-}
-
 /* Scintillement : voile vert très bref, une fois toutes les 4 s. */
 app-root.crt-flicker::before {
   content: '';
@@ -86,8 +77,98 @@ app-root.crt-flicker::before {
   app-root.crt-flicker::before { animation: none; }
 }
 
-/* Onglet actif encadré (l'image de référence encadre « Status »), en plus de la barre d'encre
-   Material. Lien créé par mat-tab-link, hors encapsulation : règle globale. */
-.mat-mdc-tab-link.mdc-tab--active {
-  box-shadow: inset 0 0 0 1px var(--mat-sys-primary);
+/* Couches CRT de D34 (vignette, bande, grille, grain / bruit) : un <div class="crt-overlay"> en
+   dernier enfant d'app-root, fixe, transparent aux clics, sous les scanlines (1000) et le
+   scintillement (1001). Chaque couche n'existe que si app-root porte la classe crt-* ; sans
+   aucune, le div est masqué. Noir / transparent seulement (D22) : la teinte vient du filtre. */
+.crt-overlay,
+.crt-overlay::before,
+.crt-overlay::after {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
 }
+app-root:not(.crt-vignette):not(.crt-grid):not(.crt-grain):not(.crt-roll):not(.crt-noise) .crt-overlay {
+  display: none;
+}
+/* Le div lui-même : deux couches d'image, vignette puis bande de balayage (chacune `none`
+   tant que sa classe est absente). */
+.crt-overlay {
+  --crt-vignette-layer: none;
+  --crt-roll-layer: none;
+  background-image: var(--crt-vignette-layer), var(--crt-roll-layer);
+  background-size: auto, 100% 20vh;
+  background-repeat: no-repeat;
+  background-position-y: 0, -20vh;
+}
+/* Vignette + courbure : coins assombris, angles arrondis (le noir hors de l'arrondi est peint
+   par l'ombre externe de l'overlay : le fond de body et d'app-root est la même surface, arrondir
+   app-root ne montrerait rien) et ombre interne, le tout proportionnel à --crt-vignette. */
+app-root.crt-vignette .crt-overlay {
+  --crt-vignette-layer: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgb(0 0 0 / calc(0.9 * var(--crt-vignette))) 100%
+  );
+  border-radius: calc(24px * var(--crt-vignette));
+  box-shadow:
+    0 0 0 4rem #000,
+    inset 0 0 calc(4rem * var(--crt-vignette)) rgb(0 0 0 / 0.6);
+}
+/* Bande de balayage : barre claire (primary à 8 %) de 20 vh qui descend en boucle en 8 s,
+   seconde couche d'image, animée sur background-position-y (la vignette reste à 0). */
+app-root.crt-roll .crt-overlay {
+  --crt-roll-layer: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--mat-sys-primary) 8%, transparent),
+    transparent
+  );
+  animation: pip-roll 8s linear infinite;
+}
+@keyframes pip-roll {
+  from { background-position-y: 0, -20vh; }
+  to { background-position-y: 0, 100vh; }
+}
+/* Grille de pixels : trame verticale fine (1 px sur 3), complément des scanlines. */
+.crt-overlay::before { content: none; }
+app-root.crt-grid .crt-overlay::before {
+  content: '';
+  background: repeating-linear-gradient(to right, transparent 0 2px, rgba(0, 0, 0, 0.12) 2px 3px);
+}
+/* Grain : texture de bruit (feTurbulence en niveaux de gris, tuile 200 px) très légère.
+   Bruit animé : la même texture, décalée par à-coups (neige) ; un seul calque pour les deux. */
+.crt-overlay::after { content: none; }
+app-root.crt-grain .crt-overlay::after,
+app-root.crt-noise .crt-overlay::after {
+  content: '';
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+app-root.crt-noise .crt-overlay::after {
+  animation: pip-noise 0.4s steps(4) infinite;
+}
+@keyframes pip-noise {
+  0% { background-position: 0 0; }
+  25% { background-position: 37px -61px; }
+  50% { background-position: -83px 29px; }
+  75% { background-position: 59px 97px; }
+  100% { background-position: -23px -47px; }
+}
+/* Animations D34 coupées si le système réduit les animations (comme pip-flicker) : la bande
+   disparaît, le bruit animé se comporte comme le grain statique. */
+@media (prefers-reduced-motion: reduce) {
+  app-root.crt-roll .crt-overlay { --crt-roll-layer: none; animation: none; }
+  app-root.crt-noise .crt-overlay::after { animation: none; }
+}
+
+/* Teinte du phosphore : un filtre sur tout l'écran (texte, cadres, icônes teintées, overlays).
+   Vert = aucune règle : le défaut ne coûte aucun recompositing par tick. app-root reçoit le
+   fond de la surface (identique à body) pour que le filtre couvre aussi le vide de l'écran.
+   Vert #1aff80 = teinte 146° : ambre ≈ 41°, bleu ≈ 216°. */
+app-root:not([data-tint='green']) { background: var(--mat-sys-surface); }
+app-root[data-tint='amber'] { filter: hue-rotate(-105deg); }
+app-root[data-tint='blue'] { filter: hue-rotate(70deg); }
+app-root[data-tint='white'] { filter: saturate(0) brightness(1.25); }
+

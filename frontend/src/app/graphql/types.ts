@@ -15,7 +15,6 @@ export type Mutation = {
   acheterAngelUpgrade: Maybe<Palier>;
   acheterCashUpgrade: Maybe<Palier>;
   acheterQtProduit: Maybe<Product>;
-  basculerManager: Maybe<Product>;
   engagerManager: Maybe<Palier>;
   lancerProductionProduit: Maybe<Product>;
   resetWorld: Maybe<World>;
@@ -37,12 +36,6 @@ export type MutationAcheterCashUpgradeArgs = {
 export type MutationAcheterQtProduitArgs = {
   id: Scalars['Int']['input'];
   quantite: Scalars['Int']['input'];
-  user: Scalars['String']['input'];
-};
-
-
-export type MutationBasculerManagerArgs = {
-  id: Scalars['Int']['input'];
   user: Scalars['String']['input'];
 };
 
@@ -107,7 +100,7 @@ export enum RatioType {
 
 export type World = {
   __typename?: 'World';
-  activeangels: Scalars['Float']['output'];
+  activeangels: Scalars['Int']['output'];
   allunlocks: Array<Palier>;
   angelbonus: Scalars['Int']['output'];
   angelupgrades: Array<Palier>;
@@ -118,6 +111,6 @@ export type World = {
   name: Scalars['String']['output'];
   products: Array<Product>;
   score: Scalars['Float']['output'];
-  totalangels: Scalars['Float']['output'];
+  totalangels: Scalars['Int']['output'];
   upgrades: Array<Palier>;
 };

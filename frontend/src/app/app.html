@@ -1,134 +1,150 @@
-<mat-toolbar class="topbar">
-  <span class="brand">ISIS Capitalist</span>
-
-  <!-- Logo et nom du monde chargé (D32) ; rien sans monde (« aucun monde chargé » plus bas). -->
-  @if (game.world(); as world) {
-    <span class="world-name">
-      <app-game-icon [candidates]="[world.logo]" />
-      {{ world.name }}
-    </span>
-  }
-
-  <mat-form-field class="user-field" appearance="outline" subscriptSizing="dynamic">
-    <mat-label>user</mat-label>
-    <input matInput type="text" [value]="game.user()" (change)="onUserChange($event)" placeholder="lucas" />
-  </mat-form-field>
-
-  <!-- [value] piloté par le signal ; $event.value rend la valeur du toggle telle quelle (D17). -->
-  <mat-button-toggle-group
-    class="multiplier"
-    name="multiplier"
-    aria-label="Quantité d'achat"
-    hideSingleSelectionIndicator
-    [value]="game.multiplier()"
-    (change)="onMultiplierChange($event.value)"
-  >
-    @for (m of multipliers; track m) {
-      <mat-button-toggle [value]="m">{{ m === 'max' ? 'max' : 'x' + m }}</mat-button-toggle>
+<!-- Bandeau d'en-tête (F-04) : icône et nom du monde, argent, multiplicateur d'achat, pseudo. -->
+<header class="header">
+  <div class="world">
+    @if (world(); as w) {
+      <app-game-icon class="world-logo round" [candidates]="[w.logo]" />
+      <span class="world-name">{{ w.name }}</span>
+    } @else {
+      <span class="muted">aucun monde chargé</span>
     }
-  </mat-button-toggle-group>
-
-  <span class="spacer"></span>
-
-  <!-- Cases de stats (comme HP / AP / XP de l'image de référence), mêmes valeurs qu'avant. -->
-  @if (game.world(); as world) {
-    <dl class="stats">
-      <div class="stat pip-frame"><dt>money</dt><dd>{{ fmt(world.money) }}</dd></div>
-      <div class="stat pip-frame"><dt>score</dt><dd>{{ fmt(world.score) }}</dd></div>
-      <div class="stat pip-frame"><dt>anges</dt><dd>{{ world.activeangels }} / {{ world.totalangels }}</dd></div>
-      <div class="stat pip-frame"><dt>bonus</dt><dd>{{ world.angelbonus }} %</dd></div>
-    </dl>
-  } @else {
-    <span class="muted">aucun monde chargé</span>
-  }
-</mat-toolbar>
-
-@if (game.errorMessage(); as message) {
-  <div class="alert" role="alert" (click)="game.clearError()" title="Cliquer pour effacer">
-    {{ message }}
   </div>
-}
 
-<!-- Barre du bas toujours affichée ; les écrans Produits → Unlocks n'existent que si un monde est
-     chargé, Paramètres ne dépend pas du monde. -->
-<app-tab-bar [active]="game.activeTab()" [angelsEarned]="angelsEarned()" (select)="game.selectTab($event)">
-  <main class="screen">
-    @if (game.activeTab() === 'settings') {
-      <app-settings-panel [(scanlines)]="game.scanlines" [(glow)]="game.glow" [(flicker)]="game.flicker" />
-    } @else if (game.world(); as world) {
-      @switch (game.activeTab()) {
-        @case ('products') {
-          <section class="products">
-            <h2 class="pip-title">Produits ({{ world.products.length }})</h2>
-            <div class="product-grid">
-              @for (product of world.products; track product.id) {
-                <app-product-card
-                  [product]="product"
-                  [activeangels]="world.activeangels"
-                  [angelbonus]="world.angelbonus"
-                  [multiplier]="game.multiplier()"
-                  [money]="world.money"
-                  [managerOwned]="managerOwned(world, product)"
-                  (buy)="game.buy(product.id, $event)"
-                  (launch)="game.launch(product.id)"
-                  (toggleManager)="game.toggleManager(product.id)"
-                />
-              }
-            </div>
-          </section>
-        }
-        @case ('managers') {
-          <app-palier-list
-            title="Managers"
-            [paliers]="world.managers"
-            actionLabel="Engager"
-            costUnit="$"
-            [balance]="world.money"
-            [blockedNames]="blockedManagers()"
-            [products]="world.products"
-            [worldLogo]="world.logo"
-            (action)="game.hireManager($event)"
-          />
-        }
-        @case ('upgrades') {
-          <app-palier-list
-            title="Upgrades"
-            [paliers]="world.upgrades"
-            actionLabel="Acheter"
-            costUnit="$"
-            [balance]="world.money"
-            [products]="world.products"
-            [worldLogo]="world.logo"
-            (action)="game.buyUpgrade($event)"
-          />
-        }
-        @case ('angels') {
-          <app-angels-panel
-            [score]="world.score"
-            [totalangels]="world.totalangels"
-            [activeangels]="world.activeangels"
-            [angelbonus]="world.angelbonus"
-            [angelsEarned]="angelsEarned()"
-            [angelupgrades]="world.angelupgrades"
-            [products]="world.products"
-            [worldLogo]="world.logo"
-            (resetRequested)="onReset(angelsEarned())"
-            (buyAngelUpgrade)="game.buyAngelUpgrade($event)"
-          />
-        }
-        @case ('unlocks') {
-          <!-- Prochain palier de chaque produit (D23), puis la table brute des all unlocks. -->
-          <section class="unlocks">
-            <app-unlock-list [products]="world.products" [worldLogo]="world.logo" />
-            <app-palier-list
-              title="All unlocks"
-              [paliers]="world.allunlocks"
-              [products]="world.products"
-              [worldLogo]="world.logo"
-            />
-          </section>
-        }
+  <div class="money pip-frame">
+    <span class="label">argent</span>
+    <span id="money" [innerHTML]="(world()?.money ?? 0) | bigvalue"></span>
+  </div>
+
+  <!-- Un seul bouton, cycle x1 → x10 → x100 → Max (F-13). -->
+  <button matButton="filled" type="button" class="multiplier" (click)="cycleQtmulti()" aria-label="Quantité d'achat, cliquer pour changer">
+    Buy {{ qtLabel(qtmulti()) }}
+  </button>
+
+  <div class="user">
+    <mat-form-field class="user-field" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Your ID</mat-label>
+      <!-- Formulaire signal (F-23) : Entrée valide le pseudo et bascule sur la partie du joueur. -->
+      <input matInput type="text" [formField]="game.loginForm.name" (keydown.enter)="game.commitName()" />
+    </mat-form-field>
+    <button matButton="outlined" type="button" class="refresh" (click)="game.refreshWorld()">Refresh</button>
+  </div>
+</header>
+
+<div class="main">
+  <!-- Bandeau gauche (F-05) : un bouton par fenêtre, badgé quand un achat est possible (F-21,
+       F-27, F-31) ou quand un reset rapporterait des anges (Investors). -->
+  <nav class="menu" aria-label="Fenêtres du jeu">
+    @for (item of menu; track item.id) {
+      <button
+        matButton="filled"
+        type="button"
+        class="menu-button"
+        [attr.data-window]="item.id"
+        [matBadge]="badges()[item.id]"
+        [matBadgeHidden]="badges()[item.id] === 0"
+        matBadgePosition="above after"
+        (click)="open(item.id)"
+      >
+        {{ item.label }}
+      </button>
+    }
+  </nav>
+
+  <!-- Partie centrale (F-06) : les produits et leurs éléments d'interaction. -->
+  <main class="products">
+    @if (world(); as w) {
+      @for (product of w.products; track product.id) {
+        <app-product-card
+          [product]="product"
+          [activeangels]="w.activeangels"
+          [angelbonus]="w.angelbonus"
+          [qtmulti]="qtmulti()"
+          [money]="w.money"
+          (buy)="game.buyProduct($event, product)"
+          (launch)="game.startProduction(product)"
+        />
       }
     }
   </main>
-</app-tab-bar>
+</div>
+
+<!-- Fenêtres superposées (F-18, F-25, F-27, F-29, F-31), une à la fois. Paramètres ne dépend
+     pas du monde. -->
+@if (modal() === 'settings') {
+  <app-modal title="Paramètres" (closed)="close()">
+    <app-settings-panel [(display)]="game.display" />
+  </app-modal>
+} @else if (world(); as w) {
+  @switch (modal()) {
+    @case ('managers') {
+      <app-modal title="Managers make you feel better !" (closed)="close()">
+        <app-palier-list
+          [paliers]="w.managers"
+          actionLabel="Hire !"
+          costUnit="$"
+          [balance]="w.money"
+          [showEffect]="false"
+          emptyText="Tous les managers sont engagés."
+          [products]="w.products"
+          [worldLogo]="w.logo"
+          (action)="game.hireManager($event)"
+        />
+      </app-modal>
+    }
+    @case ('upgrades') {
+      <app-modal title="Cash Upgrades" (closed)="close()">
+        <app-palier-list
+          [paliers]="w.upgrades"
+          actionLabel="Buy !"
+          costUnit="$"
+          [balance]="w.money"
+          emptyText="Tous les cash upgrades sont achetés."
+          [products]="w.products"
+          [worldLogo]="w.logo"
+          (action)="game.buyUpgrade($event)"
+        />
+      </app-modal>
+    }
+    @case ('angelupgrades') {
+      <app-modal title="Angel Upgrades" (closed)="close()">
+        <app-palier-list
+          [paliers]="w.angelupgrades"
+          actionLabel="Buy !"
+          costUnit="anges"
+          [balance]="w.activeangels"
+          emptyText="Tous les angel upgrades sont achetés."
+          [products]="w.products"
+          [worldLogo]="w.logo"
+          (action)="game.buyAngelUpgrade($event)"
+        />
+      </app-modal>
+    }
+    @case ('unlocks') {
+      <app-modal title="Unlocks" (closed)="close()">
+        <app-unlock-list [products]="w.products" [worldLogo]="w.logo" />
+        <h3 class="section-title">Pour tous les produits</h3>
+        <app-palier-list
+          [paliers]="w.allunlocks"
+          emptyText="Tous les unlocks globaux sont débloqués."
+          [products]="w.products"
+          [worldLogo]="w.logo"
+        />
+      </app-modal>
+    }
+    @case ('investors') {
+      <app-modal title="Angel Investors" (closed)="close()">
+        <app-angels-panel
+          [score]="w.score"
+          [totalangels]="w.totalangels"
+          [activeangels]="w.activeangels"
+          [angelbonus]="w.angelbonus"
+          [angelsEarned]="angelsEarned()"
+          (resetRequested)="onReset()"
+        />
+      </app-modal>
+    }
+  }
+}
+
+<!-- Couches CRT (D34 : vignette, bande, grille, grain / bruit), rendues par styles.css selon les
+     classes crt-* de <app-root>. -->
+<div class="crt-overlay" aria-hidden="true"></div>

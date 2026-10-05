@@ -1,4 +1,5 @@
-<!-- Aucun <img> sans candidat valide : jamais l'icône « image cassée » du navigateur. -->
-@if (src(); as src) {
-  <img [src]="src" [alt]="alt()" (error)="onError()" />
+<!-- Aucun <img> sans candidat valide (ou en attente du rendu Pip-Boy) : jamais l'icône « image
+     cassée » du navigateur. .pixel : agrandissement net de la data URL 96 × 96 (D35). -->
+@if (displaySrc(); as src) {
+  <img [src]="src" [alt]="alt()" [class.pixel]="pixelIcons()" (error)="onError()" />
 }

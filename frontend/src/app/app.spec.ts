@@ -1,131 +1,198 @@
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { Apollo } from '@apollo-orbit/angular';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { App } from './app';
-import { GameService, Tab, WorldData } from './game.service';
+import { DISPLAY_STORAGE_KEY } from './display-settings';
+import { GameService, USERNAME_STORAGE_KEY, WorldData } from './game.service';
+import { makeWorld, stubApollo } from './test-world';
 
-// Monde minimal pour la toolbar (D32) : nom, logo, stats ; aucune liste.
-const world: WorldData = {
-  name: 'World',
-  logo: 'icones/world.png',
-  money: 0,
-  score: 0,
-  totalangels: 0,
-  activeangels: 0,
-  angelbonus: 2,
-  lastupdate: 0,
-  products: [],
-  allunlocks: [],
-  upgrades: [],
-  angelupgrades: [],
-  managers: [],
-};
-
-// GameService remplacé par un stub : pas d'Apollo réel (ni de serveur) en test.
-function stubGameService(): Partial<GameService> {
-  const activeTab = signal<Tab>('products');
-  return {
-    user: signal('test'),
-    multiplier: signal(1),
-    world: signal<WorldData | undefined>(undefined),
-    errorMessage: signal(null),
-    activeTab,
-    selectTab: (tab: Tab) => activeTab.set(tab),
-    scanlines: signal(true),
-    glow: signal(true),
-    flicker: signal(false),
-    toggleManager: () => Promise.resolve(),
-  } as Partial<GameService>;
-}
-
-describe('App', () => {
-  let game: Partial<GameService>;
+// App avec le vrai GameService, Apollo remplacé par la doublure de test-world.ts (aucun serveur).
+describe('App (mise en page du sujet, F-04 → F-06)', () => {
+  let stub: ReturnType<typeof stubApollo>;
 
   beforeEach(async () => {
-    game = stubGameService();
+    localStorage.setItem(USERNAME_STORAGE_KEY, 'test');
+    localStorage.removeItem(DISPLAY_STORAGE_KEY);
+    stub = stubApollo();
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
-        { provide: GameService, useValue: game },
+        { provide: Apollo, useValue: stub.apollo },
         { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
       ],
     }).compileComponents();
   });
 
-  it('se crée sans monde chargé : bandeau, 6 onglets, ni carte ni liste ni Reset', async () => {
+  async function render(world?: WorldData) {
+    if (world) {
+      stub.data.set({ getWorld: world });
+    }
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
-    expect(fixture.componentInstance).toBeTruthy();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('input[type="text"]')).not.toBeNull();
-    expect(compiled.textContent).toContain('aucun monde chargé');
-    // La barre reste affichée (6 onglets) même sans monde ; les écrans de jeu non.
-    expect(compiled.querySelectorAll('app-tab-bar a[mat-tab-link]').length).toBe(6);
-    expect(compiled.querySelector('mat-card')).toBeNull();
-    expect(compiled.querySelector('app-palier-list')).toBeNull();
-    expect(compiled.textContent).not.toContain('Reset');
+    const el = fixture.nativeElement as HTMLElement;
+    return {
+      fixture,
+      el,
+      app: fixture.componentInstance,
+      game: TestBed.inject(GameService),
+      menu: (id: string) => el.querySelector(`.menu-button[data-window="${id}"]`) as HTMLButtonElement,
+      badge: (id: string) => {
+        const button = el.querySelector(`.menu-button[data-window="${id}"]`)!;
+        return button.classList.contains('mat-badge-hidden')
+          ? null
+          : button.querySelector('.mat-badge-content')?.textContent?.trim();
+      },
+    };
+  }
+
+  it('sans monde : en-tête (argent 0, multiplicateur, pseudo, Refresh), 6 boutons à gauche, aucun produit', async () => {
+    const { el } = await render();
+    expect(el.textContent).toContain('aucun monde chargé');
+    expect(el.querySelector('#money')?.textContent).toBe('0.00');
+    expect(el.querySelector('.multiplier')?.textContent?.trim()).toBe('Buy x1');
+    expect((el.querySelector('.user-field input') as HTMLInputElement).value).toBe('test');
+    expect(el.querySelector('button.refresh')?.textContent?.trim()).toBe('Refresh');
+    expect(Array.from(el.querySelectorAll('.menu-button .mdc-button__label')).map((b) => b.textContent!.trim())).toEqual([
+      'Unlocks',
+      'Cash Upgrades',
+      'Angel Upgrades',
+      'Managers',
+      'Investors',
+      'Paramètres',
+    ]);
+    expect(el.querySelector('app-product-card')).toBeNull();
   });
 
-  // D32 : logo + nom du monde dans la toolbar dès qu'un monde est chargé.
-  it('monde chargé → .world-name avec « World » et son icône ; sans monde → rien', async () => {
-    game.world!.set(world);
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const name = compiled.querySelector('mat-toolbar .world-name');
-    expect(name?.textContent).toContain('World');
-    expect(name?.querySelector('app-game-icon img')?.getAttribute('src')).toBe('http://localhost:3000/icones/world.png');
-    expect(compiled.textContent).not.toContain('aucun monde chargé');
-
-    game.world!.set(undefined);
-    await fixture.whenStable();
-    expect(compiled.querySelector('.world-name')).toBeNull();
-    expect(compiled.querySelector('mat-toolbar app-game-icon')).toBeNull();
-    expect(compiled.textContent).toContain('aucun monde chargé');
+  it('monde chargé : logo et nom du monde, argent en puissance de dix, un composant produit par produit', async () => {
+    const world = makeWorld();
+    world.money = 1_234_567;
+    const { el } = await render(world);
+    expect(el.querySelector('.world-name')?.textContent).toBe('World');
+    expect(el.querySelector('.world app-game-icon img')?.getAttribute('src')).toBe('http://localhost:3000/icones/world.png');
+    expect(el.querySelector('#money')?.innerHTML).toBe('1.235 × 10<sup>6</sup>');
+    expect(el.querySelectorAll('.products app-product-card').length).toBe(2);
   });
 
-  it("l'écran Paramètres s'affiche sans monde, avec 3 interrupteurs", async () => {
-    game.activeTab!.set('settings');
-    const fixture = TestBed.createComponent(App);
+  it('multiplicateur : un bouton qui cycle x1 → x10 → x100 → Max → x1, transmis aux produits (F-13)', async () => {
+    const world = makeWorld();
+    world.money = 100;
+    const { el, fixture, app } = await render(world);
+    const multi = el.querySelector('.multiplier') as HTMLButtonElement;
+    const labels: string[] = [];
+    for (let i = 0; i < 4; i++) {
+      multi.click();
+      await fixture.whenStable();
+      labels.push(multi.textContent!.trim());
+    }
+    expect(labels).toEqual(['Buy x10', 'Buy x100', 'Buy Max', 'Buy x1']);
+    multi.click();
+    multi.click();
+    multi.click();
     await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelectorAll('app-settings-panel mat-slide-toggle').length).toBe(3);
-    expect(compiled.querySelector('mat-card')).toBeNull();
+    expect(app.qtmulti()).toBe('max');
+    expect(el.querySelector('app-product-card button.buy')?.textContent?.replace(/\s+/g, ' ').trim()).toMatch(/^x14 — /);
   });
 
-  it('le toggle du multiplicateur courant est le seul coché, et cliquer un autre met à jour le service', async () => {
-    game.multiplier!.set(10);
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
+  it('badges : managers, cash upgrades et angel upgrades achetables, anges à réclamer (F-21, F-27, F-31)', async () => {
+    const world = makeWorld();
+    world.money = 1000;
+    world.activeangels = 10;
+    const { badge, fixture, game } = await render(world);
+    expect(badge('managers')).toBe('1');
+    expect(badge('upgrades')).toBe('1');
+    expect(badge('angelupgrades')).toBe('1');
+    expect(badge('investors')).toBeNull();
+    expect(badge('unlocks')).toBeNull();
+    game.world.update((w) => w && { ...w, money: 999, activeangels: 0, score: 1e15 });
     await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const toggles = Array.from(compiled.querySelectorAll<HTMLElement>('.multiplier mat-button-toggle'));
-    expect(toggles.length).toBe(4);
-    const checked = toggles.filter((t) => t.classList.contains('mat-button-toggle-checked'));
-    expect(checked.length).toBe(1);
-    expect(checked[0].textContent?.trim()).toBe('x10');
-
-    // Clic sur le bouton interne de x100 : $event.value transmis tel quel, en nombre (D17).
-    const x100 = toggles.find((t) => t.textContent?.trim() === 'x100')!;
-    x100.querySelector<HTMLButtonElement>('button')!.click();
-    await fixture.whenStable();
-    expect(game.multiplier!()).toBe(100);
-    expect(x100.classList.contains('mat-button-toggle-checked')).toBe(true);
-    expect(checked[0].classList.contains('mat-button-toggle-checked')).toBe(false);
+    expect(badge('managers')).toBeNull();
+    expect(badge('upgrades')).toBeNull();
+    expect(badge('angelupgrades')).toBeNull();
+    expect(badge('investors')).toBe('150');
   });
 
-  it('classes crt-scanlines et crt-glow posées par défaut sur app-root, pas crt-flicker', async () => {
-    const fixture = TestBed.createComponent(App);
+  it('fenêtre Managers : superposée, managers non engagés, Hire ! engage, Close ferme (F-18, F-19)', async () => {
+    const world = makeWorld();
+    world.money = 1000;
+    const { el, fixture, menu, game } = await render(world);
+    menu('managers').click();
     await fixture.whenStable();
-    const host = fixture.nativeElement as HTMLElement;
-    expect(host.classList.contains('crt-scanlines')).toBe(true);
-    expect(host.classList.contains('crt-glow')).toBe(true);
-    expect(host.classList.contains('crt-flicker')).toBe(false);
+    const modal = el.querySelector('app-modal')!;
+    expect(modal.querySelector('h2')?.textContent?.trim()).toBe('Managers make you feel better !');
+    const hire = modal.querySelector('tr.mat-mdc-row button') as HTMLButtonElement;
+    hire.click();
+    await fixture.whenStable();
+    expect(game.world()!.managers[0].unlocked).toBe(true);
+    expect(Array.from(modal.querySelectorAll('td.name')).map((td) => td.textContent!.trim())).toEqual(['Manager 2']);
+    (modal.querySelector('button.closebutton') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(el.querySelector('app-modal')).toBeNull();
+  });
 
-    game.flicker!.set(true);
-    game.scanlines!.set(false);
+  it('fenêtres Unlocks, Cash Upgrades, Angel Upgrades et Investors', async () => {
+    const { el, fixture, menu } = await render(makeWorld());
+    const titles: string[] = [];
+    for (const id of ['unlocks', 'upgrades', 'angelupgrades', 'investors']) {
+      menu(id).click();
+      await fixture.whenStable();
+      titles.push(el.querySelector('app-modal h2')!.textContent!.trim());
+    }
+    expect(titles).toEqual(['Unlocks', 'Cash Upgrades', 'Angel Upgrades', 'Angel Investors']);
+    // Une seule fenêtre à la fois : la dernière ouverte.
+    expect(el.querySelectorAll('app-modal').length).toBe(1);
+    expect(el.querySelector('app-modal app-angels-panel')).not.toBeNull();
+  });
+
+  it('Investors : reset après confirmation, puis rechargement du monde (F-29)', async () => {
+    const { el, fixture, menu } = await render(makeWorld());
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    menu('investors').click();
+    await fixture.whenStable();
+    (el.querySelector('app-angels-panel button.reset') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(confirmSpy).toHaveBeenCalledWith('Remettre à zéro la partie de « test » ? Vous gagnerez 0 ange(s).');
+    expect(stub.sent.map((m) => m.operation)).toEqual(['ResetWorld']);
+    expect(stub.refetches()).toBe(1);
+    expect(el.querySelector('app-modal')).toBeNull();
+    confirmSpy.mockRestore();
+  });
+
+  it('Paramètres s’ouvre même sans monde, avec 8 interrupteurs et 3 curseurs', async () => {
+    const { el, fixture, menu } = await render();
+    menu('settings').click();
+    await fixture.whenStable();
+    expect(el.querySelector('app-modal h2')?.textContent?.trim()).toBe('Paramètres');
+    expect(el.querySelectorAll('app-settings-panel mat-slide-toggle').length).toBe(8);
+    expect(el.querySelectorAll('app-settings-panel mat-slider').length).toBe(3);
+  });
+
+  it('message éphémère : chaque snackmessage ouvre un snack-bar (F-20)', async () => {
+    const { fixture, game } = await render(makeWorld());
+    const open = vi.spyOn(TestBed.inject(MatSnackBar), 'open');
+    game.snackmessage.set('Manager 1 engagé : Item 1 est automatisé');
+    await fixture.whenStable();
+    game.snackmessage.set('Manager 1 engagé : Item 1 est automatisé');
+    await fixture.whenStable();
+    expect(open).toHaveBeenCalledTimes(2);
+    expect(open).toHaveBeenCalledWith('Manager 1 engagé : Item 1 est automatisé', 'ok', { duration: 2000 });
+  });
+
+  it('classes crt-* par défaut sur app-root (statiques on, animées off), data-tint et variables --crt-*', async () => {
+    const { el: host, fixture, game } = await render();
+    const on = ['crt-scanlines', 'crt-glow', 'crt-vignette', 'crt-grid', 'crt-grain'];
+    const off = ['crt-flicker', 'crt-roll', 'crt-noise'];
+    on.forEach((c) => expect(host.classList.contains(c), c).toBe(true));
+    off.forEach((c) => expect(host.classList.contains(c), c).toBe(false));
+    expect(host.getAttribute('data-tint')).toBe('green');
+    expect(host.getAttribute('style')).toContain('--crt-glow: 0.5');
+    expect(host.querySelector(':scope > .crt-overlay')?.getAttribute('aria-hidden')).toBe('true');
+
+    game.display.update((d) => ({ ...d, flicker: true, scanlines: false, tint: 'amber', glowLevel: 100 }));
     await fixture.whenStable();
     expect(host.classList.contains('crt-flicker')).toBe(true);
     expect(host.classList.contains('crt-scanlines')).toBe(false);
+    expect(host.getAttribute('data-tint')).toBe('amber');
+    expect(host.getAttribute('style')).toContain('--crt-glow: 1');
   });
 });

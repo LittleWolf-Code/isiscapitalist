@@ -32,14 +32,6 @@ export type EngagerManagerMutationVariables = Exact<{
 
 export type EngagerManagerMutationData = { engagerManager: PalierFieldsFragment | null };
 
-export type BasculerManagerMutationVariables = Exact<{
-  user: string;
-  id: number;
-}>;
-
-
-export type BasculerManagerMutationData = { basculerManager: { id: number, managerUnlocked: boolean, timeleft: number } | null };
-
 export type AcheterCashUpgradeMutationVariables = Exact<{
   user: string;
   name: string;
@@ -127,23 +119,6 @@ export const ENGAGER_MANAGER_MUTATION = gql`
 export function gqlEngagerManagerMutation(variables: EngagerManagerMutationVariables): { mutation: typeof ENGAGER_MANAGER_MUTATION, variables: typeof variables } {
   return {
     mutation: ENGAGER_MANAGER_MUTATION,
-    variables
-  };
-}
-
-export const BASCULER_MANAGER_MUTATION = gql`
-    mutation BasculerManager($user: String!, $id: Int!) {
-  basculerManager(user: $user, id: $id) {
-    id
-    managerUnlocked
-    timeleft
-  }
-}
-    ` as DocumentNode<BasculerManagerMutationData, BasculerManagerMutationVariables>;
-
-export function gqlBasculerManagerMutation(variables: BasculerManagerMutationVariables): { mutation: typeof BASCULER_MANAGER_MUTATION, variables: typeof variables } {
-  return {
-    mutation: BASCULER_MANAGER_MUTATION,
     variables
   };
 }

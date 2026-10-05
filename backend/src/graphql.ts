@@ -65,8 +65,6 @@ export abstract class IMutation {
 
     abstract engagerManager(user: string, name: string): Nullable<Palier> | Promise<Nullable<Palier>>;
 
-    abstract basculerManager(user: string, id: number): Nullable<Product> | Promise<Nullable<Product>>;
-
     abstract acheterCashUpgrade(user: string, name: string): Nullable<Palier> | Promise<Nullable<Palier>>;
 
     abstract acheterAngelUpgrade(user: string, name: string): Nullable<Palier> | Promise<Nullable<Palier>>;

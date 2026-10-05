@@ -15,17 +15,18 @@ backend/
 ├── public/icones/         # images servies statiquement (http://localhost:3000/icones/x.jpg)
 ├── userworlds/            # un fichier JSON par utilisateur (créé à la volée) — ignoré par git
 └── src/
-    ├── schema.graphql     # schéma FOURNI (docs/reference/schema.graphql) — deux écarts documentés : D6, D20
+    ├── schema.graphql     # schéma FOURNI (docs/reference/schema.graphql) — un seul écart : lastupdate Float (D6)
     ├── graphql.ts         # GÉNÉRÉ au démarrage (World, Product, Palier, RatioType) — ne pas éditer
-    ├── origworld.ts       # monde initial (6 produits, 6 managers, unlocks, upgrades, angelupgrades)
+    ├── origworld.ts       # monde initial « Nuka Capitalist » (6 produits, 6 managers, unlocks, upgrades, angelupgrades)
     ├── app.module.ts      # GraphQLModule.forRoot + providers [AppService, GraphQlResolver]
-    ├── app.service.ts     # logique métier commune : readUserWorld, saveWorld, updateWorld, unlocks…
-    ├── resolver.ts        # @Resolver('World') : getWorld + les 6 mutations du sujet + basculerManager (D20)
+    ├── app.service.ts     # persistance (readUserWorld, saveWorld, nom de fichier encodé) + recherches
+    ├── world-engine.ts    # règles en fonctions pures (advanceProduction, updateWorld, bonus, unlocks, anges, reset)
+    ├── resolver.ts        # @Resolver('World') : getWorld + les 6 mutations du sujet
     └── main.ts            # NestExpressApplication, useStaticAssets(public), enableCors, port 3000
 ```
 
-Les fichiers de l'exercice précédent (`patients.json`, types `Patient`/`Symptome`, `getPatients`)
-doivent disparaître.
+Les règles de `world-engine.ts` sont recopiées à l'identique dans `frontend/src/app/game-math.ts`
+(client autonome, D36) : modifier l'une impose de modifier l'autre.
 
 ## Conventions
 

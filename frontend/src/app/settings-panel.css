@@ -1,9 +1,29 @@
-/* Liste verticale d'interrupteurs dans un cadre, aide en texte secondaire. */
-.settings { max-width: 480px; }
+/* Mise en page seule (D34) : sections titrées dans un cadre, ligne « toggle + curseur » en flex,
+   bouton de réinitialisation en bas. Les effets CRT eux-mêmes sont dans styles.css. */
+.settings { max-width: 560px; }
 .settings-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
 }
+.section-title {
+  margin: 0.5rem 0 0;
+  font: var(--mat-sys-title-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mat-sys-primary);
+}
+.section-title:first-child { margin-top: 0; }
+.setting-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+.setting-row .setting { flex: 0 0 auto; }
+.setting-label { font: var(--mat-sys-body-medium); }
+/* Le curseur prend le reste de la ligne (au moins 10 rem, sinon passe dessous). */
+.level { flex: 1 1 10rem; min-width: 10rem; }
 .hint { margin: 0; font: var(--mat-sys-body-small); color: var(--mat-sys-on-surface-variant); }
+.reset { align-self: flex-start; margin-top: 0.5rem; }

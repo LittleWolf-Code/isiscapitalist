@@ -1,44 +1,65 @@
-/* Carte produit : en-tête maison (icône 64 px ; à droite : nom + chip manager, puis barre d'achat
-   vers le prochain palier avec son texte centré dedans, D25), barre de production avec le gain
-   dedans et chrono encadré à sa droite (D28), actions. Couleurs via les tokens du thème
-   Material. */
+/* Carte produit (F-07) : grille image | contenu. Couleurs via les tokens du thème Material. */
 
-/* Hauteur des deux barres de la carte et du chrono (24 px, D33 ; 16 px de D25 à D32), source
-   unique : le chrono doit rester bord à bord avec la barre de production. La hauteur d'une
-   mat-progress-bar est le max de ses deux tokens, les poser tous deux évite une piste épaisse
-   avec un indicateur fin. Scopé à la carte : les barres de UnlockList restent à 4 px. */
+/* Hauteur de la barre de production et du chrono (24 px, D33), source unique. */
 .product { --product-bar-height: 24px; }
 .product mat-progress-bar {
   --mat-progress-bar-track-height: var(--product-bar-height);
   --mat-progress-bar-active-indicator-height: var(--product-bar-height);
 }
 
-.icon {
-  /* Couvre les deux lignes nom + barre ; neutralise les 40 px et margin-bottom de matCardAvatar. */
-  width: 64px;
-  height: 64px;
-  margin: 0;
-  object-fit: contain;
-  /* PNG unis (D11) teintés en vert phosphore : aucune couleur étrangère au monochrome (D22). */
-  filter: grayscale(1) sepia(1) saturate(6) hue-rotate(95deg) brightness(1.1);
+.product-layout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 16px;
 }
 
-/* Même retrait que mat-card-header, pour que le reste de la carte ne bouge pas. */
-.product-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 16px 16px 0;
+/* Image + quantité superposée (« superposition de deux éléments » du sujet) : le conteneur est
+   relatif, la quantité absolue, à cheval sur le bas de l'image. */
+.product-visual {
+  position: relative;
+  width: 80px;
+  height: 80px;
 }
-/* min-width: 0 : sans lui un nom long empêche la barre de rétrécir avec la carte. */
-.product-heading {
-  flex: 1 1 auto;
-  min-width: 0;
+.icon-button {
+  width: 80px;
+  height: 80px;
+  padding: 0;
+  border: 1px solid var(--mat-sys-primary);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--mat-sys-surface);
+  cursor: pointer;
+}
+.icon-button:disabled { cursor: default; }
+.icon-button:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+.product-visual.empty .icon-button { opacity: 0.45; }
+.icon {
+  width: 100%;
+  height: 100%;
+}
+.quantite {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  translate: -50% 0;
+  min-width: 3ch;
+  padding: 0 0.5ch;
+  box-sizing: border-box;
+  text-align: center;
+  font: var(--mat-sys-label-large);
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  white-space: nowrap;
+}
+
+.product-right {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  min-width: 0;
 }
-/* Sur carte étroite, le chip passe sous le nom ; le nom n'est jamais tronqué. */
 .product-title-row {
   display: flex;
   flex-wrap: wrap;
@@ -47,20 +68,12 @@
 }
 .manager { margin-left: auto; }
 
-/* Texte centré par-dessus une barre (barre d'achat « quantite / seuil », barre de production
-   « gain », D25 / D28) : lisible sur la partie remplie (primary) comme sur la piste sombre grâce
-   à mix-blend-mode: difference — vert sur vert donne du noir, vert sur sombre reste vert : on ne
-   sort pas du monochrome (D22). body-large (16 px, D33 ; label-large 14 px jusqu'en D32) : le
-   cran au-dessus de label-large dans l'échelle des raccourcis --mat-sys-*, qui ne reprennent pas
-   les tailles relevées du thème (label-large-size y vaut 18.4 px, deux crans) ; 16 px dans 24 px
-   de barre garde le ratio 2/3 des jeux. Une seule règle pour les deux barres, pour qu'elles ne
-   divergent pas au premier ajustement. */
-.product-owned,
+/* Gain centré dans la barre de production, lisible sur la partie remplie comme sur la piste
+   (mix-blend-mode: difference, monochrome D22). */
 .product-gain {
   position: relative;
   isolation: isolate;
 }
-.product-owned mat-progress-bar,
 .product-gain mat-progress-bar { display: block; }
 .bar-label {
   position: absolute;
@@ -69,48 +82,30 @@
   place-items: center;
   pointer-events: none;
   font: var(--mat-sys-body-large);
-  /* Après le raccourci font, qui réinitialise la hauteur de ligne. */
   line-height: 1;
   color: var(--mat-sys-primary);
   mix-blend-mode: difference;
 }
+/* Barre sans la transition Material : elle suit exactement le pas de 100 ms de calcScore (D29). */
+.product-gain ::ng-deep .mdc-linear-progress__bar { transition: none; }
 
-/* Ligne de production : la barre (avec le gain dedans) prend la place restante, le chrono garde
-   sa largeur à sa droite ; jamais de retour à la ligne (pas de flex-wrap). min-width: 0 : sans
-   lui la barre ne rétrécirait pas avec la carte. */
-.product-progress {
+/* Partie basse : achat (quantité + coût) puis le temps restant à côté, toujours sur une ligne. */
+.product-buy {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 0.5rem 0;
 }
-.product-gain {
+.buy {
   flex: 1 1 auto;
   min-width: 0;
+  white-space: nowrap;
+  --mat-button-filled-horizontal-padding: 12px;
 }
-/* Barre de production SANS la transition Material (transform 250 ms) : le timer de GameService
-   avance timeleft par pas de 100 ms (D15), une transition plus longue que le pas étale chaque
-   saut sur le suivant et, en fin de cycle, le retour de ~80 % à 0 % n'est jamais visible : la
-   barre semble repartir « du milieu » (D29). La barre suit désormais exactement le tick.
-   mat-progress-bar est en ViewEncapsulation.None : ses div.mdc-linear-progress__bar ne portent
-   pas l'attribut d'encapsulation de la carte, d'où le ::ng-deep, borné à .product-gain (même
-   technique que la pastille de tab-bar.css) : la barre d'achat (.product-owned) et celles
-   d'UnlockList gardent leur animation. La règle Material est `.mdc-linear-progress__bar {
-   transition: … }` (une classe) ; le sélecteur compilé `.product-gain[_ngcontent-…]
-   .mdc-linear-progress__bar` (deux classes + un attribut) l'emporte sans !important. Pas de
-   MATERIAL_ANIMATIONS { animationsDisabled: true } en providers du composant : il couperait aussi
-   les ripples des boutons et l'animation de la barre d'achat. */
-.product-gain ::ng-deep .mdc-linear-progress__bar { transition: none; }
-/* Chrono encadré, de la hauteur de la barre (--product-bar-height, 24 px, bordure comprise) et
-   à la même police que son texte (body-large 16 px, D33). min-width en ch et non en px : VT323
-   est à chasse fixe, 5 ch = « 00:00 » exactement, et h:mm:ss (7 ch) élargit la boîte sans la
-   tronquer. Pas de mix-blend-mode ici : le fond est celui de la carte. Pas de .pip-frame (cadre
-   global à padding de bloc, trop épais pour 24 px). */
 .product-timer {
   flex: 0 0 auto;
   box-sizing: border-box;
   height: var(--product-bar-height);
-  min-width: 5ch;
+  min-width: 10ch;
   padding: 0 0.25ch;
   border: 1px solid var(--mat-sys-primary);
   display: grid;
@@ -119,29 +114,4 @@
   line-height: 1;
   color: var(--mat-sys-primary);
   white-space: nowrap;
-}
-
-/* Actions : Produire / Arrêter / Reprendre au bord gauche, Acheter au bord droit (D26), toujours
-   sur UNE ligne (D29) : pas de flex-wrap, sinon un montant long faisait descendre Acheter sous
-   Produire. Chaque bouton garde sa largeur naturelle (flex: 0 0 auto) et son libellé sur une
-   ligne (white-space: nowrap) : un bouton qui rétrécit replierait « Acheter x100 — 4.77 Z » sur
-   deux lignes, et le montant descendrait quand même. formatNumber borne le montant à ~8
-   caractères ; la marge automatique sert uniquement à pousser Acheter à droite. Material pose
-   déjà display: flex, align-items: center, padding: 8px. */
-mat-card-actions {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 0.5rem;
-}
-mat-card-actions button {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-/* Retrait horizontal d'Acheter réduit (token Material, 24 px par défaut) : à 360 px la carte
-   fait 328 px, soit 310 px pour les actions, et « Reprendre » (91 px) + gap + « Acheter x100 —
-   469.72 M » (220 px à 24 px de retrait) déborderait de 9 px ; à 12 px de retrait le pire cas
-   tient (≈ 295 px). Libellé et police inchangés. */
-.buy {
-  margin-left: auto;
-  --mat-button-filled-horizontal-padding: 12px;
 }

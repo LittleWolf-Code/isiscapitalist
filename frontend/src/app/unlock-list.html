@@ -14,7 +14,7 @@
       <td mat-cell *matCellDef="let row" class="palier">
         <!-- Icône du palier avec repli (D32) devant son nom ; aucune icône quand tout est débloqué. -->
         @if (row.next; as next) {
-          <app-game-icon [candidates]="icons(next)" />
+          <app-game-icon [candidates]="icons(next)" [pixelIcons]="pixelIcons()" />
           {{ next.name }}
         } @else {
           tous les paliers débloqués
@@ -25,7 +25,7 @@
     <ng-container matColumnDef="effet">
       <th mat-header-cell *matHeaderCellDef>effet</th>
       <td mat-cell *matCellDef="let row">
-        @if (row.next; as next) { {{ next.typeratio }} ×{{ next.ratio }} }
+        @if (row.next; as next) { {{ bonus(next) }} }
       </td>
     </ng-container>
 

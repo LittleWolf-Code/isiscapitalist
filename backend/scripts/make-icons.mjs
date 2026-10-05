@@ -1,4 +1,5 @@
-// Génère les icônes de démonstration : 15 PNG 64x64 unis, une couleur par icône, dans public/icones/.
+// Génère les icônes de démonstration : 14 PNG 64x64 unis, une couleur par icône, dans public/icones/.
+// world.png n'en fait plus partie : vraie icône du thème (Vault Boy), voir docs/THEME.md.
 // Aucune dépendance : l'encodage PNG (chunks IHDR/IDAT/IEND) s'appuie sur node:zlib (deflateSync, crc32).
 // Usage : npm run icons   (depuis backend/, Node >= 22)
 import { deflateSync, crc32 } from 'node:zlib';
@@ -10,7 +11,6 @@ const OUT_DIR = join(process.cwd(), 'public', 'icones');
 
 // Nom de fichier → couleur RGB. Palette arbitraire, chaque icône a sa propre teinte.
 const ICONS = {
-  world: [0x2e, 0x86, 0xc1],
   all: [0xf3, 0x9c, 0x12],
   angel: [0xf7, 0xdc, 0x6f],
   item1: [0xe7, 0x4c, 0x3c],

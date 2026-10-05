@@ -53,8 +53,9 @@ export class GraphQlResolver {
     return product;
   }
 
-  // Lance une production : timeleft = vitesse. Quantité nulle → erreur ; production déjà en cours
-  // → no-op idempotent (un double-clic côté client n'est pas une erreur), voir D12.
+  // Lance une production : timeleft = vitesse (B-10). Production déjà en cours → no-op idempotent
+  // (un double-clic côté client n'est pas une erreur), voir D12. Aucune condition sur la quantité
+  // (D36) : à 0 exemplaire la production ne rapporte rien, le sujet ne demande pas de refus.
   @Mutation()
   lancerProductionProduit(
     @Args('user') user: string,
@@ -63,9 +64,6 @@ export class GraphQlResolver {
     const world = this.service.readUserWorld(user);
     this.service.updateWorld(world);
     const product = this.service.findProduct(world, id);
-    if (product.quantite === 0) {
-      throw new Error(`Aucun exemplaire de ${product.name} à produire`);
-    }
     if (product.timeleft === 0) {
       product.timeleft = product.vitesse;
     }
@@ -73,11 +71,10 @@ export class GraphQlResolver {
     return product;
   }
 
-  // Engage un manager : débite `seuil`, passe `unlocked` et `managerUnlocked` du produit cible
-  // à true. Aucun bonus appliqué (ratio/typeratio des managers sont décoratifs, D13) ; refuse si
-  // le produit n'a aucun exemplaire (D24) — sinon updateWorld ferait tourner sa production en
-  // boucle pour un gain de 0. La quantité est vérifiée avant l'argent : « pas assez d'argent »
-  // enverrait sur une fausse piste un joueur qui ne possède pas encore le produit.
+  // Engage un manager (B-11, F-19) : seule condition, l'argent (`seuil`) ; débite, passe
+  // `unlocked` et `managerUnlocked` du produit cible à true. Aucun bonus appliqué (ratio/typeratio
+  // des managers sont décoratifs, D13). Plus de refus à 0 exemplaire (D24 retirée, D36) : un
+  // client conforme au sujet n'en sait rien et divergerait du serveur.
   @Mutation()
   engagerManager(
     @Args('user') user: string,
@@ -90,11 +87,6 @@ export class GraphQlResolver {
       throw new Error(`Le manager ${name} est déjà engagé`);
     }
     const product = this.service.findProduct(world, manager.idcible);
-    if (product.quantite === 0) {
-      throw new Error(
-        `Aucun exemplaire de ${product.name} : achetez le produit avant d'engager son manager`,
-      );
-    }
     if (world.money < manager.seuil) {
       throw new Error("Pas assez d'argent");
     }
@@ -103,25 +95,6 @@ export class GraphQlResolver {
     product.managerUnlocked = true;
     this.service.saveWorld(user, world);
     return manager;
-  }
-
-  // Pause / reprise de l'automatisation d'un manager engagé (D20, hors sujet) : bascule
-  // `managerUnlocked` du produit. Le palier manager n'est pas touché (`unlocked` reste true : le
-  // manager est acheté une fois pour toutes, pas de remboursement — sinon PalierList le proposerait
-  // à nouveau). Aucun autre état à gérer : updateWorld lit déjà `managerUnlocked` à chaque appel,
-  // la branche « sans manager » finit la production entamée puis s'arrête, la branche « avec
-  // manager » reprend la boucle là où elle en était.
-  @Mutation()
-  basculerManager(@Args('user') user: string, @Args('id') id: number): Product {
-    const world = this.service.readUserWorld(user);
-    this.service.updateWorld(world);
-    const product = this.service.findProduct(world, id);
-    if (!this.service.hasManager(world, product)) {
-      throw new Error(`Aucun manager engagé pour ${product.name}`);
-    }
-    product.managerUnlocked = !product.managerUnlocked;
-    this.service.saveWorld(user, world);
-    return product;
   }
 
   // Achat d'un upgrade payé en argent (world.upgrades) : même sémantique qu'un unlock, mais

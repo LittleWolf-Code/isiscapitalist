@@ -1,6 +1,7 @@
 # Schéma GraphQL FOURNI par le sujet (backend.pdf, p.2-3). Approche schema-first.
-# Copie de docs/reference/schema.graphql — trois écarts : lastupdate: Float! (voir docs/DECISIONS.md, D6),
-# la mutation basculerManager (D20) et totalangels / activeangels: Float! (D27).
+# Copie de docs/reference/schema.graphql — un seul écart : lastupdate: Float! (D6). Le sujet le type
+# String! (backend.pdf) ou Int! (frontend), un horodatage en ms dépasse Int (ambiguïté A1 du cahier).
+# Les écarts D20 (basculerManager) et D27 (anges en Float) ont été retirés (D36).
 
 enum RatioType {
   gain
@@ -37,8 +38,8 @@ type World {
   logo: String!
   money: Float!
   score: Float!
-  totalangels: Float!
-  activeangels: Float!
+  totalangels: Int!
+  activeangels: Int!
   angelbonus: Int!
   lastupdate: Float!
   products: [Product!]!
@@ -56,8 +57,6 @@ type Mutation {
   acheterQtProduit(user: String!, id: Int!, quantite: Int!): Product
   lancerProductionProduit(user: String!, id: Int!): Product
   engagerManager(user: String!, name: String!): Palier
-  # Hors sujet : pause / reprise de l'automatisation d'un manager déjà engagé (D20).
-  basculerManager(user: String!, id: Int!): Product
   acheterCashUpgrade(user: String!, name: String!): Palier
   acheterAngelUpgrade(user: String!, name: String!): Palier
   resetWorld(user: String!): World

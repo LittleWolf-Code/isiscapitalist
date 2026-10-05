@@ -45,10 +45,14 @@ gain = product.quantite * product.revenu * (1 + world.activeangels * world.angel
 À chaque production terminée : `world.money += gain` et `world.score += gain`.
 
 ### Lancer une production — `lancerProductionProduit` (sujet)
-`product.timeleft = product.vitesse`. Refuser (ou ignorer) si `timeleft > 0` (hypothèse) ou si
-`quantite == 0` (hypothèse).
+`product.timeleft = product.vitesse`. Ignoré si une production est déjà en cours (`timeleft > 0`,
+D12). Aucune condition sur la quantité (D36) : à 0 exemplaire la production ne rapporte rien.
 
 ### Évolution temporelle — `updateWorld(world)` (sujet, à concevoir)
+
+Le calcul d'un produit est isolé dans `advanceProduction(product, elapsed)` →
+`{ timeleft, produced }`, recopiée à l'identique dans `frontend/src/app/game-math.ts` : le client
+fait le même calcul toutes les 100 ms (`calcScore`, D36).
 
 `elapsed = now - world.lastupdate` (si `lastupdate == 0` → premier accès : `elapsed = 0`).
 
@@ -74,18 +78,10 @@ déposer dans `backend/test/` — voir ROADMAP étape 7).
 
 - Trouver `manager` dans `world.managers` par `name` (sinon erreur), puis `product` par `manager.idcible`.
 - Refuser si `manager.unlocked` est déjà `true` (« déjà engagé »).
-- Refuser si `product.quantite == 0` (D24, hors sujet) : erreur
-  `Aucun exemplaire de <name> : achetez le produit avant d'engager son manager`, vérifiée **avant**
-  l'argent — sinon le manager ferait tourner une production en boucle pour un gain de 0.
-- Coût : `manager.seuil` en argent (hypothèse) → vérifier et déduire de `money`.
+- Coût : `manager.seuil` en argent (sujet frontend) → vérifier et déduire de `money`. C'est la
+  seule condition (la règle D24 « au moins un exemplaire » et la pause D20 ont été retirées, D36).
 - `product.managerUnlocked = true`, `manager.unlocked = true`.
 - Retourne le `Palier` manager.
-- **Pause / reprise** (hors sujet, D20) — `basculerManager(user, id)` : si un manager `unlocked`
-  cible le produit, `product.managerUnlocked = !product.managerUnlocked` (sinon erreur
-  `Aucun manager engagé pour <name>`) ; le palier manager n'est pas touché. Deux notions
-  distinctes : `manager.unlocked` = manager **possédé** (acheté une fois pour toutes),
-  `product.managerUnlocked` = automatisation **active**. En pause, `updateWorld` suit la branche
-  « sans manager » : la production entamée finit, puis plus rien jusqu'à la reprise.
 
 ## Unlocks (sujet)
 
@@ -112,17 +108,17 @@ Cible : `idcible == 0` → tous les produits ; `idcible > 0` → le produit d'id
 | `typeratio` | Effet |
 |---|---|
 | `gain`    | `product.revenu *= ratio` |
-| `vitesse` | `product.vitesse = floor(product.vitesse / ratio)` (production plus rapide) |
+| `vitesse` | `product.vitesse = max(1, floor(product.vitesse / ratio))` ; une production en cours accélère : `timeleft = min(vitesse, ceil(timeleft / ratio))` (D36) |
 | `ange`    | `world.angelbonus += ratio` (bonus % par ange actif augmenté) |
 
 ## Reset — `resetWorld` (sujet)
 
-1. Anges gagnés = **2 % du score** (D20, amende la formule AdVenture Capitalist de D7) :
-   `gagnes = floor(world.score / SCORE_PER_ANGEL) - world.totalangels` avec `SCORE_PER_ANGEL = 50`
-   (borné à ≥ 0). `score` cumule tout l'argent gagné depuis le début (jamais remis à zéro),
-   `totalangels` ce qui a déjà été distribué : la différence est ce que la partie en cours rapporte.
-   Score < 50 → 0 ange. Exemples : 8 019 386 / 0 → 160 387 ; 12 000 / 100 → 140 ; 49 → 0, 50 → 1,
-   99 → 1, 100 → 2.
+1. Anges gagnés (sujet frontend, RG-09 ; remplace la formule linéaire de D20, D36) :
+   `gagnes = floor(150 × √(score / 10¹⁵)) − totalangels` (borné à ≥ 0, total plafonné à
+   2 147 483 647 car les anges sont des `Int`). `score` cumule tout l'argent gagné depuis le début
+   (jamais remis à zéro), `totalangels` ce qui a déjà été distribué : la différence est ce que la
+   partie en cours rapporte. Exemples : 10¹⁵ → 150 ; 4·10¹⁵ avec 100 déjà gagnés → 200 ; premier
+   ange vers 4,45·10¹⁰.
 2. `totalangels += gagnes`, `activeangels += gagnes`.
 3. Nouveau monde = `structuredClone(origworld)` avec `score`, `totalangels`, `activeangels`
    repris ; `money = 0`, `lastupdate = now`.

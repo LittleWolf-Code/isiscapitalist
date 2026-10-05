@@ -1,5 +1,5 @@
-# Les mutations ne retournent qu'un fragment du monde (Product / Palier) : le client ne s'en sert
-# pas pour mettre à jour l'affichage, il refait getWorld après chaque appel (D14).
+# Mutations du sujet : le client applique d'abord l'action à son monde local (client autonome,
+# D36), puis prévient le serveur. La réponse ne sert qu'à détecter un échec (snack-bar + refresh).
 
 mutation AcheterQtProduit($user: String!, $id: Int!, $quantite: Int!) {
   acheterQtProduit(user: $user, id: $id, quantite: $quantite) {
@@ -19,15 +19,6 @@ mutation LancerProductionProduit($user: String!, $id: Int!) {
 mutation EngagerManager($user: String!, $name: String!) {
   engagerManager(user: $user, name: $name) {
     ...PalierFields
-  }
-}
-
-# Pause / reprise de l'automatisation d'un manager engagé (D20).
-mutation BasculerManager($user: String!, $id: Int!) {
-  basculerManager(user: $user, id: $id) {
-    id
-    managerUnlocked
-    timeleft
   }
 }
 

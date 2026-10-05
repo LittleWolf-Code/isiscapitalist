@@ -151,7 +151,42 @@ dans `userworlds/`**. Une étape = une session de vibe coding raisonnable. Ne pa
       `--mat-progress-bar-*-height` et de la hauteur du chrono), `.bar-label` / `.product-timer`
       en `--mat-sys-body-large`. CSS seul, 138 tests verts sans changement de spec ; `UnlockList`
       reste à 4 px.
-- [ ] 9.19 … (à compléter quand `frontend.pdf` sera disponible).
+- [x] 9.19 Paramètres : réglages CRT réalistes — vignette, grille, grain, bande, bruit, teinte,
+      curseurs, reset (D34) : `display-settings.ts` (`DisplaySettings`, `DEFAULT_DISPLAY`,
+      `normalizeDisplay`, `readStoredDisplay` avec migration des trois clés D22), clé unique
+      `isiscapitalist.display` (JSON) et signal `display` dans `GameService`, `SettingsPanel` à
+      trois sections (Écran / Lumière / Animations, 8 toggles, 3 `mat-slider`, teinte en
+      `mat-button-toggle-group`, bouton Réinitialiser), host bindings d'`App` (8 classes `crt-*`,
+      `data-tint`, variables `--crt-scanlines` / `--crt-glow` / `--crt-vignette`),
+      `div.crt-overlay` et couches dans `styles.css`. 160 tests verts (12 fichiers).
+- [x] 9.20 Sujet frontend reçu (`frontendangularsignal.pdf`) : cahier des charges
+      (`docs/CAHIER-DES-CHARGES.md`) et recette de l'existant (`docs/RECETTE.md`).
+
+## Phase 10 — Conformité au cahier des charges
+
+Le sujet prime (D36) : tout ce que `docs/RECETTE.md` classe « Partiel » ou « Non conforme » est
+aligné sur `docs/CAHIER-DES-CHARGES.md` ; les ajouts hors sujet ne sont gardés que s'ils ne
+contredisent aucune exigence (thème cathodique, écran Paramètres).
+
+- [x] 10.1 Backend : anges `150 × √(score / 10¹⁵)` (RG-09, remplace D20), schéma du sujet
+      (`totalangels` / `activeangels: Int!`, `basculerManager` retiré ; `lastupdate: Float!`
+      gardé, A1), règles ajoutées retirées (D24, refus de production à 0 exemplaire de D12),
+      accélération proportionnelle d'une production en cours (RG-07), `advanceProduction`
+      partagée avec le client, nom de joueur confiné dans `userworlds/` (D-01).
+- [x] 10.2 Frontend, logique : client autonome (F-11, F-12) — signal `server`, `world` en
+      `linkedSignal`, plus de poll, boucle `calcScore` 100 ms + `productionDone`, actions
+      appliquées localement puis envoyées (achat + unlocks, production, manager, upgrades, angel
+      upgrades), snack-bar `snackmessage`, pseudo `form()` + `commitName` + `Captain<n>` +
+      `refreshWorld`.
+- [x] 10.3 Frontend, interface : en-tête (logo + nom, argent, multiplicateur cyclique, pseudo +
+      Refresh), bandeau gauche de boutons badgés, fenêtres superposées fermables (Unlocks, Cash
+      Upgrades, Angel Upgrades, Managers, Investors, Paramètres), carte produit du sujet (image +
+      quantité superposée cliquable, barre + gain, achat + temps restant), pipes `bigvalue` /
+      `second`.
+- [x] 10.4 Monde final « Nuka Capitalist » (F-33) : casting validé de `THEME.md`, images produits
+      extraites de `Nuka Capitalist.pdf`, noms proposés pour les cases restantes, équilibrage
+      simulé.
+- [x] 10.5 Nouvelle recette (`docs/RECETTE.md`) et documentation à jour.
 
 ## Exemples de requêtes playground (à réutiliser pour tester)
 
@@ -162,13 +197,11 @@ mutation { acheterQtProduit(user: "lucas", id: 1, quantite: 1) { id quantite cou
 
 mutation { lancerProductionProduit(user: "lucas", id: 1) { id timeleft } }
 
-mutation { engagerManager(user: "lucas", name: "Manager 1") { name unlocked } }
+mutation { engagerManager(user: "lucas", name: "Cappy") { name unlocked } }
 
-mutation { basculerManager(user: "lucas", id: 1) { id managerUnlocked timeleft } }
+mutation { acheterCashUpgrade(user: "lucas", name: "Bottle") { name unlocked } }
 
-mutation { acheterCashUpgrade(user: "lucas", name: "Upgrade 1") { name unlocked } }
-
-mutation { acheterAngelUpgrade(user: "lucas", name: "Angel Upgrade 1") { name unlocked } }
+mutation { acheterAngelUpgrade(user: "lucas", name: "Fortune Finder") { name unlocked } }
 
 mutation { resetWorld(user: "lucas") { score totalangels activeangels money } }
 ```

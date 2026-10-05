@@ -1,7 +1,8 @@
 // Moteur du jeu : fonctions PURES (pas d'injection Nest, pas d'accès fichier), importées par
 // AppService et le resolver. Testables avec vitest sans instancier Nest (voir docs/DECISIONS.md, D10).
 // Phase 3 : buyCost. Phase 4 : updateWorld. Phase 5 : applyBonus, checkProductUnlocks, checkAllUnlocks.
-// Phase 6 : buyUpgrade. Phase 7 : angelsEarned, resetWorld.
+// Phase 6 : buyUpgrade. Phase 7 : angelsEarned, resetWorld. Phase 10 : advanceProduction,
+// totalAngelsFor (conformité au sujet, D36).
 import { Palier, Product, RatioType, World } from './graphql.js';
 import { origworld } from './origworld.js';
 
@@ -27,6 +28,38 @@ export function productionGain(world: World, product: Product): number {
   );
 }
 
+// Avancement de la production d'UN produit sur `elapsed` ms (RG-03) : nouveau `timeleft` et
+// nombre de productions terminées. Fonction pure, recopiée À L'IDENTIQUE dans
+// frontend/src/app/game-math.ts : le sujet demande le même calcul côté client (calcScore) et côté
+// serveur (updateWorld), sinon les deux scores dérivent (D36).
+export function advanceProduction(
+  product: Pick<Product, 'timeleft' | 'vitesse' | 'managerUnlocked'>,
+  elapsed: number,
+): { timeleft: number; produced: number } {
+  if (!product.managerUnlocked) {
+    // Sans manager : au plus une production, lancée manuellement (timeleft 0 = inactif).
+    if (product.timeleft === 0) {
+      return { timeleft: 0, produced: 0 };
+    }
+    if (product.timeleft <= elapsed) {
+      return { timeleft: 0, produced: 1 };
+    }
+    return { timeleft: product.timeleft - elapsed, produced: 0 };
+  }
+  // Avec manager : la production tourne en boucle. Un produit inactif est considéré comme
+  // venant de démarrer. `n` est calculé par formule (O(1)) : une absence de plusieurs jours
+  // ne doit pas déclencher une boucle de millions d'itérations.
+  const timeleft = product.timeleft === 0 ? product.vitesse : product.timeleft;
+  if (elapsed < timeleft) {
+    return { timeleft: timeleft - elapsed, produced: 0 };
+  }
+  const remaining = elapsed - timeleft;
+  return {
+    timeleft: product.vitesse - (remaining % product.vitesse),
+    produced: 1 + Math.floor(remaining / product.vitesse),
+  };
+}
+
 // Évolution temporelle du monde (GAME-RULES.md §Évolution temporelle). Mute `world` et le retourne.
 // `now` est injecté (défaut Date.now()) pour que les tests soient déterministes sans mock (D10).
 // Appelée en tête de CHAQUE query/mutation, avant toute action, sinon l'argent produit entre
@@ -40,38 +73,11 @@ export function updateWorld(world: World, now: number = Date.now()): World {
       : Math.max(0, Math.floor(now - world.lastupdate));
 
   for (const product of world.products) {
-    const gain = productionGain(world, product);
-
-    if (!product.managerUnlocked) {
-      // Sans manager : au plus une production, lancée manuellement (timeleft 0 = inactif).
-      if (product.timeleft === 0) {
-        continue;
-      }
-      if (product.timeleft <= elapsed) {
-        world.money += gain;
-        world.score += gain;
-        product.timeleft = 0;
-      } else {
-        product.timeleft -= elapsed;
-      }
-      continue;
-    }
-
-    // Avec manager : la production tourne en boucle. Un produit inactif est considéré comme
-    // venant de démarrer. `n` est calculé par formule (O(1)) : une absence de plusieurs jours
-    // ne doit pas déclencher une boucle de millions d'itérations.
-    if (product.timeleft === 0) {
-      product.timeleft = product.vitesse;
-    }
-    if (elapsed < product.timeleft) {
-      product.timeleft -= elapsed;
-    } else {
-      const remaining = elapsed - product.timeleft;
-      const n = 1 + Math.floor(remaining / product.vitesse);
-      world.money += n * gain;
-      world.score += n * gain;
-      product.timeleft = product.vitesse - (remaining % product.vitesse);
-    }
+    const { timeleft, produced } = advanceProduction(product, elapsed);
+    const gain = produced * productionGain(world, product);
+    world.money += gain;
+    world.score += gain;
+    product.timeleft = timeleft;
   }
 
   world.lastupdate = now;
@@ -97,10 +103,18 @@ export function applyBonus(world: World, palier: Palier): void {
     if (palier.typeratio === RatioType.gain) {
       product.revenu *= palier.ratio;
     } else if (palier.typeratio === RatioType.vitesse) {
-      // Jamais sous 1 ms (division par zéro dans updateWorld sinon). Une production en cours est
-      // plafonnée à la nouvelle vitesse : elle ne doit pas durer plus qu'un cycle complet.
+      // Jamais sous 1 ms (division par zéro dans updateWorld sinon). Une production en cours
+      // ACCÉLÈRE (RG-07, D36) : son temps restant est divisé par le même ratio, la barre garde sa
+      // progression et finit plus vite. Arrondi supérieur et plancher 1 : une production en cours
+      // ne doit pas tomber à 0, qui signifie « inactive » et perdrait son gain. Bornée à la
+      // nouvelle vitesse (l'arrondi pourrait la dépasser d'1 ms).
       product.vitesse = Math.max(1, Math.floor(product.vitesse / palier.ratio));
-      product.timeleft = Math.min(product.timeleft, product.vitesse);
+      if (product.timeleft > 0) {
+        product.timeleft = Math.min(
+          product.vitesse,
+          Math.ceil(product.timeleft / palier.ratio),
+        );
+      }
     }
   }
 }
@@ -172,23 +186,24 @@ export function buyUpgrade(
   return palier;
 }
 
-// Score nécessaire par ange gagné : « 2 % du score », soit 1 ange pour 50 de score (D20 — seul
-// point à changer si l'enseignant impose une autre courbe). On divise par 50 plutôt que de
-// multiplier par 0.02 : la division d'un multiple exact de 50 est exacte en IEEE 754, alors que
-// 0.02 n'a pas de représentation binaire finie.
-export const SCORE_PER_ANGEL = 50;
+// Plus grand entier que le type GraphQL `Int` sait sérialiser (32 bits signés). Le schéma du sujet
+// type les anges en `Int!` : au-delà, getWorld échouerait entièrement (D36).
+export const MAX_INT32 = 2_147_483_647;
 
-// Anges gagnés si le joueur faisait un reset maintenant (D20, amende la formule AdVenture
-// Capitalist de D7, injouable avec l'origworld du TP) :
-//   floor(score / SCORE_PER_ANGEL) - totalangels, borné à 0.
-// `score` cumule tout l'argent gagné depuis le tout début (jamais remis à zéro), `totalangels`
-// tout ce qui a déjà été distribué : la différence est ce que la partie en cours a rapporté.
-// En dessous de score = 50 → 0 ange.
+// Anges acquis depuis le début de la partie (RG-09, formule imposée par le sujet frontend) :
+//   150 × √(score / 10¹⁵), arrondi à l'entier inférieur (les anges sont typés Int), plafonné à
+// MAX_INT32 (atteint seulement au-delà d'un score de ~2·10²⁹).
+export function totalAngelsFor(score: number): number {
+  return Math.min(MAX_INT32, Math.floor(150 * Math.sqrt(Math.max(0, score) / 1e15)));
+}
+
+// Anges SUPPLÉMENTAIRES gagnés si le joueur faisait un reset maintenant (RG-09, remplace la
+// formule linéaire de D20) : totalAngelsFor(score) − totalangels, borné à 0. `score` cumule tout
+// l'argent gagné depuis le tout début (jamais remis à zéro), `totalangels` tout ce qui a déjà été
+// distribué : la différence est ce que la partie en cours a rapporté. 1 ange dès 4,45·10¹⁰ de
+// score, 150 anges à 10¹⁵.
 export function angelsEarned(world: World): number {
-  return Math.max(
-    0,
-    Math.floor(world.score / SCORE_PER_ANGEL) - world.totalangels,
-  );
+  return Math.max(0, totalAngelsFor(world.score) - world.totalangels);
 }
 
 // Reset (sujet §6.5, GAME-RULES.md §Reset) : retourne un NOUVEAU monde, clone profond

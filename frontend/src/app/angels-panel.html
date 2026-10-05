@@ -1,40 +1,18 @@
 <section class="angels-panel">
-  <h2>Anges</h2>
+  <dl class="stats">
+    <dt>Anges actifs</dt>
+    <dd>{{ activeangels() }}</dd>
+    <dt>Total des anges</dt>
+    <dd>{{ totalangels() }}</dd>
+    <dt>Bonus par ange</dt>
+    <dd>{{ angelbonus() }} %</dd>
+    <dt>Score</dt>
+    <dd [innerHTML]="score() | bigvalue"></dd>
+  </dl>
 
-  <mat-tab-group>
-    <mat-tab label="Reset">
-      <div class="tab-body">
-        <p class="earned">
-          Anges gagnables : <b>{{ angelsEarned() }}</b>
-        </p>
-        <dl class="stats">
-          <dt>Anges actifs</dt>
-          <dd>{{ activeangels() }} / total : {{ totalangels() }}</dd>
-          <dt>Bonus par ange</dt>
-          <dd>{{ angelbonus() }} %</dd>
-          <dt>Score</dt>
-          <dd>{{ fmt(score()) }}</dd>
-        </dl>
-        <!-- Jamais désactivé : un reset à 0 ange est permis (comme dans le jeu original). -->
-        <button matButton="filled" type="button" class="reset warn" (click)="resetRequested.emit()">
-          Reset
-        </button>
-      </div>
-    </mat-tab>
-
-    <mat-tab label="Bonus">
-      <div class="tab-body">
-        <app-palier-list
-          title="Angel upgrades"
-          [paliers]="angelupgrades()"
-          actionLabel="Acheter"
-          costUnit="anges"
-          [balance]="activeangels()"
-          [products]="products()"
-          [worldLogo]="worldLogo()"
-          (action)="buyAngelUpgrade.emit($event)"
-        />
-      </div>
-    </mat-tab>
-  </mat-tab-group>
+  <!-- Anges à réclamer par un reset, sur le bouton lui-même (fig. 11 « To Claim with Restart »). -->
+  <button matButton="filled" type="button" class="reset warn" (click)="resetRequested.emit()">
+    <span class="earned">{{ angelsEarned() }} anges</span>
+    <span class="claim">à réclamer avec un reset</span>
+  </button>
 </section>

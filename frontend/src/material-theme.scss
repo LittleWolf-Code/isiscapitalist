@@ -74,8 +74,8 @@ html {
       tertiary-container: $pip-green,
       error: $pip-green,
       error-container: $pip-green,
-      // Fond des états sélectionnés (chips sélectionnés Material ; le toggle du multiplicateur
-      // est traité par button-toggle-overrides, D31).
+      // Fond des états sélectionnés (chips sélectionnés Material ; les toggles — teinte de
+      // l'écran Paramètres — sont traités par button-toggle-overrides, D31).
       secondary-container: $pip-surface-high,
       // Angles droits partout.
       corner-extra-small: 0,
@@ -111,8 +111,9 @@ html {
     )
   );
 
-  // Toggle du multiplicateur : sélectionné en vidéo inversée (secondary-container serait
-  // invisible sur le fond), survol / focus teintés en vert (D31).
+  // Toggles (teinte de l'écran Paramètres) : sélectionné en vidéo inversée (secondary-container
+  // serait invisible sur le fond), survol / focus teintés en vert (D31). Le multiplicateur d'achat
+  // est devenu un bouton unique (D36).
   @include mat.button-toggle-overrides(
     (
       selected-state-background-color: var(--mat-sys-primary),

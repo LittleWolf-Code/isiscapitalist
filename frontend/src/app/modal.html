@@ -1,0 +1,17 @@
+<div class="backdrop" (click)="closed.emit()"></div>
+<section
+  class="modal pip-frame"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-labelledby]="titleId"
+  cdkTrapFocus
+  [cdkTrapFocusAutoCapture]="true"
+>
+  <h2 class="pip-title" [id]="titleId">{{ title() }}</h2>
+  <div class="modal-body">
+    <ng-content />
+  </div>
+  <div class="modal-actions">
+    <button matButton="filled" type="button" class="closebutton" cdkFocusInitial (click)="closed.emit()">Close</button>
+  </div>
+</section>

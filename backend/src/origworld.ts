@@ -1,10 +1,11 @@
-// Monde initial (phase 1). Données de démonstration volontairement génériques (Item N, Manager N…) :
-// le thème et les « vrais » noms viendront plus tard. Structure reprise de docs/reference/origworld.skeleton.ts.
+// Monde initial « Nuka Capitalist » (thème Fallout, docs/THEME.md ; casting appliqué en phase 10.4).
+// Chiffres d'origine (phase 1, calqués sur le monde « Terre » d'AdVenture Capitalist), noms et images
+// du casting. Structure reprise de docs/reference/origworld.skeleton.ts.
 // Ne jamais muter cet objet : le servir via structuredClone(origworld) (voir docs/DECISIONS.md, D3).
 import { RatioType, World } from './graphql.js';
 
 export const origworld: World = {
-  name: 'World',
+  name: 'Nuka Capitalist',
   logo: 'icones/world.png',
   money: 0,
   score: 0,
@@ -15,8 +16,8 @@ export const origworld: World = {
   products: [
     {
       id: 1,
-      name: 'Item 1',
-      logo: 'icones/item1.png',
+      name: 'Nuka-Cola',
+      logo: 'icones/nuka-cola.png',
       cout: 4,
       croissance: 1.07,
       revenu: 1,
@@ -26,8 +27,8 @@ export const origworld: World = {
       managerUnlocked: false,
       paliers: [
         {
-          name: 'Unlock 1.1',
-          logo: 'icones/item1.png',
+          name: 'Nuka-Cherry',
+          logo: 'icones/nuka-cola.png',
           seuil: 25,
           idcible: 1,
           ratio: 2,
@@ -35,8 +36,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 1.2',
-          logo: 'icones/item1.png',
+          name: 'Nuka-Cola Quantum',
+          logo: 'icones/nuka-cola.png',
           seuil: 50,
           idcible: 1,
           ratio: 2,
@@ -44,8 +45,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 1.3',
-          logo: 'icones/item1.png',
+          name: 'Nuka-Cola Victory',
+          logo: 'icones/nuka-cola.png',
           seuil: 100,
           idcible: 1,
           ratio: 2,
@@ -56,8 +57,8 @@ export const origworld: World = {
     },
     {
       id: 2,
-      name: 'Item 2',
-      logo: 'icones/item2.png',
+      name: 'Stimpak',
+      logo: 'icones/stimpak.png',
       cout: 60,
       croissance: 1.15,
       revenu: 60,
@@ -67,8 +68,8 @@ export const origworld: World = {
       managerUnlocked: false,
       paliers: [
         {
-          name: 'Unlock 2.1',
-          logo: 'icones/item2.png',
+          name: 'Med-X',
+          logo: 'icones/stimpak.png',
           seuil: 25,
           idcible: 2,
           ratio: 2,
@@ -76,8 +77,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 2.2',
-          logo: 'icones/item2.png',
+          name: 'RadAway',
+          logo: 'icones/stimpak.png',
           seuil: 50,
           idcible: 2,
           ratio: 2,
@@ -85,8 +86,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 2.3',
-          logo: 'icones/item2.png',
+          name: 'Super Stimpak',
+          logo: 'icones/stimpak.png',
           seuil: 100,
           idcible: 2,
           ratio: 2,
@@ -97,8 +98,8 @@ export const origworld: World = {
     },
     {
       id: 3,
-      name: 'Item 3',
-      logo: 'icones/item3.png',
+      name: 'Pip-Boy',
+      logo: 'icones/pip-boy.png',
       cout: 720,
       croissance: 1.14,
       revenu: 540,
@@ -108,8 +109,8 @@ export const origworld: World = {
       managerUnlocked: false,
       paliers: [
         {
-          name: 'Unlock 3.1',
-          logo: 'icones/item3.png',
+          name: 'Pip-Boy 2000',
+          logo: 'icones/pip-boy.png',
           seuil: 25,
           idcible: 3,
           ratio: 2,
@@ -117,8 +118,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 3.2',
-          logo: 'icones/item3.png',
+          name: 'Pip-Boy 3000',
+          logo: 'icones/pip-boy.png',
           seuil: 50,
           idcible: 3,
           ratio: 2,
@@ -126,8 +127,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 3.3',
-          logo: 'icones/item3.png',
+          name: 'Pip-Boy 3000 Mark IV',
+          logo: 'icones/pip-boy.png',
           seuil: 100,
           idcible: 3,
           ratio: 2,
@@ -138,8 +139,8 @@ export const origworld: World = {
     },
     {
       id: 4,
-      name: 'Item 4',
-      logo: 'icones/item4.png',
+      name: 'Armes',
+      logo: 'icones/armes.png',
       cout: 8640,
       croissance: 1.13,
       revenu: 4320,
@@ -149,8 +150,8 @@ export const origworld: World = {
       managerUnlocked: false,
       paliers: [
         {
-          name: 'Unlock 4.1',
-          logo: 'icones/item4.png',
+          name: 'Fusil laser AER9',
+          logo: 'icones/armes.png',
           seuil: 25,
           idcible: 4,
           ratio: 2,
@@ -158,8 +159,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 4.2',
-          logo: 'icones/item4.png',
+          name: 'Fusil à plasma',
+          logo: 'icones/armes.png',
           seuil: 50,
           idcible: 4,
           ratio: 2,
@@ -167,8 +168,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 4.3',
-          logo: 'icones/item4.png',
+          name: 'Fusil Gauss',
+          logo: 'icones/armes.png',
           seuil: 100,
           idcible: 4,
           ratio: 2,
@@ -179,8 +180,8 @@ export const origworld: World = {
     },
     {
       id: 5,
-      name: 'Item 5',
-      logo: 'icones/item5.png',
+      name: 'Armure assistée',
+      logo: 'icones/armure.png',
       cout: 103680,
       croissance: 1.12,
       revenu: 51840,
@@ -190,8 +191,8 @@ export const origworld: World = {
       managerUnlocked: false,
       paliers: [
         {
-          name: 'Unlock 5.1',
-          logo: 'icones/item5.png',
+          name: 'T-45',
+          logo: 'icones/armure.png',
           seuil: 25,
           idcible: 5,
           ratio: 2,
@@ -199,8 +200,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 5.2',
-          logo: 'icones/item5.png',
+          name: 'T-51',
+          logo: 'icones/armure.png',
           seuil: 50,
           idcible: 5,
           ratio: 2,
@@ -208,8 +209,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 5.3',
-          logo: 'icones/item5.png',
+          name: 'X-01',
+          logo: 'icones/armure.png',
           seuil: 100,
           idcible: 5,
           ratio: 2,
@@ -220,8 +221,8 @@ export const origworld: World = {
     },
     {
       id: 6,
-      name: 'Item 6',
-      logo: 'icones/item6.png',
+      name: 'Nuke',
+      logo: 'icones/nuke.png',
       cout: 1244160,
       croissance: 1.11,
       revenu: 622080,
@@ -231,8 +232,8 @@ export const origworld: World = {
       managerUnlocked: false,
       paliers: [
         {
-          name: 'Unlock 6.1',
-          logo: 'icones/item6.png',
+          name: 'Fat Man',
+          logo: 'icones/nuke.png',
           seuil: 25,
           idcible: 6,
           ratio: 2,
@@ -240,8 +241,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 6.2',
-          logo: 'icones/item6.png',
+          name: 'Ogive MIRV expérimentale',
+          logo: 'icones/nuke.png',
           seuil: 50,
           idcible: 6,
           ratio: 2,
@@ -249,8 +250,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Unlock 6.3',
-          logo: 'icones/item6.png',
+          name: 'Missile nucléaire (Site Alpha)',
+          logo: 'icones/nuke.png',
           seuil: 100,
           idcible: 6,
           ratio: 2,
@@ -263,8 +264,8 @@ export const origworld: World = {
   // Seuil = quantité que TOUS les produits doivent atteindre.
   allunlocks: [
     {
-      name: 'All Unlock 1',
-      logo: 'icones/all.png',
+      name: 'Sanctuary',
+      logo: 'icones/global.png',
       seuil: 25,
       idcible: 0,
       ratio: 2,
@@ -272,8 +273,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'All Unlock 2',
-      logo: 'icones/all.png',
+      name: 'Diamond City',
+      logo: 'icones/global.png',
       seuil: 50,
       idcible: 0,
       ratio: 3,
@@ -281,8 +282,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'All Unlock 3',
-      logo: 'icones/all.png',
+      name: 'Nuka-World',
+      logo: 'icones/global.png',
       seuil: 100,
       idcible: 0,
       ratio: 2,
@@ -293,8 +294,8 @@ export const origworld: World = {
   // Seuil = prix en argent.
   upgrades: [
     {
-      name: 'Upgrade 1',
-      logo: 'icones/item1.png',
+      name: 'Bottle',
+      logo: 'icones/upgrade-bottle.png',
       seuil: 1000,
       idcible: 1,
       ratio: 3,
@@ -302,8 +303,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Upgrade 2',
-      logo: 'icones/item2.png',
+      name: 'Doc Phosphate',
+      logo: 'icones/stimpak.png',
       seuil: 15000,
       idcible: 2,
       ratio: 3,
@@ -311,8 +312,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Upgrade 3',
-      logo: 'icones/item3.png',
+      name: 'Vault Girl',
+      logo: 'icones/upgrade-vault-girl.png',
       seuil: 180000,
       idcible: 3,
       ratio: 3,
@@ -320,8 +321,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Upgrade 4',
-      logo: 'icones/item4.png',
+      name: 'One-Eyed Ike',
+      logo: 'icones/armes.png',
       seuil: 2160000,
       idcible: 4,
       ratio: 3,
@@ -329,8 +330,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Upgrade 5',
-      logo: 'icones/item5.png',
+      name: 'The Mechanist',
+      logo: 'icones/armure.png',
       seuil: 26000000,
       idcible: 5,
       ratio: 3,
@@ -338,8 +339,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Upgrade 6',
-      logo: 'icones/item6.png',
+      name: 'Sugar Bombs',
+      logo: 'icones/upgrade-sugar-bombs.png',
       seuil: 310000000,
       idcible: 6,
       ratio: 3,
@@ -347,8 +348,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Upgrade 7',
-      logo: 'icones/all.png',
+      name: 'Tales of a Junktown Jerky Vendor',
+      logo: 'icones/global.png',
       seuil: 1e6,
       idcible: 0,
       ratio: 2,
@@ -356,8 +357,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Upgrade 8',
-      logo: 'icones/all.png',
+      name: 'Grognak the Barbarian',
+      logo: 'icones/global.png',
       seuil: 1e8,
       idcible: 0,
       ratio: 2,
@@ -365,8 +366,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Upgrade 9',
-      logo: 'icones/all.png',
+      name: 'Guns and Bullets',
+      logo: 'icones/global.png',
       seuil: 1e10,
       idcible: 0,
       ratio: 2,
@@ -374,8 +375,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Upgrade 10',
-      logo: 'icones/all.png',
+      name: 'Astoundingly Awesome Tales',
+      logo: 'icones/global.png',
       seuil: 1e12,
       idcible: 0,
       ratio: 2,
@@ -386,8 +387,8 @@ export const origworld: World = {
   // Seuil = prix en anges actifs.
   angelupgrades: [
     {
-      name: 'Angel Upgrade 1',
-      logo: 'icones/angel.png',
+      name: 'Fortune Finder',
+      logo: 'icones/bobblehead.png',
       seuil: 10,
       idcible: -1,
       ratio: 1,
@@ -395,8 +396,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Angel Upgrade 2',
-      logo: 'icones/angel.png',
+      name: 'Cap Collector',
+      logo: 'icones/bobblehead.png',
       seuil: 100,
       idcible: 0,
       ratio: 2,
@@ -404,8 +405,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Angel Upgrade 3',
-      logo: 'icones/angel.png',
+      name: 'Troc',
+      logo: 'icones/bobblehead.png',
       seuil: 1000,
       idcible: -1,
       ratio: 2,
@@ -416,8 +417,8 @@ export const origworld: World = {
   // Seuil = prix en argent. ratio/typeratio sont décoratifs : engagerManager n'applique aucun bonus (D13).
   managers: [
     {
-      name: 'Manager 1',
-      logo: 'icones/manager1.png',
+      name: 'Cappy',
+      logo: 'icones/manager-cappy.png',
       seuil: 1000,
       idcible: 1,
       ratio: 1,
@@ -425,8 +426,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Manager 2',
-      logo: 'icones/manager2.png',
+      name: 'Mister Orderly',
+      logo: 'icones/manager-mister-orderly.png',
       seuil: 15000,
       idcible: 2,
       ratio: 1,
@@ -434,8 +435,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Manager 3',
-      logo: 'icones/manager3.png',
+      name: 'Vault Boy',
+      logo: 'icones/manager-vault-boy-pipboy.png',
       seuil: 100000,
       idcible: 3,
       ratio: 1,
@@ -443,8 +444,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Manager 4',
-      logo: 'icones/manager4.png',
+      name: 'Gunslinger',
+      logo: 'icones/manager-vault-boy-gunslinger.png',
       seuil: 500000,
       idcible: 4,
       ratio: 1,
@@ -452,8 +453,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Manager 5',
-      logo: 'icones/manager5.png',
+      name: "Confrérie de l'Acier",
+      logo: 'icones/manager-confrerie.png',
       seuil: 1200000,
       idcible: 5,
       ratio: 1,
@@ -461,8 +462,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Manager 6',
-      logo: 'icones/manager6.png',
+      name: 'Nuka-Girl',
+      logo: 'icones/manager-nuka-girl.png',
       seuil: 10000000,
       idcible: 6,
       ratio: 1,

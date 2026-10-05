@@ -1,21 +1,40 @@
-// Page unique du jeu, disposition « écran cathodique » (D22) : bandeau Material (titre, user,
-// multiplicateur, cases MONEY / SCORE / ANGES / BONUS), bandeau d'erreur, puis TabBar qui projette
-// l'écran de l'onglet actif (6 ProductCard, PalierList, UnlockList + PalierList, AngelsPanel ou
-// SettingsPanel) au-dessus de la barre d'onglets du bas. Toute la logique est dans GameService.
-import { Component, computed, inject } from '@angular/core';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
+// Page du jeu, mise en page du sujet (F-04 → F-06) : bandeau d'en-tête (monde, argent,
+// multiplicateur d'achat, pseudo + Refresh), bandeau gauche de boutons badgés qui ouvrent des
+// fenêtres superposées (Unlocks, Cash Upgrades, Angel Upgrades, Managers, Investors, plus
+// Paramètres), partie centrale avec les six produits. Messages éphémères en snack-bar (F-20).
+// Toute la logique de jeu est dans GameService.
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { FormField } from '@angular/forms/signals';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { AngelsPanel } from './angels-panel';
+import { BigvaluePipe } from './bigvalue.pipe';
 import { GameIcon } from './game-icon';
-import { angelsEarned, blockedManagerNames, formatNumber } from './game-math';
-import { GameService, Multiplier, ProductData, WorldData } from './game.service';
+import { affordableCount, angelsEarned } from './game-math';
+import { GameService, Multiplier } from './game.service';
+import { Modal } from './modal';
 import { PalierList } from './palier-list';
 import { ProductCard } from './product-card';
 import { SettingsPanel } from './settings-panel';
-import { TabBar } from './tab-bar';
 import { UnlockList } from './unlock-list';
+
+// Fenêtres ouvertes depuis le bandeau gauche, dans l'ordre de la figure 7 du sujet.
+export type GameWindow = 'unlocks' | 'upgrades' | 'angelupgrades' | 'managers' | 'investors' | 'settings';
+
+export const MENU: readonly { readonly id: GameWindow; readonly label: string }[] = [
+  { id: 'unlocks', label: 'Unlocks' },
+  { id: 'upgrades', label: 'Cash Upgrades' },
+  { id: 'angelupgrades', label: 'Angel Upgrades' },
+  { id: 'managers', label: 'Managers' },
+  { id: 'investors', label: 'Investors' },
+  { id: 'settings', label: 'Paramètres' },
+];
+
+// Cycle du multiplicateur d'achat (F-13) : x1 → x10 → x100 → Max → x1.
+export const QT_CYCLE: readonly Multiplier[] = [1, 10, 100, 'max'];
 
 @Component({
   selector: 'app-root',
@@ -24,69 +43,104 @@ import { UnlockList } from './unlock-list';
     ProductCard,
     PalierList,
     UnlockList,
-    TabBar,
     AngelsPanel,
     SettingsPanel,
+    Modal,
     GameIcon,
-    MatToolbarModule,
+    BigvaluePipe,
+    FormField,
+    MatBadgeModule,
+    MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonToggleModule,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
-  // Réglages CRT posés en classes sur <app-root> : les effets sont des règles globales de
-  // styles.css (app-root.crt-*), hors budget anyComponentStyle.
+  // Réglages d'affichage posés sur <app-root> (D22 / D34) : classes crt-* (une par effet),
+  // data-tint (filtre de teinte) et variables --crt-* (intensités 0-1). Les effets sont des
+  // règles globales de styles.css (app-root.crt-*, .crt-overlay).
   host: {
-    '[class.crt-scanlines]': 'game.scanlines()',
-    '[class.crt-glow]': 'game.glow()',
-    '[class.crt-flicker]': 'game.flicker()',
+    '[class.crt-scanlines]': 'game.display().scanlines',
+    '[class.crt-glow]': 'game.display().glow',
+    '[class.crt-flicker]': 'game.display().flicker',
+    '[class.crt-vignette]': 'game.display().vignette',
+    '[class.crt-grid]': 'game.display().grid',
+    '[class.crt-grain]': 'game.display().grain',
+    '[class.crt-roll]': 'game.display().roll',
+    '[class.crt-noise]': 'game.display().noise',
+    '[attr.data-tint]': 'game.display().tint',
+    '[style.--crt-scanlines]': 'game.display().scanlinesLevel / 100',
+    '[style.--crt-glow]': 'game.display().glowLevel / 100',
+    '[style.--crt-vignette]': 'game.display().vignetteLevel / 100',
   },
 })
 export class App {
   protected readonly game = inject(GameService);
+  private readonly snackBar = inject(MatSnackBar);
 
-  protected readonly multipliers: readonly Multiplier[] = [1, 10, 100, 'max'];
-  protected readonly fmt = formatNumber;
+  // Copie du monde du service, pour la lisibilité du template.
+  protected readonly world = this.game.world;
+  protected readonly menu = MENU;
 
-  // Anges que rapporterait un reset maintenant, calculés une seule fois pour la pastille de la
-  // barre et l'écran Anges ; 0 tant qu'aucun monde n'est chargé (pastille masquée).
+  // Position du multiplicateur d'achat (F-13), transmise à chaque produit.
+  readonly qtmulti = signal<Multiplier>(1);
+  // Fenêtre ouverte (une seule à la fois), null = aucune.
+  readonly modal = signal<GameWindow | null>(null);
+
+  // Anges supplémentaires qu'un reset rapporterait (fenêtre Investors et son badge).
   protected readonly angelsEarned = computed(() => {
-    const world = this.game.world();
+    const world = this.world();
     return world ? angelsEarned(world) : 0;
   });
 
-  // Managers non possédés dont le produit cible n'a aucun exemplaire : leur bouton Engager est
-  // grisé (D24), le serveur refuserait. Recalculé à chaque getWorld (D14).
-  protected readonly blockedManagers = computed(() => {
-    const world = this.game.world();
-    return world ? blockedManagerNames(world) : [];
+  // Badges du bandeau gauche (F-21, F-27, F-31) : nombre d'éléments achetables maintenant.
+  protected readonly badges = computed<Record<GameWindow, number>>(() => {
+    const world = this.world();
+    return {
+      unlocks: 0,
+      upgrades: world ? affordableCount(world.upgrades, world.money) : 0,
+      angelupgrades: world ? affordableCount(world.angelupgrades, world.activeangels) : 0,
+      managers: world ? affordableCount(world.managers, world.money) : 0,
+      investors: this.angelsEarned(),
+      settings: 0,
+    };
   });
 
-  // Manager acheté pour ce produit (palier de world.managers ciblant le produit et débloqué) :
-  // ProductCard en déduit Produire / Arrêter / Reprendre avec product.managerUnlocked (D20).
-  protected managerOwned(world: WorldData, product: ProductData): boolean {
-    return world.managers.some((m) => m.idcible === product.id && m.unlocked);
+  constructor() {
+    // Snack-bar à chaque nouveau message du service (F-20) ; le message initial vide est ignoré.
+    effect(() => {
+      const message = this.game.snackmessage();
+      if (message) {
+        this.snackBar.open(message, 'ok', { duration: 2000 });
+      }
+    });
   }
 
-  // `change` (et non `input`) : le monde n'est rechargé qu'une fois la saisie terminée, sinon
-  // chaque frappe créerait un fichier userworlds/<préfixe>-world.json côté serveur.
-  protected onUserChange(event: Event): void {
-    const value = (event.target as HTMLInputElement).value.trim();
-    this.game.user.set(value);
+  // Libellé du multiplicateur : « Buy x1 », « Buy x10 », « Buy x100 », « Buy Max ».
+  protected qtLabel(qt: Multiplier): string {
+    return qt === 'max' ? 'Max' : 'x' + qt;
   }
 
-  // `$event.value` du mat-button-toggle-group est la valeur fournie au [value] du toggle
-  // (nombre ou 'max'), transmise telle quelle : pas de conversion.
-  protected onMultiplierChange(value: Multiplier): void {
-    this.game.multiplier.set(value);
+  // Clic sur le multiplicateur : position suivante du cycle.
+  protected cycleQtmulti(): void {
+    const index = QT_CYCLE.indexOf(this.qtmulti());
+    this.qtmulti.set(QT_CYCLE[(index + 1) % QT_CYCLE.length]);
   }
 
-  // Le confirm() vit ici (l'écran Anges ne connaît pas `user`) ; `earned` est l'estimation
-  // client, le serveur recalcule au reset (D19).
-  protected onReset(earned: number): void {
+  protected open(window: GameWindow): void {
+    this.modal.set(window);
+  }
+
+  protected close(): void {
+    this.modal.set(null);
+  }
+
+  // Bouton de reset de la fenêtre Investors : confirmation, puis mutation et rechargement.
+  protected onReset(): void {
     const user = this.game.user();
-    if (confirm(`Réinitialiser le monde de « ${user} » ? Vous gagnerez ${earned} ange(s).`)) {
+    const earned = this.angelsEarned();
+    if (confirm(`Remettre à zéro la partie de « ${user} » ? Vous gagnerez ${earned} ange(s).`)) {
+      this.close();
       void this.game.reset();
     }
   }

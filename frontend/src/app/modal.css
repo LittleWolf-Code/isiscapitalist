@@ -1,0 +1,36 @@
+/* Fenêtre superposée (style .modal du sujet) : fond assombri plein écran, fenêtre fixe centrée
+   au-dessus du reste, barre de défilement interne si le contenu déborde. Les effets CRT
+   (z-index ≥ 999, transparents aux clics) restent par-dessus. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--mat-sys-surface) 75%, transparent);
+}
+
+.modal {
+  position: fixed;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: min(800px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 1rem;
+  border-color: var(--mat-sys-primary);
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+}

@@ -1,57 +1,57 @@
-// Seul point de contact avec le serveur GraphQL : porte l'utilisateur courant, le monde affiché,
-// les 7 mutations, le message d'erreur et le timer local. Les composants (ProductCard, PalierList)
-// sont purement présentationnels et ne connaissent pas Apollo.
-import { DestroyRef, Injectable, effect, inject, signal } from '@angular/core';
+// Service du jeu (F-02, F-03) : signaux partagés (pseudo, serveur, monde, message éphémère),
+// boucle principale du client (calcScore, F-11) et actions du joueur. Le client est AUTONOME
+// (D36) : chaque action est d'abord appliquée au monde local, puis transmise au serveur par la
+// mutation du sujet ; le monde n'est relu (getWorld) qu'au démarrage, au changement de pseudo, sur
+// Refresh, après un reset et après un échec de transmission — le serveur fait foi (NF-03).
+// Seul fichier qui injecte Apollo : les composants sont présentationnels.
+import { DestroyRef, Injectable, effect, inject, linkedSignal, signal } from '@angular/core';
+import { form } from '@angular/forms/signals';
 import { Apollo, CombinedGraphQLErrors } from '@apollo-orbit/angular';
+import { DISPLAY_STORAGE_KEY, DisplaySettings, readStoredDisplay } from './display-settings';
+import {
+  PalierData,
+  ProductData,
+  WorldData,
+  advanceProduction,
+  angelsEarned,
+  applyBonus,
+  applyUnlocks,
+  bonusLabel,
+  buyCost,
+  productionGain,
+  replaceProduct,
+} from './game-math';
 import {
   ACHETER_ANGEL_UPGRADE_MUTATION,
   ACHETER_CASH_UPGRADE_MUTATION,
   ACHETER_QT_PRODUIT_MUTATION,
-  BASCULER_MANAGER_MUTATION,
   ENGAGER_MANAGER_MUTATION,
   GET_WORLD_QUERY,
-  GetWorldQueryData,
   LANCER_PRODUCTION_PRODUIT_MUTATION,
-  PalierFieldsFragment,
   RESET_WORLD_MUTATION,
 } from './graphql';
+import { SERVER } from './server';
 
-// Types tels que retournés par getWorld (sous-ensemble structurel de World / Product / Palier).
-export type WorldData = NonNullable<GetWorldQueryData['getWorld']>;
-export type ProductData = WorldData['products'][number];
-export type PalierData = PalierFieldsFragment;
+export type { PalierData, ProductData, WorldData } from './game-math';
 
-// Mode d'achat : quantité fixe, ou 'max' (le plus grand nombre payable, calculé par ProductCard).
+// Mode d'achat (F-13) : quantité fixe, ou 'max' (le plus grand nombre payable, calculé par la carte).
 export type Multiplier = 1 | 10 | 100 | 'max';
 
-// Onglets de la barre du bas (D19, élargis en D22) : un écran par onglet, toujours un actif.
-export type Tab = 'products' | 'managers' | 'upgrades' | 'angels' | 'unlocks' | 'settings';
-export const TABS: readonly Tab[] = ['products', 'managers', 'upgrades', 'angels', 'unlocks', 'settings'];
+// Modèle du formulaire de pseudo (F-23, formulaire signal du sujet).
+export interface UserLogin {
+  name: string;
+}
 
-export const USER_STORAGE_KEY = 'isiscapitalist.user';
-export const DEFAULT_USER = 'lucas';
-export const USER_REQUIRED_MESSAGE = 'Utilisateur requis';
+// Clé du pseudo imposée par le sujet ; l'ancienne clé de la phase 9 est migrée une fois.
+export const USERNAME_STORAGE_KEY = 'username';
+export const LEGACY_USER_STORAGE_KEY = 'isiscapitalist.user';
 
-// Préférence d'affichage, persistée comme `user`. L'ancienne valeur 'none' (panneau fermé,
-// D19) n'existe plus : elle est lue comme inconnue → DEFAULT_TAB.
-export const TAB_STORAGE_KEY = 'isiscapitalist.tab';
-export const DEFAULT_TAB: Tab = 'products';
-
-// Réglages de l'effet écran cathodique (D22), une clé par réglage, valeurs 'on' / 'off'.
-export const SCANLINES_STORAGE_KEY = 'isiscapitalist.scanlines';
-export const GLOW_STORAGE_KEY = 'isiscapitalist.glow';
-export const FLICKER_STORAGE_KEY = 'isiscapitalist.flicker';
-export const DEFAULT_SCANLINES = true;
-export const DEFAULT_GLOW = true;
-export const DEFAULT_FLICKER = false;
-
-// Période de rafraîchissement serveur (getWorld) et du timer local d'animation des barres.
-const POLL_INTERVAL_MS = 2000;
+// Période de la boucle principale (F-11).
 const TICK_INTERVAL_MS = 100;
 
 // Message brut d'une erreur Apollo Client 4 : pour une erreur GraphQL, `mutate()` rejette avec
 // CombinedGraphQLErrors dont `.errors[i].message` est le message levé par le resolver
-// (ex. « Pas assez d'argent ») — c'est ce texte exact que le bandeau doit montrer.
+// (ex. « Pas assez d'argent »).
 export function errorText(error: unknown): string {
   if (CombinedGraphQLErrors.is(error)) {
     return error.errors.map((e) => e.message).join('\n');
@@ -62,42 +62,29 @@ export function errorText(error: unknown): string {
   return String(error);
 }
 
-function readStoredUser(): string {
+// Pseudo de départ (F-23) : celui mémorisé sous `username`, sinon celui de la phase 9 (migré),
+// sinon un pseudo aléatoire « Captain<n> » (0 ≤ n < 10 000) — jamais vide, pour que deux
+// nouveaux visiteurs ne partagent pas la même partie. localStorage indisponible → aléatoire.
+export function readStoredUsername(random: () => number = Math.random): string {
   try {
-    return localStorage.getItem(USER_STORAGE_KEY) ?? DEFAULT_USER;
+    const stored =
+      localStorage.getItem(USERNAME_STORAGE_KEY) ||
+      localStorage.getItem(LEGACY_USER_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_USER_STORAGE_KEY);
+    if (stored) {
+      return stored;
+    }
   } catch {
-    return DEFAULT_USER;
+    // Navigation privée : pas de mémoire, pseudo aléatoire.
   }
+  return 'Captain' + Math.floor(random() * 10000);
 }
 
-// Onglet mémorisé : absent, inconnu (dont l'ancien 'none') ou localStorage indisponible
-// → DEFAULT_TAB.
-export function readStoredTab(): Tab {
+function storeUsername(name: string): void {
   try {
-    const value = localStorage.getItem(TAB_STORAGE_KEY);
-    return (TABS as readonly string[]).includes(value ?? '') ? (value as Tab) : DEFAULT_TAB;
+    localStorage.setItem(USERNAME_STORAGE_KEY, name);
   } catch {
-    return DEFAULT_TAB;
-  }
-}
-
-// Interrupteur mémorisé : 'on' → true, 'off' → false ; absent, inconnu ou localStorage
-// indisponible → fallback.
-export function readStoredFlag(key: string, fallback: boolean): boolean {
-  try {
-    const value = localStorage.getItem(key);
-    return value === 'on' ? true : value === 'off' ? false : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-// Écriture d'un interrupteur, silencieuse si localStorage est indisponible.
-function storeFlag(key: string, value: boolean): void {
-  try {
-    localStorage.setItem(key, value ? 'on' : 'off');
-  } catch {
-    // Navigation privée… : le réglage ne survit pas au rechargement, sans erreur.
+    // localStorage indisponible : le pseudo ne survit pas au rechargement.
   }
 }
 
@@ -105,49 +92,46 @@ function storeFlag(key: string, value: boolean): void {
 export class GameService {
   private readonly apollo = inject(Apollo);
 
-  // Utilisateur courant (persisté dans localStorage). Vide → aucun appel serveur.
-  readonly user = signal(readStoredUser());
-  // Mode d'achat global (bouton Acheter xN / max des produits).
-  readonly multiplier = signal<Multiplier>(1);
-  // Onglet actif de la barre du bas (persisté dans localStorage), jamais nul (D22).
-  readonly activeTab = signal<Tab>(readStoredTab());
-  // Réglages CRT (persistés) : App les pose en classes crt-* sur <app-root>, SettingsPanel les édite.
-  readonly scanlines = signal(readStoredFlag(SCANLINES_STORAGE_KEY, DEFAULT_SCANLINES));
-  readonly glow = signal(readStoredFlag(GLOW_STORAGE_KEY, DEFAULT_GLOW));
-  readonly flicker = signal(readStoredFlag(FLICKER_STORAGE_KEY, DEFAULT_FLICKER));
-  // Dernier monde reçu du serveur, remplacé EN ENTIER à chaque réponse getWorld (D14) ; seul
-  // `timeleft` des produits est modifié localement entre deux réponses (D15).
-  readonly world = signal<WorldData | undefined>(undefined);
-  // Message du dernier échec (serveur ou réseau), effacé par un clic sur le bandeau.
-  readonly errorMessage = signal<string | null>(null);
+  // Adresse du backend (server.ts) : images = server() + logo.
+  readonly server = SERVER;
+  // Pseudo saisi (formulaire signal) et pseudo validé : seul `user` déclenche getWorld.
+  readonly UserloginModel = signal<UserLogin>({ name: '' });
+  readonly loginForm = form(this.UserloginModel);
+  readonly user = signal('');
+  // Réglages d'affichage CRT (D34, persistés en un seul JSON).
+  readonly display = signal<DisplaySettings>(readStoredDisplay());
+  // Message éphémère (F-20) : App ouvre un snack-bar à chaque set(), même texte répété compris.
+  readonly snackmessage = signal('', { equal: () => false });
 
-  // getWorld : no-cache (D14), poll toutes les 2 s, suspendu (variables null) si user vide.
-  private readonly worldQuery = this.apollo.signal.query({
+  // getWorld (F-03) : no-cache, le serveur est la référence au chargement ; suspendu (variables
+  // null) tant qu'aucun pseudo n'est validé.
+  readonly worldQuery = this.apollo.signal.query({
     query: GET_WORLD_QUERY,
     fetchPolicy: 'no-cache',
-    pollInterval: POLL_INTERVAL_MS,
     variables: () => {
       const user = this.user();
       return user ? { user } : null;
     },
   });
 
-  private readonly acheterQtProduit = this.apollo.signal.mutation(
-    ACHETER_QT_PRODUIT_MUTATION,
-    { fetchPolicy: 'no-cache' },
-  );
+  // Monde affiché (F-03) : réinitialisé à chaque réponse de getWorld, modifié localement entre
+  // deux réponses (calcScore, actions). Pendant un rechargement (données momentanément absentes)
+  // le dernier monde reste affiché.
+  readonly world = linkedSignal<WorldData | null | undefined, WorldData | undefined>({
+    source: () => this.worldQuery.data()?.getWorld,
+    computation: (world, previous) => world ?? previous?.value,
+  });
+
+  private readonly acheterQtProduit = this.apollo.signal.mutation(ACHETER_QT_PRODUIT_MUTATION, {
+    fetchPolicy: 'no-cache',
+  });
   private readonly lancerProductionProduit = this.apollo.signal.mutation(
     LANCER_PRODUCTION_PRODUIT_MUTATION,
     { fetchPolicy: 'no-cache' },
   );
-  private readonly engagerManager = this.apollo.signal.mutation(
-    ENGAGER_MANAGER_MUTATION,
-    { fetchPolicy: 'no-cache' },
-  );
-  private readonly basculerManager = this.apollo.signal.mutation(
-    BASCULER_MANAGER_MUTATION,
-    { fetchPolicy: 'no-cache' },
-  );
+  private readonly engagerManager = this.apollo.signal.mutation(ENGAGER_MANAGER_MUTATION, {
+    fetchPolicy: 'no-cache',
+  });
   private readonly acheterCashUpgrade = this.apollo.signal.mutation(
     ACHETER_CASH_UPGRADE_MUTATION,
     { fetchPolicy: 'no-cache' },
@@ -156,81 +140,62 @@ export class GameService {
     ACHETER_ANGEL_UPGRADE_MUTATION,
     { fetchPolicy: 'no-cache' },
   );
-  private readonly resetWorldMutation = this.apollo.signal.mutation(
-    RESET_WORLD_MUTATION,
-    { fetchPolicy: 'no-cache' },
-  );
+  private readonly resetWorldMutation = this.apollo.signal.mutation(RESET_WORLD_MUTATION, {
+    fetchPolicy: 'no-cache',
+  });
+
+  // Instant du dernier passage de calcScore (performance.now, F-11).
+  private lastTick = performance.now();
 
   constructor() {
-    // Toute réponse getWorld remplace l'état local ; une réponse vide (chargement, changement
-    // d'utilisateur) conserve le dernier monde affiché.
-    effect(() => {
-      const world = this.worldQuery.data()?.getWorld;
-      if (world) {
-        this.world.set(world);
-      }
-    });
+    // Pseudo initial (F-23) : mémorisé, migré ou Captain<n>, posé dans le formulaire et validé
+    // d'emblée (mémorisé aussi, pour retrouver la même partie au rechargement).
+    const username = readStoredUsername();
+    this.loginForm.name().value.set(username);
+    this.user.set(username);
+    storeUsername(username);
 
-    // Échec de getWorld (backend arrêté, user inconnu…) → bandeau ; le poll continue.
+    // Échec de getWorld (backend arrêté…) → message éphémère.
     effect(() => {
       const error = this.worldQuery.error();
       if (error) {
-        this.errorMessage.set(errorText(error));
+        this.snackmessage.set(`Erreur de chargement du monde : ${errorText(error)}`);
       }
     });
 
     effect(() => {
-      const user = this.user();
+      const display = this.display();
       try {
-        localStorage.setItem(USER_STORAGE_KEY, user);
+        localStorage.setItem(DISPLAY_STORAGE_KEY, JSON.stringify(display));
       } catch {
-        // localStorage indisponible (navigation privée…) : la valeur ne survit pas au rechargement.
-      }
-      if (!user) {
-        this.errorMessage.set(USER_REQUIRED_MESSAGE);
+        // localStorage indisponible : les réglages ne survivent pas au rechargement.
       }
     });
 
-    effect(() => {
-      const tab = this.activeTab();
-      try {
-        localStorage.setItem(TAB_STORAGE_KEY, tab);
-      } catch {
-        // localStorage indisponible : l'onglet ne survit pas au rechargement, sans erreur.
-      }
-    });
-
-    effect(() => storeFlag(SCANLINES_STORAGE_KEY, this.scanlines()));
-    effect(() => storeFlag(GLOW_STORAGE_KEY, this.glow()));
-    effect(() => storeFlag(FLICKER_STORAGE_KEY, this.flicker()));
-
-    // Timer local : n'anime que timeleft (D15). L'écart réel entre deux ticks est mesuré plutôt
-    // que supposé égal à 100 ms (onglet en arrière-plan, GC…).
-    let last = Date.now();
-    const timer = setInterval(() => {
-      const now = Date.now();
-      this.tick(now - last);
-      last = now;
-    }, TICK_INTERVAL_MS);
+    // Boucle principale (F-11) : toutes les 100 ms, l'écart réel est mesuré (onglet en
+    // arrière-plan, GC…) plutôt que supposé.
+    const timer = setInterval(() => this.calcScore(), TICK_INTERVAL_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
-  // Décrémente timeleft des productions en cours. Sans manager : borné à 0 (le serveur créditera
-  // la production au prochain getWorld). Avec manager : la barre repart de vitesse.
-  // Ne touche ni money ni score : le serveur les crédite, sinon double comptage au refetch.
-  tick(elapsedMs: number): void {
+  // Évolution du monde depuis le passage précédent (F-11) : même calcul que updateWorld du
+  // serveur (advanceProduction) ; chaque production terminée est créditée par productionDone.
+  calcScore(now: number = performance.now()): void {
+    const elapsed = now - this.lastTick;
+    this.lastTick = now;
     const world = this.world();
-    if (!world || elapsedMs <= 0) {
+    if (!world || elapsed <= 0) {
       return;
     }
+    const done: [ProductData, number][] = [];
     let changed = false;
     const products = world.products.map((p) => {
-      if (p.timeleft <= 0) {
-        return p;
+      const { timeleft, produced } = advanceProduction(p, elapsed);
+      if (produced > 0) {
+        done.push([p, produced]);
       }
-      let timeleft = p.timeleft - elapsedMs;
-      if (timeleft <= 0) {
-        timeleft = p.managerUnlocked ? p.vitesse - (-timeleft % p.vitesse) : 0;
+      if (timeleft === p.timeleft) {
+        return p;
       }
       changed = true;
       return { ...p, timeleft };
@@ -238,83 +203,171 @@ export class GameService {
     if (changed) {
       this.world.set({ ...world, products });
     }
+    for (const [product, qt] of done) {
+      this.productionDone(product, qt);
+    }
   }
 
-  clearError(): void {
-    this.errorMessage.set(null);
+  // `qt` productions de `prod` terminées (F-12) : argent ET score augmentés du gain, bonus des
+  // anges compris (F-30).
+  productionDone(prod: ProductData, qt: number): void {
+    this.world.update((world) => {
+      if (!world) return world;
+      const gain = productionGain(world, prod) * qt;
+      return { ...world, money: world.money + gain, score: world.score + gain };
+    });
   }
 
-  // Clic sur un onglet de la barre : il devient actif (re-clic sur l'actif : rien ne change).
-  selectTab(tab: Tab): void {
-    this.activeTab.set(tab);
-  }
-
-  // `quantite` vient de ProductCard : en mode 'max' seule la carte connaît la quantité payable.
-  buy(id: number, quantite: number): Promise<void> {
-    return this.run((user) =>
-      this.acheterQtProduit.mutate({ variables: { user, id, quantite } }),
+  // Clic sur l'icône d'un produit (F-10, F-17) : lance une production si le produit a au moins
+  // un exemplaire, n'est pas automatisé et n'est pas déjà en production.
+  startProduction(product: ProductData): void {
+    const world = this.world();
+    const current = world?.products.find((p) => p.id === product.id);
+    if (!world || !current || current.quantite === 0 || current.managerUnlocked || current.timeleft > 0) {
+      return;
+    }
+    this.world.set(replaceProduct(world, current.id, (p) => ({ ...p, timeleft: p.vitesse })));
+    void this.send('le lancement de la production', (user) =>
+      this.lancerProductionProduit.mutate({ variables: { user, id: current.id } }),
     );
   }
 
-  launch(id: number): Promise<void> {
-    return this.run((user) =>
-      this.lancerProductionProduit.mutate({ variables: { user, id } }),
+  // Achat de `qt` exemplaires (F-15) : quantité, coût du prochain exemplaire et argent mis à jour,
+  // unlocks du produit puis allunlocks appliqués (F-26), message éphémère, mutation.
+  buyProduct(qt: number, product: ProductData): void {
+    const world = this.world();
+    const current = world?.products.find((p) => p.id === product.id);
+    if (!world || !current || qt <= 0) {
+      return;
+    }
+    const cost = buyCost(current, qt);
+    if (cost > world.money) {
+      return;
+    }
+    const bought = replaceProduct({ ...world, money: world.money - cost }, current.id, (p) => ({
+      ...p,
+      quantite: p.quantite + qt,
+      cout: p.cout * Math.pow(p.croissance, qt),
+    }));
+    const { world: next, unlocked } = applyUnlocks(bought, current.id);
+    this.world.set(next);
+    if (unlocked.length > 0) {
+      const list = unlocked.map((p) => `${p.name} (${bonusLabel(p)})`).join(', ');
+      this.snackmessage.set(`Palier${unlocked.length > 1 ? 's' : ''} débloqué${unlocked.length > 1 ? 's' : ''} : ${list}`);
+    }
+    void this.send("l'achat du produit", (user) =>
+      this.acheterQtProduit.mutate({ variables: { user, id: current.id, quantite: qt } }),
     );
   }
 
-  hireManager(name: string): Promise<void> {
-    return this.run((user) =>
-      this.engagerManager.mutate({ variables: { user, name } }),
+  // Engagement d'un manager (F-19, F-22) : argent vérifié puis débité, manager et produit
+  // débloqués, production lancée immédiatement si le produit était au repos.
+  hireManager(manager: PalierData): void {
+    const world = this.world();
+    const current = world?.managers.find((m) => m.name === manager.name);
+    if (!world || !current || current.unlocked || world.money < current.seuil) {
+      return;
+    }
+    const hired: WorldData = {
+      ...world,
+      money: world.money - current.seuil,
+      managers: world.managers.map((m) => (m === current ? { ...m, unlocked: true } : m)),
+    };
+    this.world.set(
+      replaceProduct(hired, current.idcible, (p) => ({
+        ...p,
+        managerUnlocked: true,
+        timeleft: p.timeleft > 0 ? p.timeleft : p.vitesse,
+      })),
+    );
+    const product = world.products.find((p) => p.id === current.idcible);
+    this.snackmessage.set(`${current.name} engagé : ${product?.name ?? 'le produit'} est automatisé`);
+    void this.send("l'engagement du manager", (user) =>
+      this.engagerManager.mutate({ variables: { user, name: current.name } }),
     );
   }
 
-  // Pause / reprise de l'automatisation d'un manager engagé (D20). Le timer local n'est pas
-  // touché : le getWorld qui suit rapporte le nouveau managerUnlocked et tick() s'y conforme.
-  toggleManager(id: number): Promise<void> {
-    return this.run((user) =>
-      this.basculerManager.mutate({ variables: { user, id } }),
+  // Achat d'un cash upgrade (F-28) : payé en argent, bonus appliqué comme un unlock.
+  buyUpgrade(upgrade: PalierData): void {
+    const world = this.world();
+    const current = world?.upgrades.find((u) => u.name === upgrade.name);
+    if (!world || !current || current.unlocked || world.money < current.seuil) {
+      return;
+    }
+    const bought: WorldData = {
+      ...world,
+      money: world.money - current.seuil,
+      upgrades: world.upgrades.map((u) => (u === current ? { ...u, unlocked: true } : u)),
+    };
+    this.world.set(applyBonus(bought, current));
+    this.snackmessage.set(`Upgrade acheté : ${current.name} (${bonusLabel(current)})`);
+    void this.send("l'achat de l'upgrade", (user) =>
+      this.acheterCashUpgrade.mutate({ variables: { user, name: current.name } }),
     );
   }
 
-  buyUpgrade(name: string): Promise<void> {
-    return this.run((user) =>
-      this.acheterCashUpgrade.mutate({ variables: { user, name } }),
+  // Achat d'un angel upgrade (F-32) : payé en anges actifs (perdus), type `ange` → angelbonus,
+  // sinon gain / vitesse comme un unlock.
+  buyAngelUpgrade(upgrade: PalierData): void {
+    const world = this.world();
+    const current = world?.angelupgrades.find((u) => u.name === upgrade.name);
+    if (!world || !current || current.unlocked || world.activeangels < current.seuil) {
+      return;
+    }
+    const bought: WorldData = {
+      ...world,
+      activeangels: world.activeangels - current.seuil,
+      angelupgrades: world.angelupgrades.map((u) => (u === current ? { ...u, unlocked: true } : u)),
+    };
+    this.world.set(applyBonus(bought, current));
+    this.snackmessage.set(`Angel upgrade acheté : ${current.name} (${bonusLabel(current)})`);
+    void this.send("l'achat de l'angel upgrade", (user) =>
+      this.acheterAngelUpgrade.mutate({ variables: { user, name: current.name } }),
     );
   }
 
-  buyAngelUpgrade(name: string): Promise<void> {
-    return this.run((user) =>
-      this.acheterAngelUpgrade.mutate({ variables: { user, name } }),
-    );
+  // Reset (F-29) : mutation resetWorld, puis rechargement du monde remis à zéro par le serveur.
+  async reset(): Promise<void> {
+    const world = this.world();
+    const earned = world ? angelsEarned(world) : 0;
+    if (await this.send('le reset du monde', (user) => this.resetWorldMutation.mutate({ variables: { user } }))) {
+      this.snackmessage.set(`Monde remis à zéro : ${earned} ange(s) gagné(s)`);
+      this.refreshWorld();
+    }
   }
 
-  reset(): Promise<void> {
-    return this.run((user) =>
-      this.resetWorldMutation.mutate({ variables: { user } }),
-    );
+  // Validation du pseudo par Entrée (F-23) : mémorisé (clé `username`), la partie bascule sur ce
+  // joueur. Pseudo vide ignoré (le serveur exige un user).
+  commitName(): void {
+    const field = this.loginForm.name().value().trim();
+    if (!field) {
+      return;
+    }
+    storeUsername(field);
+    this.user.set(field);
   }
 
-  // Schéma commun des 7 mutations : succès → bandeau effacé ; échec → message serveur brut ;
-  // dans les deux cas refetch de getWorld (le serveur applique updateWorld à chaque appel :
-  // c'est ainsi que l'argent produit est crédité, et l'affichage reste aligné même après une
-  // erreur). Sans utilisateur, rien n'est envoyé.
-  private async run(mutation: (user: string) => Promise<unknown>): Promise<void> {
+  // Bouton Refresh (F-24) : relit le monde sur le serveur. Une erreur réseau est déjà signalée
+  // par l'effet sur worldQuery.error().
+  refreshWorld(): void {
+    this.worldQuery.refetch().catch(() => undefined);
+  }
+
+  // Transmission d'une action au serveur : échec → message éphémère avec le texte du serveur
+  // (F-16, F-20) et rechargement du monde, puisque le monde local a divergé. Sans pseudo, rien
+  // n'est envoyé. Retourne true si le serveur a accepté.
+  private async send(action: string, mutation: (user: string) => Promise<unknown>): Promise<boolean> {
     const user = this.user();
     if (!user) {
-      this.errorMessage.set(USER_REQUIRED_MESSAGE);
-      return;
+      return false;
     }
     try {
       await mutation(user);
-      this.errorMessage.set(null);
+      return true;
     } catch (error) {
-      this.errorMessage.set(errorText(error));
-    } finally {
-      try {
-        await this.worldQuery.refetch();
-      } catch (error) {
-        this.errorMessage.set(errorText(error));
-      }
+      this.snackmessage.set(`Erreur de transmission serveur pour ${action} : ${errorText(error)}`);
+      this.refreshWorld();
+      return false;
     }
   }
 }

@@ -1,62 +1,43 @@
 <mat-card class="product" appearance="outlined">
-  <!-- En-tête maison (D25) : mat-card-header ne projette que title / subtitle dans sa colonne de
-       texte, la barre d'achat n'aurait pas pu se placer sous le nom. Les directives matCardAvatar
-       et mat-card-title gardent la typographie du thème. -->
-  <div class="product-header">
-    <img matCardAvatar class="icon" [src]="iconUrl()" [alt]="product().name" />
-    <div class="product-heading">
+  <div class="product-layout">
+    <!-- Partie gauche (F-07) : image du produit, quantité superposée en bas ; un clic lance la
+         production (F-10). Grisée sans exemplaire ; un produit automatisé ne se clique plus. -->
+    <div class="product-visual" [class.empty]="product().quantite === 0">
+      <button
+        type="button"
+        class="icon-button"
+        [disabled]="!canProduce()"
+        [attr.aria-label]="'Produire ' + product().name"
+        (click)="startFabrication()"
+      >
+        <app-game-icon class="icon" [candidates]="[product().logo]" [alt]="product().name" [pixelIcons]="pixelIcons()" />
+      </button>
+      <span class="quantite" aria-label="Exemplaires possédés">{{ product().quantite }}</span>
+    </div>
+
+    <!-- Partie droite : nom, barre de production avec le gain, achat + temps restant. -->
+    <div class="product-right">
       <div class="product-title-row">
         <mat-card-title>{{ product().name }}</mat-card-title>
-        @if (managerOwned()) {
-          <!-- Texte constant : la pause se lit sur le bouton Reprendre (D30). -->
-          <mat-chip-set class="manager" aria-label="Manager engagé">
+        @if (product().managerUnlocked) {
+          <mat-chip-set class="manager" aria-label="Production automatisée">
             <mat-chip>manager</mat-chip>
           </mat-chip-set>
         }
       </div>
 
-      <!-- Barre d'achat : exemplaires possédés vers le seuil du prochain palier verrouillé (D23),
-           quantité seule quand tout est débloqué ; texte centré dans la barre (D25). Mise à jour
-           à la réception du monde (D14). -->
-      <div class="product-owned">
-        <mat-progress-bar
-          mode="determinate"
-          [value]="ownedProgress()"
-          aria-label="Progression vers le prochain palier"
-        />
-        <span class="bar-label">
-          @if (nextPalier(); as next) {
-            {{ product().quantite }} / {{ next.seuil }}
-          } @else {
-            {{ product().quantite }}
-          }
-        </span>
+      <div class="product-gain">
+        <mat-progress-bar mode="determinate" [value]="progress()" aria-label="Production en cours" />
+        <span class="bar-label" [innerHTML]="gain() | bigvalue"></span>
+      </div>
+
+      <div class="product-buy">
+        <!-- Quantité achetée et coût (F-07, F-14) ; désactivé si le joueur ne peut pas payer. -->
+        <button matButton="filled" class="buy" type="button" [disabled]="!canBuy()" (click)="buy.emit(numberToBuy())">
+          x{{ numberToBuy() }} — <span [innerHTML]="cost() | bigvalue"></span>
+        </button>
+        <span class="product-timer" role="timer" aria-label="Temps restant">{{ remaining() | second }}</span>
       </div>
     </div>
   </div>
-
-  <mat-card-content>
-    <!-- Barre de production avec le gain d'une production centré dedans (même technique que la
-         barre d'achat, D25), et à sa droite le chrono encadré : temps restant, ou durée d'un
-         cycle au repos (D28). Le chrono suit le timer 100 ms de GameService (D15). -->
-    <div class="product-progress">
-      <div class="product-gain">
-        <mat-progress-bar mode="determinate" [value]="progress()" aria-label="Production en cours" />
-        <span class="bar-label">{{ fmt(gain()) }}</span>
-      </div>
-      <span class="product-timer" role="timer" aria-label="Temps restant">{{ remainingLabel() }}</span>
-    </div>
-  </mat-card-content>
-
-  <mat-card-actions>
-    <!-- Produire (production manuelle) ou Arrêter / Reprendre l'automatisation (D20) : sans coût,
-         désactivé sans exemplaire du produit (D21). -->
-    <button matButton type="button" [disabled]="!canProduce()" (click)="onProductionClick()">
-      {{ productionLabel() }}
-    </button>
-    <!-- Désactivé faute d'argent (D17) ; .buy le colle au bord droit (D26). -->
-    <button matButton="filled" class="buy" type="button" [disabled]="!canBuy()" (click)="buy.emit(quantity())">
-      Acheter x{{ quantity() }} — {{ fmt(cost()) }}
-    </button>
-  </mat-card-actions>
 </mat-card>

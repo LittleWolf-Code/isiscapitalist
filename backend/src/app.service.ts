@@ -9,8 +9,13 @@ import { updateWorld } from './world-engine.js';
 export class AppService {
   // Chemin du fichier JSON d'un utilisateur : backend/userworlds/<user>-world.json
   // (process.cwd() et non __dirname : le backend est en ESM, voir docs/DECISIONS.md D2).
+  // Le pseudo est libre (n'importe quelle chaîne GraphQL) : il est ENCODÉ avant de devenir un nom
+  // de fichier (D36). encodeURIComponent échappe `/`, `\` et `:`, donc « ../x » ne peut plus
+  // sortir de userworlds/ ; `*` (interdit sous Windows) est échappé en plus. Lettres, chiffres,
+  // `-`, `_` et `.` restent tels quels : les fichiers existants (lucas, test-9-10…) gardent leur nom.
   private worldPath(user: string): string {
-    return path.join(process.cwd(), 'userworlds', user + '-world.json');
+    const safe = encodeURIComponent(user).replace(/\*/g, '%2A');
+    return path.join(process.cwd(), 'userworlds', safe + '-world.json');
   }
 
   // Lit le monde d'un utilisateur. Fichier absent, illisible ou JSON corrompu :
@@ -57,11 +62,5 @@ export class AppService {
       throw new Error(`Le manager ${name} n'existe pas`);
     }
     return manager;
-  }
-
-  // Manager possédé pour ce produit : palier de world.managers ciblant le produit et acheté.
-  // Distinct de product.managerUnlocked (automatisation active), qui peut être en pause (D20).
-  hasManager(world: World, product: Product): boolean {
-    return world.managers.some((m) => m.idcible === product.id && m.unlocked);
   }
 }

@@ -13,3 +13,6 @@ img {
   height: 100%;
   object-fit: contain;
 }
+/* Rendu Pip-Boy (D35) : la data URL 96 × 96 est agrandie sans lissage — nette en 32 / 64 px, et
+   les pixels se voient au-delà, c'est le but. */
+img.pixel { image-rendering: pixelated; }
