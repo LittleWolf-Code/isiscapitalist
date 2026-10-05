@@ -8,6 +8,7 @@
 // Le contenu (produits, listes, Investors, Paramètres) est écrit une fois dans des ng-template et
 // placé dans une fenêtre ou dans un écran. Messages éphémères en snack-bar (F-20). Toute la
 // logique de jeu est dans GameService.
+import { OverlayContainer } from '@angular/cdk/overlay';
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
@@ -27,6 +28,7 @@ import { GameService, Multiplier } from './game.service';
 import { Modal } from './modal';
 import { PalierList } from './palier-list';
 import { ProductCard } from './product-card';
+import { DEFAULT_SERVER } from './server';
 import { SettingsPanel } from './settings-panel';
 import { Tab, TabBar, TAB_STORAGE_KEY, readStoredTab } from './tab-bar';
 import { UnlockList } from './unlock-list';
@@ -98,6 +100,8 @@ export class App {
   protected readonly world = this.game.world;
   protected readonly menu = MENU;
   protected readonly qtCycle = QT_CYCLE;
+  // Adresse rendue par le bouton « Défaut » de Paramètres (D41).
+  protected readonly defaultServer = DEFAULT_SERVER;
 
   // Disposition choisie dans Paramètres (D37).
   readonly layout = computed(() => this.game.display().layout);
@@ -141,6 +145,14 @@ export class App {
       if (message) {
         this.snackBar.open(message, 'ok', { duration: 2000 });
       }
+    });
+
+    // Teinte des overlays (D41) : MatSnackBar rend dans .cdk-overlay-container, enfant de <body>
+    // et donc hors du filtre posé sur <app-root> ; le conteneur reçoit le même data-tint, et
+    // styles.css applique le même filtre à chacun de ses .cdk-overlay-pane.
+    const overlayContainer = inject(OverlayContainer).getContainerElement();
+    effect(() => {
+      overlayContainer.setAttribute('data-tint', this.game.display().tint);
     });
 
     effect(() => {

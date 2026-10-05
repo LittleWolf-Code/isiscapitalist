@@ -10,12 +10,13 @@
         [attr.aria-label]="'Produire ' + product().name"
         (click)="startFabrication()"
       >
-        <app-game-icon class="icon" [candidates]="[product().logo]" [alt]="product().name" [pixelIcons]="pixelIcons()" />
+        <app-game-icon class="icon" [candidates]="iconCandidates()" [alt]="product().name" [pixelIcons]="pixelIcons()" />
       </button>
       <span class="quantite" aria-label="Exemplaires possédés">{{ product().quantite }}</span>
     </div>
 
-    <!-- Partie droite : nom, barre de production avec le gain, achat + temps restant. -->
+    <!-- Partie droite : nom, dernier palier, barre de production avec le gain, achat + temps
+         restant. -->
     <div class="product-right">
       <div class="product-title-row">
         <mat-card-title>{{ product().name }}</mat-card-title>
@@ -25,6 +26,9 @@
           </mat-chip-set>
         }
       </div>
+      <!-- Dernier palier atteint (D40) ; la ligne garde sa hauteur même vide, pour que les cartes
+           d'une même rangée restent alignées. -->
+      <mat-card-subtitle class="palier">{{ lastPalier()?.name }}</mat-card-subtitle>
 
       <div class="product-gain">
         <mat-progress-bar mode="determinate" [value]="progress()" aria-label="Production en cours" />

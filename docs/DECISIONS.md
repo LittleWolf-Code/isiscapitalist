@@ -1200,3 +1200,84 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
   et images jusqu'à leur prochain reset. Tests backend inchangés et verts (86 + 10), les noms y
   étant lus dans `origworld`.
 
+
+## D39 — Mise en ligne sur le VPS : https://capitalist.lucaslopvet.fr
+
+- **Contexte** : l'utilisateur a demandé de déployer l'application sur son VPS (Ubuntu 25.04,
+  alias SSH `MonServeurAntigravity`, `152.228.129.169`), qui héberge déjà d'autres sites derrière
+  Nginx + certbot, avec ufw (seuls 22, 80 et 443 ouverts) et Node 24.
+- **Décision** : un seul domaine. Nginx sert le build Angular (`/opt/isiscapitalist/frontend`)
+  et relaie `/graphql` et `/icones/` au backend NestJS, lancé par le service systemd
+  `isiscapitalist` (utilisateur système `capitalist`, `127.0.0.1:3200` côté Nginx, port fermé
+  par ufw, `NODE_ENV=production`, écriture limitée à `userworlds/` et `src/` par
+  `ProtectSystem=strict`). Certificat Let's Encrypt (`certbot certonly --nginx`, renouvellement par
+  `certbot.timer`), HTTP redirigé vers HTTPS. Pas de Docker ni de PM2 : un seul processus Node,
+  systemd suffit.
+- **Frontend** : `SERVER` (`server.ts`) vaut `http://localhost:3000/` en mode dev (`ng serve`,
+  tests) et l'origine de la page dans le build de production (`isDevMode()`). Le front parle donc
+  à son propre hôte : ni CORS, ni canvas « tainted » pour les icônes Pip-Boy (D35). Pour jouer sur
+  le monde d'un autre groupe (F-34), `server.ts` reste le seul endroit à modifier.
+- **Déploiement** : `deploy/deploy.sh` (Git Bash) compile les deux applications, envoie une
+  archive par SSH et lance `deploy/remote-install.sh` sur le serveur. Celui-ci remplace le code
+  (rsync `--delete`) sans toucher à `userworlds/` ni à `node_modules/`, fait `npm ci --omit=dev`,
+  installe le service et le site Nginx (`deploy/*.service`, `deploy/*.conf`, versionnés), puis
+  redémarre. Sous Windows, il utilise le `ssh.exe` du système, seul à passer par le service
+  `ssh-agent` qui garde la clé (protégée par passphrase) déverrouillée. `.gitattributes` force LF
+  sur `deploy/` et les `*.sh` (`core.autocrlf=true` sur le poste).
+- **Conséquences** : avec `NODE_ENV=production`, Apollo désactive l'introspection et la sandbox
+  sur `/graphql` en ligne ; le playground reste celui de `npm run start:dev` en local. Les mondes
+  des joueurs en ligne vivent dans `/opt/isiscapitalist/backend/userworlds/` (non sauvegardés).
+
+## D40 — Achats barrés en fin de liste, dernier palier sur la carte produit
+
+- **Contexte** : retours du joueur (étape 10.8, prompt `docs/prompts/settings-server-purchased-paliers-snack-tint.md`).
+  Un manager engagé ou un upgrade acheté disparaissait de sa fenêtre, comme le demande le sujet
+  (F-18, F-25, F-27, F-31 : lister ce qui n'est **pas encore** débloqué) ; le joueur veut garder
+  la trace de ses achats. Il veut aussi voir sur la carte d'un produit le palier qu'il a atteint.
+- **Décision** : `PalierList` affiche d'abord les paliers non débloqués (inchangés : ordre du
+  monde, bouton actif si le solde suffit), puis les débloqués, dans l'ordre du monde, en lignes
+  `.done` atténuées et barrées, avec à la place du bouton une mention texte (`doneLabel` :
+  « Engagé », « Acheté », « Atteint ») — le barré seul ne serait pas annoncé par un lecteur
+  d'écran. `emptyText` passe au-dessus du tableau barré quand tout est débloqué. Les badges ne
+  comptent toujours que l'achetable ; `UnlockList` (prochain palier de chaque produit) ne change
+  pas. `ProductCard` montre le dernier palier atteint (plus grand seuil débloqué de
+  `product.paliers`) en sous-titre et met son image en tête des candidats de l'icône, avec repli
+  sur l'image du produit ; la ligne du sous-titre est réservée même vide, pour aligner les cartes.
+- **Écart assumé avec le sujet** : la partie « non débloqués » de chaque fenêtre reste conforme ;
+  les éléments débloqués viennent en plus, après, et ne sont pas sélectionnables. Comme Cookie
+  Clicker, et contrairement à AdVenture Capitalist qui les retire.
+- **Conséquences** : 6 paliers seulement ont une image propre (Nuka-Cola Classic et Quantum,
+  Gunslinger, Fat Man, Ogive MIRV, Missile nucléaire) ; pour les autres, seul le sous-titre change.
+  Les allunlocks ne changent pas les cartes. Après un reset, la carte revient au produit.
+
+## D41 — Adresse du serveur modifiable dans Paramètres, teinte des overlays
+
+- **Contexte** : F-34 demande de pouvoir jouer sur le monde d'un autre groupe en changeant
+  l'adresse du serveur ; il fallait jusqu'ici modifier `server.ts` et recompiler. Les
+  notifications (snack-bar) restaient vertes quelle que soit la teinte choisie (D34).
+- **Décision (serveur)** : cadre « Serveur » dans `SettingsPanel`, séparé des réglages
+  d'affichage (« Réinitialiser les réglages » ne le touche pas). Saisie validée par Entrée ou
+  « Appliquer » via `normalizeServerUrl` (`server.ts`, fonction pure : http(s) uniquement,
+  origine + chemin terminé par « / », requête et ancre ignorées), sinon message d'erreur en
+  `mat-hint` (`mat-error` exige un contrôle de formulaire). `GameService.setServer` met à jour
+  `SERVER`, mémorise l'adresse sous `isiscapitalist.server` (l'adresse par défaut efface la clé),
+  affiche « Serveur : … » et relance `getWorld`. « Défaut » revient à `DEFAULT_SERVER`. L'endpoint
+  Apollo devient `uri: () => SERVER() + 'graphql'`, fonction évaluée à chaque opération : sans
+  elle, la chaîne calculée au démarrage ignorait tout changement. Un `mat-hint` prévient,
+  sans bloquer, qu'une page https peut voir un serveur http bloqué par le navigateur (contenu mixte).
+- **Décision (teinte)** : `App` pose `data-tint` sur `OverlayContainer.getContainerElement()`
+  (le conteneur est un enfant de `<body>`, hors du filtre de `app-root`) et `styles.css` applique
+  le filtre de la teinte à chaque `.cdk-overlay-pane`. Pas sur le conteneur lui-même : la CDK
+  d'Angular 22 place ses overlays dans un `div.cdk-overlay-popover[popover]` de la top layer du
+  navigateur, que le filtre d'un ancêtre n'atteint pas (constaté dans Chrome ; jsdom ne le
+  reproduit pas). Pas de `panelClass` non plus : il ne suivrait pas un changement de teinte
+  pendant qu'une notification est ouverte.
+- **Conséquences** : un serveur injoignable est signalé par le message existant « Erreur de
+  chargement du monde » ; le dernier monde reste affiché jusqu'à correction ou « Défaut ». Un
+  serveur sans CORS sur `/icones` donne des icônes en couleur (repli D35). Les effets CRT
+  (scanlines, halo…) ne s'appliquent pas aux notifications, seule la teinte.
+- **À savoir (onglets, même étape)** : `material-theme.scss` relève les tokens `-size` du thème
+  (title-medium 1,35 rem…) mais les raccourcis `var(--mat-sys-title-medium)` gardent la taille
+  Material par défaut (1 rem). La barre d'onglets utilise donc les tokens séparés ; ses libellés
+  passent de 14 px (raccourci `label-large`) à 21,6 px, et la pagination apparaît sous ~650 px
+  au lieu de ~500 px. Les autres `font: var(--mat-sys-…)` du projet ont le même décalage.

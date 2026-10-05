@@ -180,11 +180,15 @@ app-root.crt-noise .crt-overlay::after {
 /* Teinte du phosphore : un filtre sur tout l'écran (texte, cadres, icônes teintées, overlays).
    Vert = aucune règle : le défaut ne coûte aucun recompositing par tick. app-root reçoit le
    fond de la surface (identique à body) pour que le filtre couvre aussi le vide de l'écran.
-   Vert #1aff80 = teinte 146° : ambre ≈ 41°, bleu ≈ 216°. */
+   Vert #1aff80 = teinte 146° : ambre ≈ 41°, bleu ≈ 216°.
+   Overlays CDK (snack-bar, D41) : hors de app-root, leur conteneur porte le même data-tint
+   (App). Le filtre va sur chaque .cdk-overlay-pane et non sur le conteneur : la CDK place ses
+   overlays dans un [popover] de la top layer du navigateur, que le filtre d'un ancêtre
+   n'atteint pas. Aucun fond non plus : un overlay ne doit pas masquer le jeu. */
 app-root:not([data-tint='green']) { background: var(--mat-sys-surface); }
-app-root[data-tint='amber'] { filter: hue-rotate(-105deg); }
-app-root[data-tint='blue'] { filter: hue-rotate(70deg); }
-app-root[data-tint='white'] { filter: saturate(0) brightness(1.25); }
+app-root[data-tint='amber'], .cdk-overlay-container[data-tint='amber'] .cdk-overlay-pane { filter: hue-rotate(-105deg); }
+app-root[data-tint='blue'], .cdk-overlay-container[data-tint='blue'] .cdk-overlay-pane { filter: hue-rotate(70deg); }
+app-root[data-tint='white'], .cdk-overlay-container[data-tint='white'] .cdk-overlay-pane { filter: saturate(0) brightness(1.25); }
 
 /* Onglet actif encadré, en plus de la barre d'encre Material (disposition « onglets »). Lien
    créé par mat-tab-link, hors encapsulation : règle globale. */

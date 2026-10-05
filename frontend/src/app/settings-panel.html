@@ -86,4 +86,35 @@
 
     <button matButton="outlined" class="reset" type="button" (click)="reset()">Réinitialiser les réglages</button>
   </div>
+
+  <!-- Adresse du backend (F-34, D41), dans son propre cadre : « Réinitialiser les réglages » ne
+       la touche pas. Validée par Entrée ou « Appliquer » ; « Défaut » revient à server.ts. Les
+       messages passent par mat-hint : mat-error ne s'affiche qu'avec un contrôle de formulaire. -->
+  <div class="settings-list server-settings pip-frame">
+    <h3 class="section-title">Serveur</h3>
+    <mat-form-field class="server-field" subscriptSizing="dynamic">
+      <mat-label>Adresse du serveur</mat-label>
+      <input
+        matInput
+        type="url"
+        name="server"
+        autocomplete="url"
+        spellcheck="false"
+        [value]="serverDraft()"
+        (input)="onServerInput($any($event.target).value)"
+        (keydown.enter)="applyServer()"
+      />
+      @if (serverError(); as error) {
+        <mat-hint class="server-error" role="alert">{{ error }}</mat-hint>
+      } @else if (mixedContent()) {
+        <mat-hint class="server-warning">{{ mixedContentHint }}</mat-hint>
+      }
+    </mat-form-field>
+    <div class="server-actions">
+      <button matButton="filled" class="apply-server" type="button" [disabled]="!canApply()" (click)="applyServer()">
+        Appliquer
+      </button>
+      <button matButton="outlined" class="default-server" type="button" (click)="resetServer()">Défaut</button>
+    </div>
+  </div>
 </section>

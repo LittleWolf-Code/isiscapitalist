@@ -61,6 +61,20 @@ resolver ; les règles sont en fonctions pures dans `world-engine.ts` (D10), tes
 - `App` : en-tête, bandeau gauche de boutons badgés, produits, fenêtres `Modal` ; les autres
   composants sont présentationnels (input / output). Détail des fichiers : `frontend/CLAUDE.md`.
 
+## Production (D39)
+
+```
+navigateur ──HTTPS──▶ Nginx (capitalist.lucaslopvet.fr, certificat Let's Encrypt)
+                        ├─ /            → /opt/isiscapitalist/frontend (build Angular)
+                        └─ /graphql, /icones/ → 127.0.0.1:3200 (service systemd isiscapitalist)
+                                                  └─ /opt/isiscapitalist/backend/userworlds/
+```
+
+- Le build de production du front s'adresse à sa propre origine (`server.ts`, `isDevMode()`).
+- `deploy/deploy.sh` compile, envoie et installe ; `deploy/remote-install.sh` (exécuté sur le
+  VPS) ne touche jamais aux mondes des joueurs. Fichiers serveur versionnés : `deploy/*.service`,
+  `deploy/*.conf`.
+
 ## Outils Claude Code
 
 - `.claude/launch.json` : configurations `backend` (port 3000) et `frontend` (port 4200) pour la preview.

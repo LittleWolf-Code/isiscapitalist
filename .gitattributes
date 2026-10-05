@@ -1,0 +1,4 @@
+# Scripts et configs exécutés sur le VPS Linux (deploy/, D39) : toujours en LF, même si
+# core.autocrlf convertit le reste du dépôt sous Windows.
+*.sh text eol=lf
+deploy/** text eol=lf

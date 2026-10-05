@@ -27,3 +27,9 @@
 .level { flex: 1 1 10rem; min-width: 10rem; }
 .hint { margin: 0; font: var(--mat-sys-body-small); color: var(--mat-sys-on-surface-variant); }
 .reset { align-self: flex-start; margin-top: 0.5rem; }
+
+/* Cadre « Serveur » (D41) sous celui de l'affichage. */
+.server-settings { margin-top: 1rem; }
+.server-field { width: 100%; }
+.server-error { color: var(--mat-sys-error); }
+.server-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }

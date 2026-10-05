@@ -30,7 +30,7 @@ import {
   LANCER_PRODUCTION_PRODUIT_MUTATION,
   RESET_WORLD_MUTATION,
 } from './graphql';
-import { SERVER } from './server';
+import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY, normalizeServerUrl } from './server';
 
 export type { PalierData, ProductData, WorldData } from './game-math';
 
@@ -92,7 +92,7 @@ function storeUsername(name: string): void {
 export class GameService {
   private readonly apollo = inject(Apollo);
 
-  // Adresse du backend (server.ts) : images = server() + logo.
+  // Adresse du backend (server.ts) : images = server() + logo ; modifiable par setServer (D41).
   readonly server = SERVER;
   // Pseudo saisi (formulaire signal) et pseudo validé : seul `user` déclenche getWorld.
   readonly UserloginModel = signal<UserLogin>({ name: '' });
@@ -351,6 +351,30 @@ export class GameService {
   // par l'effet sur worldQuery.error().
   refreshWorld(): void {
     this.worldQuery.refetch().catch(() => undefined);
+  }
+
+  // Adresse du serveur choisie dans Paramètres (F-34, D41) : appliquée tout de suite (endpoint
+  // GraphQL et images lisent SERVER), mémorisée (sauf l'adresse par défaut, qui efface la clé),
+  // puis le monde du joueur est relu sur ce serveur. Un serveur injoignable est signalé par
+  // l'effet sur worldQuery.error() ; le dernier monde reste affiché. Adresse invalide ou
+  // inchangée : rien ne se passe.
+  setServer(raw: string): void {
+    const url = normalizeServerUrl(raw);
+    if (url === null || url === this.server()) {
+      return;
+    }
+    this.server.set(url);
+    try {
+      if (url === DEFAULT_SERVER) {
+        localStorage.removeItem(SERVER_STORAGE_KEY);
+      } else {
+        localStorage.setItem(SERVER_STORAGE_KEY, url);
+      }
+    } catch {
+      // localStorage indisponible : l'adresse ne survit pas au rechargement.
+    }
+    this.snackmessage.set(`Serveur : ${url}`);
+    this.refreshWorld();
   }
 
   // Transmission d'une action au serveur : échec → message éphémère avec le texte du serveur

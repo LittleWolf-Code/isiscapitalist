@@ -4,6 +4,7 @@ import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { App } from './app';
 import { DISPLAY_STORAGE_KEY } from './display-settings';
+import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY } from './server';
 import { TAB_STORAGE_KEY } from './tab-bar';
 import { GameService, USERNAME_STORAGE_KEY, WorldData } from './game.service';
 import { makeWorld, stubApollo } from './test-world';
@@ -16,6 +17,7 @@ describe('App (mise en page du sujet, F-04 → F-06)', () => {
     localStorage.setItem(USERNAME_STORAGE_KEY, 'test');
     localStorage.removeItem(DISPLAY_STORAGE_KEY);
     localStorage.removeItem(TAB_STORAGE_KEY);
+    localStorage.removeItem(SERVER_STORAGE_KEY);
     stub = stubApollo();
     await TestBed.configureTestingModule({
       imports: [App],
@@ -25,6 +27,9 @@ describe('App (mise en page du sujet, F-04 → F-06)', () => {
       ],
     }).compileComponents();
   });
+
+  // SERVER est un signal de module : remis à l'adresse par défaut après chaque test.
+  afterEach(() => SERVER.set(DEFAULT_SERVER));
 
   async function render(world?: WorldData) {
     if (world) {
@@ -126,7 +131,9 @@ describe('App (mise en page du sujet, F-04 → F-06)', () => {
     hire.click();
     await fixture.whenStable();
     expect(game.world()!.managers[0].unlocked).toBe(true);
-    expect(Array.from(modal.querySelectorAll('td.name')).map((td) => td.textContent!.trim())).toEqual(['Manager 2']);
+    // Manager engagé : toujours listé, en dernier et barré (D40).
+    expect(Array.from(modal.querySelectorAll('td.name')).map((td) => td.textContent!.trim())).toEqual(['Manager 2', 'Manager 1']);
+    expect(modal.querySelector('tr.done .done-label')?.textContent?.trim()).toBe('Engagé');
     (modal.querySelector('button.closebutton') as HTMLButtonElement).click();
     await fixture.whenStable();
     expect(el.querySelector('app-modal')).toBeNull();
@@ -196,6 +203,36 @@ describe('App (mise en page du sujet, F-04 → F-06)', () => {
     expect(host.classList.contains('crt-scanlines')).toBe(false);
     expect(host.getAttribute('data-tint')).toBe('amber');
     expect(host.getAttribute('style')).toContain('--crt-glow: 1');
+  });
+
+  it('teinte des notifications (D41) : le conteneur des overlays CDK porte le même data-tint', async () => {
+    const { fixture, game } = await render();
+    const container = () => document.querySelector('.cdk-overlay-container');
+    expect(container()?.getAttribute('data-tint')).toBe('green');
+    game.display.update((d) => ({ ...d, tint: 'amber' }));
+    await fixture.whenStable();
+    expect(container()?.getAttribute('data-tint')).toBe('amber');
+    game.display.update((d) => ({ ...d, tint: 'blue' }));
+    await fixture.whenStable();
+    expect(container()?.getAttribute('data-tint')).toBe('blue');
+  });
+
+  it('Paramètres → Serveur : adresse appliquée par GameService.setServer, « Défaut » y revient (D41)', async () => {
+    const { el, fixture, menu, game } = await render();
+    menu('settings').click();
+    await fixture.whenStable();
+    const input = el.querySelector('app-settings-panel .server-field input') as HTMLInputElement;
+    expect(input.value).toBe('http://localhost:3000/');
+    input.value = 'http://localhost:4000';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    await fixture.whenStable();
+    expect(game.server()).toBe('http://localhost:4000/');
+    expect(stub.refetches()).toBe(1);
+    (el.querySelector('app-settings-panel button.default-server') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(game.server()).toBe('http://localhost:3000/');
+    expect(input.value).toBe('http://localhost:3000/');
   });
 
   // Disposition « onglets » (D37) : barre du haut à cases de stats, barre d'onglets en bas.

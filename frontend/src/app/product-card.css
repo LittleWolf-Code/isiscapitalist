@@ -67,6 +67,8 @@
   gap: 0.5rem;
 }
 .manager { margin-left: auto; }
+/* Dernier palier atteint (D40) : une ligne toujours réservée, vide ou non. */
+.palier { margin: 0; min-height: 1lh; }
 
 /* Gain centré dans la barre de production, lisible sur la partie remplie comme sur la piste
    (mix-blend-mode: difference, monochrome D22). */

@@ -1,0 +1,27 @@
+# Backend GraphQL d'ISIS Capitalist sur le VPS (D39), installé par deploy/remote-install.sh dans
+# /etc/systemd/system/. Écoute sur le port 3200, fermé par ufw : seul Nginx (même machine) y accède.
+[Unit]
+Description=ISIS Capitalist - backend GraphQL NestJS (capitalist.lucaslopvet.fr)
+After=network.target
+
+[Service]
+Type=simple
+User=capitalist
+Group=capitalist
+WorkingDirectory=/opt/isiscapitalist/backend
+Environment=NODE_ENV=production
+Environment=PORT=3200
+ExecStart=/usr/bin/node dist/main.js
+Restart=on-failure
+RestartSec=5
+
+# Durcissement : le service n'écrit que les mondes des joueurs (userworlds/) et src/graphql.ts,
+# régénéré par @nestjs/graphql à chaque démarrage.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/isiscapitalist/backend/userworlds /opt/isiscapitalist/backend/src
+
+[Install]
+WantedBy=multi-user.target

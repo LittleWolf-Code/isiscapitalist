@@ -1,7 +1,7 @@
 // Composant « produit » du sujet (F-07) : à gauche l'image avec la quantité superposée, cliquable
-// pour lancer la production (F-10) ; à droite la barre de production avec le gain d'une
-// production, puis le bouton d'achat (quantité et coût) et le temps restant. Purement
-// présentationnel (input / output) : GameService applique les actions.
+// pour lancer la production (F-10) ; à droite le nom, le dernier palier atteint (D40), la barre
+// de production avec le gain d'une production, puis le bouton d'achat (quantité et coût) et le
+// temps restant. Purement présentationnel (input / output) : GameService applique les actions.
 import { Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -10,7 +10,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { BigvaluePipe } from './bigvalue.pipe';
 import { GameIcon } from './game-icon';
 import { buyCost, maxAffordable, productionGain, productionProgress } from './game-math';
-import { Multiplier, ProductData } from './game.service';
+import { Multiplier, PalierData, ProductData } from './game.service';
 import { SecondPipe } from './second.pipe';
 
 @Component({
@@ -69,6 +69,22 @@ export class ProductCard {
   protected readonly remaining = computed(() => {
     const { vitesse, timeleft } = this.product();
     return timeleft > 0 ? timeleft : vitesse;
+  });
+  // Dernier palier atteint du produit (plus grand seuil débloqué, D40) : nom en sous-titre et
+  // image de l'icône. null avant le premier palier, et de nouveau après un reset. Les allunlocks
+  // (communs à tous les produits) n'en font pas partie.
+  protected readonly lastPalier = computed(() =>
+    this.product().paliers.reduce<PalierData | null>(
+      (last, p) => (p.unlocked && (last === null || p.seuil > last.seuil) ? p : last),
+      null,
+    ),
+  );
+  // Image du dernier palier, avec repli sur celle du produit (GameIcon passe au candidat suivant
+  // si une image ne charge pas).
+  protected readonly iconCandidates = computed(() => {
+    const logo = this.product().logo;
+    const palierLogo = this.lastPalier()?.logo;
+    return palierLogo && palierLogo !== logo ? [palierLogo, logo] : [logo];
   });
   // Production manuelle possible : au moins un exemplaire et pas de manager (un produit
   // automatisé produit seul).

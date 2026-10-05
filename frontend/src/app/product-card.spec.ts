@@ -66,6 +66,28 @@ describe('ProductCard (F-07)', () => {
     expect(el.querySelector('.product-visual img')!.classList.contains('pixel')).toBe(false);
   });
 
+  it('dernier palier atteint (D40) : nom en sous-titre, image du palier, repli sur le produit', async () => {
+    const { el, host, fixture, text } = await render();
+    // Comme Nuka-Cola : le 1er palier a sa propre image, le 2e réutilise celle du produit.
+    const paliers = [{ ...item1.paliers[0], logo: 'icones/palier11.png' }, item1.paliers[1]];
+    const at = async (quantite: number, unlocked: readonly boolean[]) => {
+      host.product.set({
+        ...item1,
+        quantite,
+        paliers: paliers.map((p, i) => ({ ...p, unlocked: unlocked[i] })),
+      });
+      await fixture.whenStable();
+      return [text('.palier') ?? '', el.querySelector('.product-visual img')?.getAttribute('src')];
+    };
+    expect(await at(24, [false, false])).toEqual(['', 'http://localhost:3000/icones/item1.png']);
+    expect(await at(25, [true, false])).toEqual(['Unlock 1.1', 'http://localhost:3000/icones/palier11.png']);
+    expect(await at(50, [true, true])).toEqual(['Unlock 1.2', 'http://localhost:3000/icones/item1.png']);
+    // Après un reset, plus aucun palier : retour au produit.
+    expect(await at(1, [false, false])).toEqual(['', 'http://localhost:3000/icones/item1.png']);
+    // La ligne du sous-titre existe même vide (alignement des cartes).
+    expect(el.querySelector('mat-card-subtitle.palier')).not.toBeNull();
+  });
+
   it("clic sur l'icône : émet launch (startFabrication, F-10)", async () => {
     const { icon, host } = await render();
     icon().click();

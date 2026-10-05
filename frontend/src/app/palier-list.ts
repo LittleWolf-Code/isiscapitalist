@@ -1,7 +1,8 @@
 // Liste de paliers d'une fenêtre (managers, cash upgrades, angel upgrades, all unlocks) :
-// purement présentationnelle. Comme le demande le sujet, seuls les paliers NON débloqués sont
-// affichés (F-18, F-25, F-27, F-31) : logo, nom, produit ciblé, effet, coût / seuil et bouton
-// d'action actif seulement si le solde suffit. Sans `actionLabel` la liste est en lecture seule
+// purement présentationnelle. Les paliers NON débloqués viennent d'abord, comme le demande le
+// sujet (F-18, F-25, F-27, F-31) : logo, nom, produit ciblé, effet, coût / seuil et bouton
+// d'action actif seulement si le solde suffit. Les paliers débloqués suivent, barrés, avec la
+// mention `doneLabel` à la place du bouton (D40). Sans `actionLabel` la liste n'a pas de bouton
 // (all unlocks).
 import { Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,12 +26,15 @@ export type CostUnit = '$' | 'anges' | null;
 export class PalierList {
   readonly paliers = input.required<readonly PalierData[]>();
   readonly actionLabel = input<string | null>(null);
+  // Mention d'un palier débloqué (« Engagé », « Acheté », « Atteint ») : le barré seul ne serait
+  // pas annoncé par un lecteur d'écran.
+  readonly doneLabel = input<string | null>(null);
   readonly costUnit = input<CostUnit>(null);
   // Solde disponible dans l'unité de costUnit (money ou activeangels) ; null = pas de bouton.
   readonly balance = input<number | null>(null);
   // Colonne « effet » : sans objet pour un manager (ratio / typeratio non utilisés, RG-12).
   readonly showEffect = input(true);
-  // Message affiché quand tout est débloqué.
+  // Message affiché (au-dessus des paliers barrés) quand tout est débloqué.
   readonly emptyText = input('Tout est débloqué.');
   // Produits du monde et logo du monde (D32) : cible en toutes lettres et repli d'image.
   readonly products = input<readonly ProductData[]>([]);
@@ -41,8 +45,12 @@ export class PalierList {
   // Émis avec le palier cliqué.
   readonly action = output<PalierData>();
 
-  // Paliers encore verrouillés, dans l'ordre du monde.
-  protected readonly visible = computed(() => this.paliers().filter((p) => !p.unlocked));
+  // Paliers encore verrouillés puis débloqués, chacun dans l'ordre du monde.
+  protected readonly rows = computed(() => [
+    ...this.paliers().filter((p) => !p.unlocked),
+    ...this.paliers().filter((p) => p.unlocked),
+  ]);
+  protected readonly allUnlocked = computed(() => this.paliers().every((p) => p.unlocked));
 
   protected readonly displayedColumns = computed<readonly string[]>(() => [
     'logo',
@@ -50,7 +58,7 @@ export class PalierList {
     'produit',
     ...(this.showEffect() ? ['effet'] : []),
     'seuil',
-    ...(this.actionLabel() ? ['action'] : []),
+    ...(this.actionLabel() || this.doneLabel() ? ['action'] : []),
   ]);
 
   protected readonly bonus = bonusLabel;

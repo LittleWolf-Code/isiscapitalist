@@ -38,11 +38,15 @@ Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`
   formulaire signal, pipes `bigvalue` / `second` ; thème « écran cathodique » (D22 / D34) et
   icônes Pip-Boy (D35) conservés. Paramètres → « Disposition » permet de revenir à la barre
   d'onglets en bas de la phase 9 (D37) ; la disposition du sujet reste celle par défaut.
+  Étape 10.8 : achats barrés en fin de liste et dernier palier sur la carte produit (D40),
+  adresse du serveur modifiable dans Paramètres et notifications teintées (D41).
   Détail : `frontend/CLAUDE.md`.
 - Les décisions D14, D15, D19, D20, D23 à D31 décrivent la phase 9 et sont **remplacées** (D36) ;
   les relire seulement pour l'historique.
 - `node_modules/` **par sous-projet** (`backend/`, `frontend/`), pas de `package.json` racine (D16).
 - Prérequis : Node ≥ 22.22.3 (exigé par le CLI Angular 22).
+- **En ligne** sur https://capitalist.lucaslopvet.fr (VPS, Nginx + systemd, D39) ; config serveur
+  et scripts dans `deploy/`.
 
 ## Commandes
 
@@ -54,6 +58,9 @@ cd backend && npm run build && npm run lint && npm test
 # frontend (port 4200)
 cd frontend && npm start
 cd frontend && npm run codegen   # régénère types.ts / operations.ts depuis src/app/graphql/*.graphql
+
+# déploiement sur le VPS (Git Bash ; clé SSH chargée dans le ssh-agent de Windows, D39)
+bash deploy/deploy.sh
 ```
 
 Pour lancer les serveurs dans Claude Code, utiliser les configurations `backend` / `frontend` de

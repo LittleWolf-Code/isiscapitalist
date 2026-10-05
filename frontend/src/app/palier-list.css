@@ -17,4 +17,10 @@ table { width: 100%; }
 tr.affordable td { color: var(--mat-sys-primary); }
 tr:not(.affordable) td { color: var(--mat-sys-on-surface-variant); }
 
+/* Palier débloqué (D40) : ligne atténuée, texte barré sauf la mention « Engagé / Acheté /
+   Atteint ». */
+tr.done td { opacity: 0.6; }
+tr.done td:not(.logo-cell, .action-cell) { text-decoration: line-through; }
+.done-label { white-space: nowrap; font: var(--mat-sys-label-large); letter-spacing: 0.06em; }
+
 .empty { margin: 0.5rem 0; font: var(--mat-sys-body-large); color: var(--mat-sys-on-surface-variant); }

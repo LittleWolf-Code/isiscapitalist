@@ -192,6 +192,8 @@ contredisent aucune exigence (thème cathodique, écran Paramètres).
       `TabBar` rétablie, un écran par onglet) ; contenus partagés en `ng-template`.
 - [x] 10.7 Images de la version du 05/10 de `Nuka Capitalist.pdf` (D38) : 10 images détourées
       (managers Armes et Nuke, 6 paliers, upgrades 1 et 2), upgrade 2 sur les Armes.
+- [x] 10.8 Retours joueur (D40, D41) : adresse du serveur dans Paramètres, achats barrés,
+      palier sur la carte, onglets 1,35 rem, teinte des notifications.
 
 ## Exemples de requêtes playground (à réutiliser pour tester)
 

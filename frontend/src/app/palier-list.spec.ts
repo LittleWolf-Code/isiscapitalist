@@ -14,6 +14,7 @@ const world = makeWorld();
     <app-palier-list
       [paliers]="paliers()"
       [actionLabel]="actionLabel()"
+      [doneLabel]="doneLabel()"
       [costUnit]="costUnit()"
       [balance]="balance()"
       [showEffect]="showEffect()"
@@ -27,6 +28,7 @@ const world = makeWorld();
 class Host {
   readonly paliers = signal<readonly PalierData[]>(world.managers);
   readonly actionLabel = signal<string | null>('Hire !');
+  readonly doneLabel = signal<string | null>('Engagé');
   readonly costUnit = signal<CostUnit>('$');
   readonly balance = signal<number | null>(1000);
   readonly showEffect = signal(false);
@@ -63,19 +65,38 @@ describe('PalierList', () => {
     );
   });
 
-  it('seuls les paliers NON débloqués sont affichés', async () => {
+  it("non débloqués d'abord, puis débloqués (D40), chacun dans l'ordre du monde", async () => {
     const { host, fixture, rows } = await render();
     host.paliers.set([{ ...world.managers[0], unlocked: true }, world.managers[1]]);
     await fixture.whenStable();
-    expect(rows().map((r) => r.querySelector('td.name')!.textContent!.trim())).toEqual(['Manager 2']);
+    expect(rows().map((r) => r.querySelector('td.name')!.textContent!.trim())).toEqual(['Manager 2', 'Manager 1']);
+    expect(rows().map((r) => r.classList.contains('done'))).toEqual([false, true]);
   });
 
-  it('tout débloqué → message, pas de tableau', async () => {
-    const { host, fixture, el } = await render();
+  it('palier débloqué : ligne .done barrée, mention doneLabel à la place du bouton', async () => {
+    const { host, fixture, rows, buttons } = await render();
+    host.paliers.set([{ ...world.managers[0], unlocked: true }, world.managers[1]]);
+    await fixture.whenStable();
+    const done = rows()[1];
+    expect(done.querySelector('button')).toBeNull();
+    expect(done.querySelector('.done-label')?.textContent?.trim()).toBe('Engagé');
+    expect(buttons().map((b) => b.textContent!.trim())).toEqual(['Hire !']);
+  });
+
+  it('tout débloqué → message au-dessus du tableau barré', async () => {
+    const { host, fixture, el, rows } = await render();
     host.paliers.set(world.managers.map((m) => ({ ...m, unlocked: true })));
     await fixture.whenStable();
-    expect(el.querySelector('table')).toBeNull();
     expect(el.querySelector('.empty')?.textContent?.trim()).toBe('Tous les managers sont engagés.');
+    expect(el.querySelector('.empty')!.compareDocumentPosition(el.querySelector('table')!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(rows().every((r) => r.classList.contains('done'))).toBe(true);
+  });
+
+  it('il reste un palier verrouillé → pas de message', async () => {
+    const { el } = await render();
+    expect(el.querySelector('.empty')).toBeNull();
   });
 
   it('bouton actif seulement si le solde suffit (seuil ≤ solde), clic → palier émis', async () => {
@@ -113,12 +134,28 @@ describe('PalierList', () => {
     const { host, fixture, headers, rows, buttons } = await render();
     host.paliers.set(world.allunlocks);
     host.actionLabel.set(null);
+    host.doneLabel.set(null);
     host.costUnit.set(null);
     host.balance.set(null);
     host.showEffect.set(true);
     await fixture.whenStable();
     expect(headers()).toEqual(['', 'nom', 'produit', 'effet', 'seuil']);
     expect(rows()[0].querySelector('td.seuil')!.textContent!.trim()).toBe('25 exemplaires de chaque produit');
+    expect(buttons()).toEqual([]);
+  });
+
+  it('all unlocks avec doneLabel : colonne de mention, remplie pour les seuls paliers atteints', async () => {
+    const { host, fixture, headers, rows, buttons } = await render();
+    host.paliers.set([{ ...world.allunlocks[0], unlocked: true }, { ...world.allunlocks[0], name: 'All 2', seuil: 50 }]);
+    host.actionLabel.set(null);
+    host.doneLabel.set('Atteint');
+    host.costUnit.set(null);
+    host.balance.set(null);
+    host.showEffect.set(true);
+    await fixture.whenStable();
+    expect(headers()).toEqual(['', 'nom', 'produit', 'effet', 'seuil', '']);
+    expect(rows().map((r) => r.querySelector('td.name')!.textContent!.trim())).toEqual(['All 2', 'All 1']);
+    expect(rows().map((r) => r.querySelector('td.action-cell')!.textContent!.trim())).toEqual(['', 'Atteint']);
     expect(buttons()).toEqual([]);
   });
 });

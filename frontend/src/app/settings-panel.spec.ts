@@ -1,16 +1,28 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { DEFAULT_DISPLAY, DisplaySettings } from './display-settings';
-import { SettingsPanel } from './settings-panel';
+import { MIXED_CONTENT_HINT, SERVER_ERROR, SettingsPanel } from './settings-panel';
 
 // Hôte de test : un signal DisplaySettings lié en two-way, comme App avec GameService.display.
 @Component({
   standalone: true,
   imports: [SettingsPanel],
-  template: `<app-settings-panel [(display)]="display" />`,
+  template: `
+    <app-settings-panel
+      [(display)]="display"
+      [server]="server()"
+      defaultServer="http://localhost:3000/"
+      [httpsPage]="httpsPage()"
+      (serverChange)="emitted.push($event); server.set($event)"
+    />
+  `,
 })
 class Host {
   readonly display = signal<DisplaySettings>({ ...DEFAULT_DISPLAY });
+  // Comme App + GameService.setServer : l'adresse émise devient l'adresse appliquée.
+  readonly server = signal('http://localhost:3000/');
+  readonly httpsPage = signal(false);
+  readonly emitted: string[] = [];
 }
 
 const TOGGLE_ORDER = [
@@ -45,12 +57,12 @@ describe('SettingsPanel', () => {
     return Array.from(el.querySelectorAll<HTMLElement>('.layout mat-button-toggle'));
   }
 
-  it('affiche le titre, 3 sections, 8 interrupteurs dans l\'ordre, 3 curseurs et 4 teintes', async () => {
+  it('affiche le titre, 4 sections, 8 interrupteurs dans l\'ordre, 3 curseurs et 4 teintes', async () => {
     const fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('h2')?.textContent?.trim()).toBe('Paramètres');
-    expect(Array.from(el.querySelectorAll('h3')).map((h) => h.textContent?.trim())).toEqual(['Écran', 'Lumière', 'Animations']);
+    expect(Array.from(el.querySelectorAll('h3')).map((h) => h.textContent?.trim())).toEqual(['Écran', 'Lumière', 'Animations', 'Serveur']);
     expect(toggles(el).map((t) => t.textContent?.trim())).toEqual(TOGGLE_ORDER);
     // Défauts : statiques on, animés off.
     expect(buttons(el).map((b) => b.getAttribute('aria-checked'))).toEqual([
@@ -139,5 +151,80 @@ describe('SettingsPanel', () => {
     expect(fixture.componentInstance.display()).toEqual(DEFAULT_DISPLAY);
     expect(tintButtons(el)[0].classList.contains('mat-button-toggle-checked')).toBe(true);
     expect(sliders(el)[2].value).toBe('50');
+  });
+
+  describe('adresse du serveur (F-34, D41)', () => {
+    async function render() {
+      const fixture = TestBed.createComponent(Host);
+      await fixture.whenStable();
+      const el = fixture.nativeElement as HTMLElement;
+      const input = el.querySelector('.server-field input') as HTMLInputElement;
+      return {
+        fixture,
+        host: fixture.componentInstance,
+        el,
+        input,
+        type: async (value: string) => {
+          input.value = value;
+          input.dispatchEvent(new Event('input'));
+          await fixture.whenStable();
+        },
+        enter: async () => {
+          input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+          await fixture.whenStable();
+        },
+        apply: () => el.querySelector('button.apply-server') as HTMLButtonElement,
+        hint: () => el.querySelector('.server-field mat-hint')?.textContent?.trim() ?? null,
+      };
+    }
+
+    it("champ prérempli avec l'adresse appliquée, « Appliquer » désactivé tant qu'elle ne change pas", async () => {
+      const { input, apply, type } = await render();
+      expect(input.value).toBe('http://localhost:3000/');
+      expect(apply().disabled).toBe(true);
+      await type('http://localhost:3000');
+      expect(apply().disabled).toBe(true);
+      await type('https://autre-groupe.fr');
+      expect(apply().disabled).toBe(false);
+    });
+
+    it('Entrée sur une adresse valide → forme normalisée émise', async () => {
+      const { host, input, type, enter } = await render();
+      await type('  https://autre-groupe.fr/api ');
+      await enter();
+      expect(host.emitted).toEqual(['https://autre-groupe.fr/api/']);
+      expect(input.value).toBe('https://autre-groupe.fr/api/');
+    });
+
+    it("adresse invalide → message d'erreur, rien n'est émis ; nouvelle saisie → message effacé", async () => {
+      const { fixture, host, apply, type, hint } = await render();
+      await type('localhost:3000');
+      apply().click();
+      await fixture.whenStable();
+      expect(host.emitted).toEqual([]);
+      expect(hint()).toBe(SERVER_ERROR);
+      await type('localhost:300');
+      expect(hint()).toBeNull();
+    });
+
+    it("« Défaut » émet l'adresse par défaut et remet le champ à jour", async () => {
+      const { fixture, host, el, input } = await render();
+      host.server.set('https://autre-groupe.fr/');
+      await fixture.whenStable();
+      (el.querySelector('button.default-server') as HTMLButtonElement).click();
+      await fixture.whenStable();
+      expect(host.emitted).toEqual(['http://localhost:3000/']);
+      expect(input.value).toBe('http://localhost:3000/');
+    });
+
+    it('avertissement de contenu mixte seulement si la page est en https et la saisie en http', async () => {
+      const { fixture, host, type, hint } = await render();
+      expect(hint()).toBeNull();
+      host.httpsPage.set(true);
+      await fixture.whenStable();
+      expect(hint()).toBe(MIXED_CONTENT_HINT);
+      await type('https://autre-groupe.fr');
+      expect(hint()).toBeNull();
+    });
   });
 });

@@ -13,6 +13,7 @@ import {
   USERNAME_STORAGE_KEY,
   readStoredUsername,
 } from './game.service';
+import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY } from './server';
 import { makeWorld, stubApollo } from './test-world';
 
 const KEYS = [
@@ -22,6 +23,7 @@ const KEYS = [
   LEGACY_SCANLINES_STORAGE_KEY,
   LEGACY_GLOW_STORAGE_KEY,
   LEGACY_FLICKER_STORAGE_KEY,
+  SERVER_STORAGE_KEY,
 ];
 
 function clearStorage(): void {
@@ -324,6 +326,33 @@ describe('GameService', () => {
       TestBed.tick();
       expect(game.display()).toEqual({ ...DEFAULT_DISPLAY, flicker: true });
       expect(localStorage.getItem(LEGACY_FLICKER_STORAGE_KEY)).toBeNull();
+    });
+  });
+
+  describe('adresse du serveur (F-34, D41)', () => {
+    // SERVER est un signal de module : le remettre à l'adresse par défaut pour les autres specs.
+    afterEach(() => SERVER.set(DEFAULT_SERVER));
+
+    it('setServer : SERVER changé, adresse mémorisée, message, getWorld relancé une fois', () => {
+      setup();
+      game.setServer('https://autre-groupe.fr');
+      expect(SERVER()).toBe('https://autre-groupe.fr/');
+      expect(game.server()).toBe('https://autre-groupe.fr/');
+      expect(localStorage.getItem(SERVER_STORAGE_KEY)).toBe('https://autre-groupe.fr/');
+      expect(game.snackmessage()).toBe('Serveur : https://autre-groupe.fr/');
+      expect(stub.refetches()).toBe(1);
+    });
+
+    it("setServer : adresse invalide ou inchangée → rien ; retour à l'adresse par défaut → clé effacée", () => {
+      setup();
+      game.setServer('pas une adresse');
+      game.setServer(DEFAULT_SERVER);
+      expect(stub.refetches()).toBe(0);
+      game.setServer('https://autre-groupe.fr/');
+      game.setServer(DEFAULT_SERVER);
+      expect(SERVER()).toBe(DEFAULT_SERVER);
+      expect(localStorage.getItem(SERVER_STORAGE_KEY)).toBeNull();
+      expect(stub.refetches()).toBe(2);
     });
   });
 });
