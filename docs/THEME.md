@@ -33,10 +33,10 @@ départ : `Nuka Capitalist.pdf` (6 objets + images produit déjà choisies).
 | Manager Nuka-Cola | **Cappy** | `manager-cappy.png` |
 | Manager Stimpak | **Mister Orderly** | `manager-mister-orderly.png` |
 | Manager Pip-Boy | **Vault Boy** (pose Pip-Boy, distincte du logo) | `manager-vault-boy-pipboy.png` |
-| Manager Armes | **Vault Boy « Gunslinger »** (deux revolvers) | `manager-vault-boy-gunslinger.png` |
+| Manager Armes | **Commando** — Vault Boy à la mitraillette (PDF du 05/10 ; remplace « Gunslinger », passé en palier 1) | `manager-vault-boy-mitraillette.png` |
 | Manager Armures | **Confrérie de l'Acier** (emblème, pas un paladin en T-60) | `manager-confrerie.png` |
-| Manager Nuke | **Nuka-Girl** | `manager-nuka-girl.png` |
-| Upgrade Nuka-Cola | **Bottle** | `upgrade-bottle.png` |
+| Manager Nuke | **Nuka-Girl** en combinaison spatiale (PDF du 05/10, recadrée sur le buste) | `manager-nuka-girl-spatiale.png` |
+| Upgrade Nuka-Cola | **Affiche Nuka-Cola** (PDF du 05/10 ; remplace « Bottle ») | `upgrade-affiche-nuka-cola.png` |
 | Upgrade Pip-Boy | **Vault Girl** | `upgrade-vault-girl.png` |
 | Upgrade Nuke | **Sugar Bombs** | `upgrade-sugar-bombs.png` |
 
@@ -45,14 +45,17 @@ Repli envisagé si ça gêne : Protectron (RobCo) en manager Pip-Boy.
 
 ## Paliers produit — proposé, appliqué
 
+Les cases en **gras** ont une image propre (PDF du 05/10/2026) ; les autres reprennent l'image du
+produit.
+
 | Produit | 25 (vitesse ×2) | 50 (gain ×2) | 100 (vitesse ×2) |
 |---|---|---|---|
-| Nuka-Cola | Nuka-Cherry | Nuka-Cola Quantum | Nuka-Cola Victory |
+| Nuka-Cola | **Nuka-Cola Classic** (logo) | Nuka-Cherry | **Nuka-Cola Quantum** |
 | Stimpak | Med-X | RadAway | Super Stimpak |
 | Pip-Boy | Pip-Boy 2000 | Pip-Boy 3000 | Pip-Boy 3000 Mark IV |
-| Armes | Fusil laser AER9 | Fusil à plasma | Fusil Gauss |
+| Armes | **Gunslinger** (Vault Boy aux revolvers) | Fusil à plasma | Fusil Gauss |
 | Armure assistée | T-45 | T-51 | X-01 |
-| Nuke | Fat Man | Ogive MIRV expérimentale | Missile nucléaire (Site Alpha) |
+| Nuke | **Fat Man** (mini-nuke) | **Ogive MIRV expérimentale** (mini-nuke à réaction) | **Missile nucléaire (Site Alpha)** (champignon) |
 
 Le `logo` d'un palier peut pointer vers l'image du produit si on ne veut pas 18 images de plus
 (le `GameIcon` du frontend a déjà le repli palier → produit → monde, D32).
@@ -61,7 +64,7 @@ Le `logo` d'un palier peut pointer vers l'image du produit si on ne veut pas 18 
 
 | Case | Nom dans `origworld.ts` | Image |
 |---|---|---|
-| Upgrade Stimpak (×3) | **Doc Phosphate** (médecin de Dry Rock Gulch) | `stimpak.png` (repli produit) |
+| Upgrade 2 (×3) | **Pinkie Pie** (armée), **cible Armes** (PDF du 05/10, choix de l'utilisateur ; remplace « Doc Phosphate » sur Stimpak, qui n'a plus d'upgrade propre) | `upgrade-pinkie-pie.png` |
 | Upgrade Armes (×3) | **One-Eyed Ike** (hors-la-loi de Dry Rock Gulch) | `armes.png` |
 | Upgrade Armures (×3) | **The Mechanist** | `armure.png` |
 | Upgrades globaux (magazines, ×2) | **Tales of a Junktown Jerky Vendor**, **Grognak the Barbarian**, **Guns and Bullets**, **Astoundingly Awesome Tales** | `global.png` |
@@ -75,6 +78,20 @@ Buttercup, Mr. Pebbles, Captain Cosmos, Manta Man, Mister Handy, Protectron, Mad
 Lexique non appliqué (*proposé*, à confirmer) : argent → bouchons, reset → « Activer le G.E.C.K. ».
 
 ## Images
+
+### Images de la version du 05/10/2026 du PDF (Bureau, 10 pages)
+
+- 10 images ajoutées par l'utilisateur sous les rubriques manager / palier / upgrade (aucun nom
+  nouveau, sauf « cappy » déjà en place) : `palier-nuka-cola-logo`, `palier-nuka-cola-quantum`,
+  `manager-vault-boy-mitraillette`, `palier-vault-boy-revolvers`, `manager-nuka-girl-spatiale`,
+  `palier-mini-nuke`, `palier-mini-nuke-reaction`, `palier-champignon-atomique`,
+  `upgrade-affiche-nuka-cola`, `upgrade-pinkie-pie` (xref 8, 12, 22, 23, 32, 35, 36, 39, 40, 43).
+- Détourage : remplissage depuis les bords sur les pixels clairs et peu saturés (luminosité ≥ 180,
+  écart entre canaux ≤ 22) pour les fonds en faux damier ; ≥ 238 / ≤ 12 pour les fonds blancs
+  (Nuka-Girl, champignon) ; aucun pour l'affiche. Recadrage, carré 512 × 512, marge 8 %.
+  Nuka-Girl est recadrée sur la moitié haute (en pied, illisible dans un rond de 40 à 80 px).
+- Plus référencées par `origworld.ts` (gardées pour les anciennes parties) :
+  `manager-vault-boy-gunslinger.png`, `manager-nuka-girl.png`, `upgrade-bottle.png`.
 
 ### Images produits et symboles (05/10/2026)
 

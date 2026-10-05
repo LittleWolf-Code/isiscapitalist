@@ -5,6 +5,12 @@
 export type Tint = 'green' | 'amber' | 'blue' | 'white';
 export const TINTS: readonly Tint[] = ['green', 'amber', 'blue', 'white'];
 
+// Disposition de la page (D37) : 'sujet' = mise en page du sujet (bandeau gauche + fenêtres
+// superposées, défaut, conforme au cahier des charges) ; 'onglets' = disposition de la phase 9
+// (barre du haut à cases de stats, barre d'onglets en bas, un écran par onglet).
+export type Layout = 'sujet' | 'onglets';
+export const LAYOUTS: readonly Layout[] = ['sujet', 'onglets'];
+
 export interface DisplaySettings {
   scanlines: boolean;
   scanlinesLevel: number; // 0-100
@@ -18,6 +24,7 @@ export interface DisplaySettings {
   roll: boolean;
   noise: boolean;
   tint: Tint;
+  layout: Layout;
 }
 
 // Défauts : tout ce qui est statique est actif, tout ce qui est animé est inactif, curseurs à
@@ -35,6 +42,7 @@ export const DEFAULT_DISPLAY: DisplaySettings = {
   roll: false,
   noise: false,
   tint: 'green',
+  layout: 'sujet',
 };
 
 // Une seule clé JSON (D34) à la place des trois clés 'on' / 'off' de D22, lues une fois en
@@ -75,6 +83,7 @@ function pickLevel(raw: Record<string, unknown>, key: keyof DisplaySettings): nu
 export function normalizeDisplay(raw: unknown): DisplaySettings {
   const source = raw !== null && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const tint = source['tint'];
+  const layout = source['layout'];
   return {
     scanlines: pickBoolean(source, 'scanlines'),
     scanlinesLevel: pickLevel(source, 'scanlinesLevel'),
@@ -88,6 +97,9 @@ export function normalizeDisplay(raw: unknown): DisplaySettings {
     roll: pickBoolean(source, 'roll'),
     noise: pickBoolean(source, 'noise'),
     tint: (TINTS as readonly unknown[]).includes(tint) ? (tint as Tint) : DEFAULT_DISPLAY.tint,
+    layout: (LAYOUTS as readonly unknown[]).includes(layout)
+      ? (layout as Layout)
+      : DEFAULT_DISPLAY.layout,
   };
 }
 

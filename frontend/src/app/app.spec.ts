@@ -4,6 +4,7 @@ import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { App } from './app';
 import { DISPLAY_STORAGE_KEY } from './display-settings';
+import { TAB_STORAGE_KEY } from './tab-bar';
 import { GameService, USERNAME_STORAGE_KEY, WorldData } from './game.service';
 import { makeWorld, stubApollo } from './test-world';
 
@@ -14,6 +15,7 @@ describe('App (mise en page du sujet, F-04 → F-06)', () => {
   beforeEach(async () => {
     localStorage.setItem(USERNAME_STORAGE_KEY, 'test');
     localStorage.removeItem(DISPLAY_STORAGE_KEY);
+    localStorage.removeItem(TAB_STORAGE_KEY);
     stub = stubApollo();
     await TestBed.configureTestingModule({
       imports: [App],
@@ -194,5 +196,79 @@ describe('App (mise en page du sujet, F-04 → F-06)', () => {
     expect(host.classList.contains('crt-scanlines')).toBe(false);
     expect(host.getAttribute('data-tint')).toBe('amber');
     expect(host.getAttribute('style')).toContain('--crt-glow: 1');
+  });
+
+  // Disposition « onglets » (D37) : barre du haut à cases de stats, barre d'onglets en bas.
+  describe('disposition « onglets »', () => {
+    async function renderTabs(world: WorldData) {
+      const view = await render(world);
+      view.game.display.update((d) => ({ ...d, layout: 'onglets' }));
+      await view.fixture.whenStable();
+      const tab = async (id: string) => {
+        (view.el.querySelector(`a.tab[data-tab="${id}"]`) as HTMLElement).click();
+        await view.fixture.whenStable();
+      };
+      return { ...view, tab };
+    }
+
+    it('barre du haut (stats, multiplicateur en 4 boutons), 6 onglets en bas, écran Produits', async () => {
+      const world = makeWorld();
+      world.money = 1000;
+      const { el, app, fixture } = await renderTabs(world);
+      expect(el.classList.contains('layout-onglets')).toBe(true);
+      expect(el.querySelector('.menu')).toBeNull();
+      expect(Array.from(el.querySelectorAll('.stat dt')).map((d) => d.textContent)).toEqual(['argent', 'score', 'anges', 'bonus']);
+      expect(el.querySelectorAll('app-tab-bar a.tab').length).toBe(6);
+      expect(el.querySelectorAll('.screen .product-grid app-product-card').length).toBe(2);
+      const toggles = Array.from(el.querySelectorAll<HTMLElement>('.multiplier-toggle mat-button-toggle'));
+      expect(toggles.map((t) => t.textContent?.trim())).toEqual(['x1', 'x10', 'x100', 'Max']);
+      toggles[1].querySelector('button')!.click();
+      await fixture.whenStable();
+      expect(app.qtmulti()).toBe(10);
+    });
+
+    it('un écran par onglet, badges sur Managers / Upgrades / Anges, onglet mémorisé', async () => {
+      const world = makeWorld();
+      world.money = 1000;
+      world.activeangels = 10;
+      const { el, tab, fixture } = await renderTabs(world);
+      const badge = (id: string) => {
+        const host = el.querySelector(`a.tab[data-tab="${id}"] .mat-badge`)!;
+        return host.classList.contains('mat-badge-hidden') ? null : host.querySelector('.mat-badge-content')?.textContent?.trim();
+      };
+      expect([badge('managers'), badge('upgrades'), badge('angels'), badge('products')]).toEqual(['1', '1', '1', null]);
+      await tab('managers');
+      expect(el.querySelector('.screen h2')?.textContent).toBe('Managers');
+      expect(el.querySelectorAll('.screen app-palier-list tr.mat-mdc-row').length).toBe(2);
+      await tab('angels');
+      expect(el.querySelector('.screen app-angels-panel')).not.toBeNull();
+      expect(el.querySelector('.screen h3')?.textContent).toBe('Angel Upgrades');
+      await tab('unlocks');
+      expect(el.querySelector('.screen app-unlock-list')).not.toBeNull();
+      await fixture.whenStable();
+      expect(localStorage.getItem(TAB_STORAGE_KEY)).toBe('unlocks');
+    });
+
+    it('changer de disposition dans Paramètres garde le joueur sur ses réglages, dans les deux sens', async () => {
+      const { el, fixture, menu, app } = await render(makeWorld());
+      menu('settings').click();
+      await fixture.whenStable();
+      const layoutButton = (i: number) =>
+        el.querySelectorAll<HTMLElement>('app-settings-panel .layout mat-button-toggle')[i].querySelector('button')!;
+      layoutButton(1).click();
+      await fixture.whenStable();
+      expect(app.layout()).toBe('onglets');
+      expect(el.querySelector('app-modal')).toBeNull();
+      expect(app.tab()).toBe('settings');
+      expect(el.querySelector('.screen app-settings-panel h2')?.textContent?.trim()).toBe('Paramètres');
+
+      layoutButton(0).click();
+      await fixture.whenStable();
+      expect(app.layout()).toBe('sujet');
+      expect(el.querySelector('app-tab-bar')).toBeNull();
+      expect(el.querySelector('app-modal h2')?.textContent?.trim()).toBe('Paramètres');
+      // Dans la fenêtre, le panneau ne répète pas le titre.
+      expect(el.querySelector('app-modal app-settings-panel h2')).toBeNull();
+    });
   });
 });

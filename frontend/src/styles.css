@@ -55,6 +55,20 @@ app-root.crt-glow {
 app-root.crt-glow .pip-frame {
   box-shadow: 0 0 calc(1rem * var(--crt-glow)) color-mix(in srgb, var(--mat-sys-primary) 35%, transparent);
 }
+/* Multiplicateur en 4 boutons de la disposition « onglets » (D31, D37) : halo comme les cadres.
+   Le groupe Material est en overflow: hidden (angles arrondis) ; nos angles sont à 0, on libère
+   le halo. */
+.multiplier-toggle.mat-button-toggle-group { overflow: visible; }
+app-root.crt-glow .multiplier-toggle .mat-button-toggle-checked {
+  box-shadow: 0 0 0.5rem color-mix(in srgb, var(--mat-sys-primary) 35%, transparent);
+}
+/* Focus clavier : anneau en currentColor (lisible sur fond noir comme sur fond vert) ;
+   Material met outline: none sur le bouton interne. */
+.multiplier-toggle .mat-button-toggle-button:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: -2px;
+}
+
 /* Scintillement : voile vert très bref, une fois toutes les 4 s. */
 app-root.crt-flicker::before {
   content: '';
@@ -172,3 +186,8 @@ app-root[data-tint='amber'] { filter: hue-rotate(-105deg); }
 app-root[data-tint='blue'] { filter: hue-rotate(70deg); }
 app-root[data-tint='white'] { filter: saturate(0) brightness(1.25); }
 
+/* Onglet actif encadré, en plus de la barre d'encre Material (disposition « onglets »). Lien
+   créé par mat-tab-link, hors encapsulation : règle globale. */
+.mat-mdc-tab-link.mdc-tab--active {
+  box-shadow: inset 0 0 0 1px var(--mat-sys-primary);
+}

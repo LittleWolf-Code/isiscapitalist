@@ -187,6 +187,11 @@ contredisent aucune exigence (thème cathodique, écran Paramètres).
       extraites de `Nuka Capitalist.pdf`, noms proposés pour les cases restantes, équilibrage
       simulé.
 - [x] 10.5 Nouvelle recette (`docs/RECETTE.md`) et documentation à jour.
+- [x] 10.6 Disposition au choix dans Paramètres (D37) : celle du sujet par défaut, ou la barre
+      d'onglets en bas de la phase 9 (barre du haut à cases de stats, multiplicateur en 4 boutons,
+      `TabBar` rétablie, un écran par onglet) ; contenus partagés en `ng-template`.
+- [x] 10.7 Images de la version du 05/10 de `Nuka Capitalist.pdf` (D38) : 10 images détourées
+      (managers Armes et Nuke, 6 paliers, upgrades 1 et 2), upgrade 2 sur les Armes.
 
 ## Exemples de requêtes playground (à réutiliser pour tester)
 
@@ -199,7 +204,7 @@ mutation { lancerProductionProduit(user: "lucas", id: 1) { id timeleft } }
 
 mutation { engagerManager(user: "lucas", name: "Cappy") { name unlocked } }
 
-mutation { acheterCashUpgrade(user: "lucas", name: "Bottle") { name unlocked } }
+mutation { acheterCashUpgrade(user: "lucas", name: "Affiche Nuka-Cola") { name unlocked } }
 
 mutation { acheterAngelUpgrade(user: "lucas", name: "Fortune Finder") { name unlocked } }
 

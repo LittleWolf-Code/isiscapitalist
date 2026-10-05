@@ -1,5 +1,6 @@
-/* Mise en page du sujet (F-04 → F-06) en CSS Grid : en-tête sur toute la largeur, puis bandeau
-   gauche de boutons et partie centrale des produits. Couleurs et effets : thème et styles.css. */
+/* Deux dispositions (D37) : celle du sujet (F-04 → F-06, CSS Grid : en-tête, puis bandeau gauche
+   de boutons et produits) et « onglets » (barre du haut à cases de stats, écran, barre d'onglets
+   en bas, en fin de fichier). Couleurs et effets : thème et styles.css. */
 
 /* Colonne pleine hauteur : seul le contenu principal défile, jamais la page. */
 :host {
@@ -91,7 +92,7 @@
 /* Fenêtre étroite : le bandeau gauche devient une rangée de boutons au-dessus des produits, et
    c'est la page entière qui défile (en-tête et menu prendraient sinon presque tout l'écran). */
 @media (max-width: 700px) {
-  :host { height: auto; min-height: 100dvh; overflow: visible; }
+  :host(.layout-sujet) { height: auto; min-height: 100dvh; overflow: visible; }
   .products { overflow: visible; }
   .main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; }
   .menu {
@@ -111,4 +112,52 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--mat-sys-primary);
+}
+
+/* ——— Disposition « onglets » (D37, rendu de la phase 9) ——— */
+
+/* Barre du haut : hauteur libre pour passer sur plusieurs lignes en largeur réduite. */
+mat-toolbar.topbar {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 64px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  white-space: normal;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  border-bottom: 1px solid var(--mat-sys-outline);
+}
+.brand { font: var(--mat-sys-title-large); letter-spacing: 0.08em; text-transform: uppercase; }
+.topbar .world-logo { width: 32px; height: 32px; }
+.topbar .world-name { font: var(--mat-sys-title-medium); text-transform: none; color: inherit; }
+.spacer { flex: 1 1 auto; }
+
+/* Cases de stats : libellé en capitales puis valeur, dans un cadre. */
+.stats { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; }
+.stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font: var(--mat-sys-body-medium);
+}
+.stat dt { text-transform: uppercase; letter-spacing: 0.06em; color: var(--mat-sys-on-surface-variant); }
+.stat dd { margin: 0; font: var(--mat-sys-title-medium); }
+
+/* Écran de l'onglet actif : prend la hauteur restante, défilement interne. */
+.screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 0.75rem;
 }

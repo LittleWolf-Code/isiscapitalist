@@ -111,9 +111,9 @@ html {
     )
   );
 
-  // Toggles (teinte de l'écran Paramètres) : sélectionné en vidéo inversée (secondary-container
-  // serait invisible sur le fond), survol / focus teintés en vert (D31). Le multiplicateur d'achat
-  // est devenu un bouton unique (D36).
+  // Toggles (teinte et disposition de l'écran Paramètres, multiplicateur en 4 boutons de la
+  // disposition « onglets ») : sélectionné en vidéo inversée (secondary-container serait
+  // invisible sur le fond), survol / focus teintés en vert (D31, D37).
   @include mat.button-toggle-overrides(
     (
       selected-state-background-color: var(--mat-sys-primary),

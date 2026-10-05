@@ -1154,3 +1154,49 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
   `world.e2e-spec.ts` (manager sans exemplaire, production à 0, `basculerManager` absent, pseudo
   « ../ », reset à 300 anges pour un score de 4·10¹⁵) ; les noms du monde y sont lus dans
   `origworld`.
+
+## D37 — Disposition au choix : celle du sujet (défaut) ou la barre d'onglets de la phase 9
+
+- **Contexte** (05/10/2026) : D36 a remplacé la barre d'onglets du bas (D22) par la mise en page
+  du sujet. L'utilisateur veut pouvoir revenir à l'esthétique précédente, au choix, depuis les
+  options.
+- **Décision** : nouveau réglage `layout` dans `DisplaySettings` (`'sujet'` par défaut,
+  `'onglets'`), persisté dans le JSON `isiscapitalist.display` (valeur inconnue → `'sujet'`),
+  choisi dans Paramètres → Écran → « Disposition » (`mat-button-toggle-group.layout` : « Menu à
+  gauche (sujet) » / « Onglets en bas »). En `'onglets'`, `App` affiche la barre du haut de la
+  phase 9 (titre, logo + nom du monde, pseudo + Refresh, multiplicateur en 4 boutons
+  `.multiplier-toggle` avec le style D31, cases argent / score / anges / bonus) et la `TabBar`
+  rétablie (6 onglets, un écran par onglet, onglet mémorisé sous `isiscapitalist.tab`). Le contenu
+  des écrans et des fenêtres est écrit une seule fois dans des `ng-template` (produits, managers,
+  cash upgrades, angel upgrades, unlocks, Investors, Paramètres) placés par `ngTemplateOutlet`.
+  La logique de jeu (client autonome, D36) est la même dans les deux dispositions. Changer de
+  disposition garde le joueur sur ses réglages (fenêtre Paramètres ↔ onglet Paramètres).
+  `SettingsPanel` reçoit `showTitle` (faux dans la fenêtre, qui porte déjà le titre).
+- **Ce qui n'est pas rétabli** : la carte produit de la phase 9 (barre « quantite / seuil »,
+  bouton Produire / Arrêter / Reprendre — la mutation de pause n'existe plus, D36) et les nombres
+  en k / M (le pipe `bigvalue` du sujet sert partout). La pastille de l'onglet Anges compte les
+  angel upgrades achetables (comme les autres onglets), et non plus les anges gagnables.
+- **Conséquences** : la conformité est inchangée, la disposition du sujet restant celle par
+  défaut. La règle « page entière qui défile sous 700 px » ne vaut que pour `'sujet'`
+  (`:host(.layout-sujet)`) ; en `'onglets'` la barre reste collée en bas, avec la pagination
+  Material en fenêtre étroite (D26). Tests : `display-settings.spec.ts`, `settings-panel.spec.ts`,
+  `tab-bar.spec.ts` (rétabli), `app.spec.ts` (disposition « onglets » et bascule) — 173 tests.
+
+## D38 — Images de la version du 05/10/2026 de « Nuka Capitalist.pdf »
+
+- **Contexte** : l'utilisateur a complété le PDF du thème (Bureau, 10 pages au lieu de 4) avec 10
+  images placées sous les rubriques manager / palier / upgrade, sans nouveau nom, et demandé leur
+  intégration, avec l'upgrade 2 sur les Armes.
+- **Décision** : chaque image va à la case sous laquelle elle est placée dans le PDF (détail et
+  réglages de détourage dans `docs/THEME.md`). Les noms *proposés* suivent les images : paliers
+  Nuka-Cola « Nuka-Cola Classic » / « Nuka-Cherry » / « Nuka-Cola Quantum » (le PDF met la
+  Quantum au palier 100), palier Armes 25 « Gunslinger », manager des Armes « Commando » (Vault Boy
+  à la mitraillette), upgrade 1 « Affiche Nuka-Cola », upgrade 2 « Pinkie Pie » avec
+  `idcible: 4` (Armes). Aucun chiffre ne change (seuils, ratios, coûts).
+- **Conséquences** : le Stimpak n'a plus d'upgrade propre et les Armes en ont deux (upgrade 2 à
+  15 000 $, upgrade 4 à 2,16 M$). Simulation (`simulate-balance.mjs`) : tous les managers en
+  5 min 34 s (8 min 34 s avant), premier ange en 20 min (28), 10¹² en 49 min (58) ; 150 anges en
+  52 h sans reset (57), 29 h avec resets (32). Les parties existantes gardent leurs anciens noms
+  et images jusqu'à leur prochain reset. Tests backend inchangés et verts (86 + 10), les noms y
+  étant lus dans `origworld`.
+

@@ -40,7 +40,7 @@ Les erreurs métier arrivent dans `errors[0].message` (en français).
 | `acheterQtProduit` | Achète `quantite` exemplaires (coût géométrique), déclenche les unlocks | `mutation { acheterQtProduit(user: "lucas", id: 1, quantite: 1) { id quantite cout } }` |
 | `lancerProductionProduit` | Lance une production (`timeleft = vitesse`) | `mutation { lancerProductionProduit(user: "lucas", id: 1) { id timeleft } }` |
 | `engagerManager` | Engage un manager (production automatique du produit cible) | `mutation { engagerManager(user: "lucas", name: "Cappy") { name unlocked } }` |
-| `acheterCashUpgrade` | Achète un upgrade payé en argent | `mutation { acheterCashUpgrade(user: "lucas", name: "Bottle") { name unlocked } }` |
+| `acheterCashUpgrade` | Achète un upgrade payé en argent | `mutation { acheterCashUpgrade(user: "lucas", name: "Affiche Nuka-Cola") { name unlocked } }` |
 | `acheterAngelUpgrade` | Achète un upgrade payé en anges actifs | `mutation { acheterAngelUpgrade(user: "lucas", name: "Fortune Finder") { name unlocked } }` |
 | `resetWorld` | Reset « prestige » : anges gagnés `150 × √(score / 10¹⁵)` − déjà gagnés, monde initial | `mutation { resetWorld(user: "lucas") { score totalangels activeangels money } }` |
 

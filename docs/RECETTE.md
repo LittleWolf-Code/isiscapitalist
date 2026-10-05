@@ -98,6 +98,9 @@ non-conformité (§ 6) : les noms *proposés* du thème.
 | F-33 | Conforme | Monde « Nuka Capitalist ». Simulation : 6 managers en 8 min 34 s, 10⁹ en 17 min, premier ange en 28 min, 10¹² en 58 min ; avec un reset quand les anges doublent, 10 anges à 1 h 30, 150 en 32 h (sans reset : 57 h). |
 | F-34 | Conforme | Adresse du serveur en un seul endroit (`server.ts`) ; opérations valides contre le serveur de test ; plus d'opération hors sujet. Non joué contre le serveur d'un autre groupe (aucune adresse disponible). |
 
+Depuis D37, Paramètres → « Disposition » propose aussi la barre d'onglets en bas de la phase 9 ;
+la disposition du sujet, vérifiée ci-dessus, reste celle par défaut (F-05 inchangé).
+
 Interface vérifiée aussi à 375 px de large : pas de défilement horizontal, menu au-dessus des
 produits, page entière qui défile, fenêtres à 16 px des bords, focus clavier sur Close à
 l'ouverture et rendu au bouton d'origine à la fermeture.

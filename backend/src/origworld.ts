@@ -1,4 +1,5 @@
-// Monde initial « Nuka Capitalist » (thème Fallout, docs/THEME.md ; casting appliqué en phase 10.4).
+// Monde initial « Nuka Capitalist » (thème Fallout, docs/THEME.md ; casting appliqué en phase 10.4,
+// images de la version du 05/10/2026 de « Nuka Capitalist.pdf » en phase 10.7).
 // Chiffres d'origine (phase 1, calqués sur le monde « Terre » d'AdVenture Capitalist), noms et images
 // du casting. Structure reprise de docs/reference/origworld.skeleton.ts.
 // Ne jamais muter cet objet : le servir via structuredClone(origworld) (voir docs/DECISIONS.md, D3).
@@ -27,8 +28,8 @@ export const origworld: World = {
       managerUnlocked: false,
       paliers: [
         {
-          name: 'Nuka-Cherry',
-          logo: 'icones/nuka-cola.png',
+          name: 'Nuka-Cola Classic',
+          logo: 'icones/palier-nuka-cola-logo.png',
           seuil: 25,
           idcible: 1,
           ratio: 2,
@@ -36,7 +37,7 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Nuka-Cola Quantum',
+          name: 'Nuka-Cherry',
           logo: 'icones/nuka-cola.png',
           seuil: 50,
           idcible: 1,
@@ -45,8 +46,8 @@ export const origworld: World = {
           unlocked: false,
         },
         {
-          name: 'Nuka-Cola Victory',
-          logo: 'icones/nuka-cola.png',
+          name: 'Nuka-Cola Quantum',
+          logo: 'icones/palier-nuka-cola-quantum.png',
           seuil: 100,
           idcible: 1,
           ratio: 2,
@@ -150,8 +151,8 @@ export const origworld: World = {
       managerUnlocked: false,
       paliers: [
         {
-          name: 'Fusil laser AER9',
-          logo: 'icones/armes.png',
+          name: 'Gunslinger',
+          logo: 'icones/palier-vault-boy-revolvers.png',
           seuil: 25,
           idcible: 4,
           ratio: 2,
@@ -233,7 +234,7 @@ export const origworld: World = {
       paliers: [
         {
           name: 'Fat Man',
-          logo: 'icones/nuke.png',
+          logo: 'icones/palier-mini-nuke.png',
           seuil: 25,
           idcible: 6,
           ratio: 2,
@@ -242,7 +243,7 @@ export const origworld: World = {
         },
         {
           name: 'Ogive MIRV expérimentale',
-          logo: 'icones/nuke.png',
+          logo: 'icones/palier-mini-nuke-reaction.png',
           seuil: 50,
           idcible: 6,
           ratio: 2,
@@ -251,7 +252,7 @@ export const origworld: World = {
         },
         {
           name: 'Missile nucléaire (Site Alpha)',
-          logo: 'icones/nuke.png',
+          logo: 'icones/palier-champignon-atomique.png',
           seuil: 100,
           idcible: 6,
           ratio: 2,
@@ -294,8 +295,8 @@ export const origworld: World = {
   // Seuil = prix en argent.
   upgrades: [
     {
-      name: 'Bottle',
-      logo: 'icones/upgrade-bottle.png',
+      name: 'Affiche Nuka-Cola',
+      logo: 'icones/upgrade-affiche-nuka-cola.png',
       seuil: 1000,
       idcible: 1,
       ratio: 3,
@@ -303,10 +304,10 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Doc Phosphate',
-      logo: 'icones/stimpak.png',
+      name: 'Pinkie Pie',
+      logo: 'icones/upgrade-pinkie-pie.png',
       seuil: 15000,
-      idcible: 2,
+      idcible: 4,
       ratio: 3,
       typeratio: RatioType.gain,
       unlocked: false,
@@ -444,8 +445,8 @@ export const origworld: World = {
       unlocked: false,
     },
     {
-      name: 'Gunslinger',
-      logo: 'icones/manager-vault-boy-gunslinger.png',
+      name: 'Commando',
+      logo: 'icones/manager-vault-boy-mitraillette.png',
       seuil: 500000,
       idcible: 4,
       ratio: 1,
@@ -463,7 +464,7 @@ export const origworld: World = {
     },
     {
       name: 'Nuka-Girl',
-      logo: 'icones/manager-nuka-girl.png',
+      logo: 'icones/manager-nuka-girl-spatiale.png',
       seuil: 10000000,
       idcible: 6,
       ratio: 1,

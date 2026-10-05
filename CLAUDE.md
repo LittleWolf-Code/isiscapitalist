@@ -36,7 +36,9 @@ Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`
   localement puis transmises, rechargement sur refus), mise en page du sujet (en-tête, bandeau
   gauche badgé, fenêtres superposées, carte produit à image cliquable), snack-bar, pseudo en
   formulaire signal, pipes `bigvalue` / `second` ; thème « écran cathodique » (D22 / D34) et
-  icônes Pip-Boy (D35) conservés. Détail : `frontend/CLAUDE.md`.
+  icônes Pip-Boy (D35) conservés. Paramètres → « Disposition » permet de revenir à la barre
+  d'onglets en bas de la phase 9 (D37) ; la disposition du sujet reste celle par défaut.
+  Détail : `frontend/CLAUDE.md`.
 - Les décisions D14, D15, D19, D20, D23 à D31 décrivent la phase 9 et sont **remplacées** (D36) ;
   les relire seulement pour l'historique.
 - `node_modules/` **par sous-projet** (`backend/`, `frontend/`), pas de `package.json` racine (D16).

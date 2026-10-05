@@ -50,6 +50,16 @@ describe('normalizeDisplay', () => {
   });
 });
 
+// Disposition de la page (D37) : 'sujet' par défaut, 'onglets' au choix, inconnue → défaut.
+describe('normalizeDisplay — disposition', () => {
+  it("défaut 'sujet' ; 'onglets' conservé ; valeur inconnue ou absente → 'sujet'", () => {
+    expect(DEFAULT_DISPLAY.layout).toBe('sujet');
+    expect(normalizeDisplay({ layout: 'onglets' }).layout).toBe('onglets');
+    expect(normalizeDisplay({ layout: 'tabs' }).layout).toBe('sujet');
+    expect(normalizeDisplay({ tint: 'amber' }).layout).toBe('sujet');
+  });
+});
+
 describe('readStoredFlag', () => {
   beforeEach(clearStorage);
 

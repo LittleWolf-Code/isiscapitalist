@@ -1,11 +1,29 @@
 <section class="settings">
-  <h2 class="pip-title">Paramètres</h2>
+  @if (showTitle()) {
+    <h2 class="pip-title">Paramètres</h2>
+  }
 
   <!-- Ordre des mat-slide-toggle figé (les specs comptent dessus) : Vignette, Grille, Grain,
        Scanlines, Halo, Scintillement, Bande, Bruit. Un curseur est désactivé quand son toggle
        est off mais garde sa valeur. -->
   <div class="settings-list pip-frame">
     <h3 class="section-title">Écran</h3>
+    <!-- Disposition de la page (D37) : celle du sujet par défaut, ou la barre d'onglets en bas. -->
+    <div class="setting-row">
+      <span class="setting-label">Disposition</span>
+      <mat-button-toggle-group
+        class="layout"
+        name="layout"
+        aria-label="Disposition"
+        hideSingleSelectionIndicator
+        [value]="display().layout"
+        (change)="onLayoutChange($event.value)"
+      >
+        @for (l of layouts; track l.value) {
+          <mat-button-toggle [value]="l.value">{{ l.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
     <div class="setting-row">
       <span class="setting-label">Teinte</span>
       <mat-button-toggle-group

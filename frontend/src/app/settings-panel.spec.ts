@@ -41,6 +41,9 @@ describe('SettingsPanel', () => {
   function tintButtons(el: HTMLElement): HTMLElement[] {
     return Array.from(el.querySelectorAll<HTMLElement>('.tint mat-button-toggle'));
   }
+  function layoutButtons(el: HTMLElement): HTMLElement[] {
+    return Array.from(el.querySelectorAll<HTMLElement>('.layout mat-button-toggle'));
+  }
 
   it('affiche le titre, 3 sections, 8 interrupteurs dans l\'ordre, 3 curseurs et 4 teintes', async () => {
     const fixture = TestBed.createComponent(Host);
@@ -114,9 +117,21 @@ describe('SettingsPanel', () => {
     expect(tintButtons(el)[1].classList.contains('mat-button-toggle-checked')).toBe(true);
   });
 
+  it("disposition (D37) : « Menu à gauche (sujet) » coché par défaut, clic « Onglets en bas » → layout 'onglets'", async () => {
+    const fixture = TestBed.createComponent(Host);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(layoutButtons(el).map((b) => b.textContent?.trim())).toEqual(['Menu à gauche (sujet)', 'Onglets en bas']);
+    expect(layoutButtons(el)[0].classList.contains('mat-button-toggle-checked')).toBe(true);
+    layoutButtons(el)[1].querySelector<HTMLButtonElement>('button')!.click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.display().layout).toBe('onglets');
+    expect(layoutButtons(el)[1].classList.contains('mat-button-toggle-checked')).toBe(true);
+  });
+
   it('clic Réinitialiser → DEFAULT_DISPLAY', async () => {
     const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.display.set({ ...DEFAULT_DISPLAY, tint: 'white', roll: true, glowLevel: 90, grid: false });
+    fixture.componentInstance.display.set({ ...DEFAULT_DISPLAY, tint: 'white', roll: true, glowLevel: 90, grid: false, layout: 'onglets' });
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     el.querySelector<HTMLButtonElement>('button.reset')!.click();

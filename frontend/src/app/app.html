@@ -1,5 +1,156 @@
-<!-- Bandeau d'en-tête (F-04) : icône et nom du monde, argent, multiplicateur d'achat, pseudo. -->
-<header class="header">
+@if (layout() === 'onglets') {
+  <!-- Disposition « onglets » (D37) : barre du haut à cases de stats, écran de l'onglet actif,
+       barre d'onglets en bas. -->
+  <mat-toolbar class="topbar">
+    <span class="brand">ISIS Capitalist</span>
+    <ng-container *ngTemplateOutlet="worldTpl" />
+    <ng-container *ngTemplateOutlet="userTpl" />
+    <mat-button-toggle-group
+      class="multiplier-toggle"
+      name="multiplier"
+      aria-label="Quantité d'achat"
+      hideSingleSelectionIndicator
+      [value]="qtmulti()"
+      (change)="qtmulti.set($event.value)"
+    >
+      @for (m of qtCycle; track m) {
+        <mat-button-toggle [value]="m">{{ qtLabel(m) }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+    <span class="spacer"></span>
+    @if (world(); as w) {
+      <dl class="stats">
+        <div class="stat pip-frame"><dt>argent</dt><dd id="money" [innerHTML]="w.money | bigvalue"></dd></div>
+        <div class="stat pip-frame"><dt>score</dt><dd [innerHTML]="w.score | bigvalue"></dd></div>
+        <div class="stat pip-frame"><dt>anges</dt><dd>{{ w.activeangels }} / {{ w.totalangels }}</dd></div>
+        <div class="stat pip-frame"><dt>bonus</dt><dd>{{ w.angelbonus }} %</dd></div>
+      </dl>
+    }
+  </mat-toolbar>
+
+  <app-tab-bar [active]="tab()" [badges]="tabBadges()" (select)="tab.set($event)">
+    <main class="screen">
+      @if (tab() === 'settings') {
+        <ng-container *ngTemplateOutlet="settingsTpl; context: { $implicit: true }" />
+      } @else if (world(); as w) {
+        @switch (tab()) {
+          @case ('products') {
+            <h2 class="pip-title">Produits ({{ w.products.length }})</h2>
+            <div class="product-grid">
+              <ng-container *ngTemplateOutlet="productsTpl; context: { $implicit: w }" />
+            </div>
+          }
+          @case ('managers') {
+            <h2 class="pip-title">Managers</h2>
+            <ng-container *ngTemplateOutlet="managersTpl; context: { $implicit: w }" />
+          }
+          @case ('upgrades') {
+            <h2 class="pip-title">Cash Upgrades</h2>
+            <ng-container *ngTemplateOutlet="upgradesTpl; context: { $implicit: w }" />
+          }
+          @case ('angels') {
+            <h2 class="pip-title">Angel Investors</h2>
+            <ng-container *ngTemplateOutlet="investorsTpl; context: { $implicit: w }" />
+            <h3 class="section-title">Angel Upgrades</h3>
+            <ng-container *ngTemplateOutlet="angelUpgradesTpl; context: { $implicit: w }" />
+          }
+          @case ('unlocks') {
+            <h2 class="pip-title">Unlocks</h2>
+            <ng-container *ngTemplateOutlet="unlocksTpl; context: { $implicit: w }" />
+          }
+        }
+      } @else {
+        <p class="muted">aucun monde chargé</p>
+      }
+    </main>
+  </app-tab-bar>
+} @else {
+  <!-- Disposition du sujet (F-04 → F-06), par défaut. -->
+  <header class="header">
+    <ng-container *ngTemplateOutlet="worldTpl" />
+
+    <div class="money pip-frame">
+      <span class="label">argent</span>
+      <span id="money" [innerHTML]="(world()?.money ?? 0) | bigvalue"></span>
+    </div>
+
+    <!-- Un seul bouton, cycle x1 → x10 → x100 → Max (F-13). -->
+    <button matButton="filled" type="button" class="multiplier" (click)="cycleQtmulti()" aria-label="Quantité d'achat, cliquer pour changer">
+      Buy {{ qtLabel(qtmulti()) }}
+    </button>
+
+    <ng-container *ngTemplateOutlet="userTpl" />
+  </header>
+
+  <div class="main">
+    <!-- Bandeau gauche (F-05) : un bouton par fenêtre, badgé quand un achat est possible (F-21,
+         F-27, F-31) ou quand un reset rapporterait des anges (Investors). -->
+    <nav class="menu" aria-label="Fenêtres du jeu">
+      @for (item of menu; track item.id) {
+        <button
+          matButton="filled"
+          type="button"
+          class="menu-button"
+          [attr.data-window]="item.id"
+          [matBadge]="badges()[item.id]"
+          [matBadgeHidden]="badges()[item.id] === 0"
+          matBadgePosition="above after"
+          (click)="open(item.id)"
+        >
+          {{ item.label }}
+        </button>
+      }
+    </nav>
+
+    <!-- Partie centrale (F-06) : les produits et leurs éléments d'interaction. -->
+    <main class="products">
+      @if (world(); as w) {
+        <ng-container *ngTemplateOutlet="productsTpl; context: { $implicit: w }" />
+      }
+    </main>
+  </div>
+
+  <!-- Fenêtres superposées (F-18, F-25, F-27, F-29, F-31), une à la fois. Paramètres ne dépend
+       pas du monde. -->
+  @if (modal() === 'settings') {
+    <app-modal title="Paramètres" (closed)="close()">
+      <ng-container *ngTemplateOutlet="settingsTpl; context: { $implicit: false }" />
+    </app-modal>
+  } @else if (world(); as w) {
+    @switch (modal()) {
+      @case ('managers') {
+        <app-modal title="Managers make you feel better !" (closed)="close()">
+          <ng-container *ngTemplateOutlet="managersTpl; context: { $implicit: w }" />
+        </app-modal>
+      }
+      @case ('upgrades') {
+        <app-modal title="Cash Upgrades" (closed)="close()">
+          <ng-container *ngTemplateOutlet="upgradesTpl; context: { $implicit: w }" />
+        </app-modal>
+      }
+      @case ('angelupgrades') {
+        <app-modal title="Angel Upgrades" (closed)="close()">
+          <ng-container *ngTemplateOutlet="angelUpgradesTpl; context: { $implicit: w }" />
+        </app-modal>
+      }
+      @case ('unlocks') {
+        <app-modal title="Unlocks" (closed)="close()">
+          <ng-container *ngTemplateOutlet="unlocksTpl; context: { $implicit: w }" />
+        </app-modal>
+      }
+      @case ('investors') {
+        <app-modal title="Angel Investors" (closed)="close()">
+          <ng-container *ngTemplateOutlet="investorsTpl; context: { $implicit: w }" />
+        </app-modal>
+      }
+    }
+  }
+}
+
+<!-- Contenus partagés par les deux dispositions. -->
+
+<!-- Logo rond + nom du monde (F-04). -->
+<ng-template #worldTpl>
   <div class="world">
     @if (world(); as w) {
       <app-game-icon class="world-logo round" [candidates]="[w.logo]" />
@@ -8,142 +159,99 @@
       <span class="muted">aucun monde chargé</span>
     }
   </div>
+</ng-template>
 
-  <div class="money pip-frame">
-    <span class="label">argent</span>
-    <span id="money" [innerHTML]="(world()?.money ?? 0) | bigvalue"></span>
-  </div>
-
-  <!-- Un seul bouton, cycle x1 → x10 → x100 → Max (F-13). -->
-  <button matButton="filled" type="button" class="multiplier" (click)="cycleQtmulti()" aria-label="Quantité d'achat, cliquer pour changer">
-    Buy {{ qtLabel(qtmulti()) }}
-  </button>
-
+<!-- Pseudo (formulaire signal, Entrée = commitName, F-23) et bouton Refresh (F-24). -->
+<ng-template #userTpl>
   <div class="user">
     <mat-form-field class="user-field" appearance="outline" subscriptSizing="dynamic">
       <mat-label>Your ID</mat-label>
-      <!-- Formulaire signal (F-23) : Entrée valide le pseudo et bascule sur la partie du joueur. -->
       <input matInput type="text" [formField]="game.loginForm.name" (keydown.enter)="game.commitName()" />
     </mat-form-field>
     <button matButton="outlined" type="button" class="refresh" (click)="game.refreshWorld()">Refresh</button>
   </div>
-</header>
+</ng-template>
 
-<div class="main">
-  <!-- Bandeau gauche (F-05) : un bouton par fenêtre, badgé quand un achat est possible (F-21,
-       F-27, F-31) ou quand un reset rapporterait des anges (Investors). -->
-  <nav class="menu" aria-label="Fenêtres du jeu">
-    @for (item of menu; track item.id) {
-      <button
-        matButton="filled"
-        type="button"
-        class="menu-button"
-        [attr.data-window]="item.id"
-        [matBadge]="badges()[item.id]"
-        [matBadgeHidden]="badges()[item.id] === 0"
-        matBadgePosition="above after"
-        (click)="open(item.id)"
-      >
-        {{ item.label }}
-      </button>
-    }
-  </nav>
-
-  <!-- Partie centrale (F-06) : les produits et leurs éléments d'interaction. -->
-  <main class="products">
-    @if (world(); as w) {
-      @for (product of w.products; track product.id) {
-        <app-product-card
-          [product]="product"
-          [activeangels]="w.activeangels"
-          [angelbonus]="w.angelbonus"
-          [qtmulti]="qtmulti()"
-          [money]="w.money"
-          (buy)="game.buyProduct($event, product)"
-          (launch)="game.startProduction(product)"
-        />
-      }
-    }
-  </main>
-</div>
-
-<!-- Fenêtres superposées (F-18, F-25, F-27, F-29, F-31), une à la fois. Paramètres ne dépend
-     pas du monde. -->
-@if (modal() === 'settings') {
-  <app-modal title="Paramètres" (closed)="close()">
-    <app-settings-panel [(display)]="game.display" />
-  </app-modal>
-} @else if (world(); as w) {
-  @switch (modal()) {
-    @case ('managers') {
-      <app-modal title="Managers make you feel better !" (closed)="close()">
-        <app-palier-list
-          [paliers]="w.managers"
-          actionLabel="Hire !"
-          costUnit="$"
-          [balance]="w.money"
-          [showEffect]="false"
-          emptyText="Tous les managers sont engagés."
-          [products]="w.products"
-          [worldLogo]="w.logo"
-          (action)="game.hireManager($event)"
-        />
-      </app-modal>
-    }
-    @case ('upgrades') {
-      <app-modal title="Cash Upgrades" (closed)="close()">
-        <app-palier-list
-          [paliers]="w.upgrades"
-          actionLabel="Buy !"
-          costUnit="$"
-          [balance]="w.money"
-          emptyText="Tous les cash upgrades sont achetés."
-          [products]="w.products"
-          [worldLogo]="w.logo"
-          (action)="game.buyUpgrade($event)"
-        />
-      </app-modal>
-    }
-    @case ('angelupgrades') {
-      <app-modal title="Angel Upgrades" (closed)="close()">
-        <app-palier-list
-          [paliers]="w.angelupgrades"
-          actionLabel="Buy !"
-          costUnit="anges"
-          [balance]="w.activeangels"
-          emptyText="Tous les angel upgrades sont achetés."
-          [products]="w.products"
-          [worldLogo]="w.logo"
-          (action)="game.buyAngelUpgrade($event)"
-        />
-      </app-modal>
-    }
-    @case ('unlocks') {
-      <app-modal title="Unlocks" (closed)="close()">
-        <app-unlock-list [products]="w.products" [worldLogo]="w.logo" />
-        <h3 class="section-title">Pour tous les produits</h3>
-        <app-palier-list
-          [paliers]="w.allunlocks"
-          emptyText="Tous les unlocks globaux sont débloqués."
-          [products]="w.products"
-          [worldLogo]="w.logo"
-        />
-      </app-modal>
-    }
-    @case ('investors') {
-      <app-modal title="Angel Investors" (closed)="close()">
-        <app-angels-panel
-          [score]="w.score"
-          [totalangels]="w.totalangels"
-          [activeangels]="w.activeangels"
-          [angelbonus]="w.angelbonus"
-          [angelsEarned]="angelsEarned()"
-          (resetRequested)="onReset()"
-        />
-      </app-modal>
-    }
+<ng-template #productsTpl let-w>
+  @for (product of w.products; track product.id) {
+    <app-product-card
+      [product]="product"
+      [activeangels]="w.activeangels"
+      [angelbonus]="w.angelbonus"
+      [qtmulti]="qtmulti()"
+      [money]="w.money"
+      (buy)="game.buyProduct($event, product)"
+      (launch)="game.startProduction(product)"
+    />
   }
-}
+</ng-template>
+
+<ng-template #managersTpl let-w>
+  <app-palier-list
+    [paliers]="w.managers"
+    actionLabel="Hire !"
+    costUnit="$"
+    [balance]="w.money"
+    [showEffect]="false"
+    emptyText="Tous les managers sont engagés."
+    [products]="w.products"
+    [worldLogo]="w.logo"
+    (action)="game.hireManager($event)"
+  />
+</ng-template>
+
+<ng-template #upgradesTpl let-w>
+  <app-palier-list
+    [paliers]="w.upgrades"
+    actionLabel="Buy !"
+    costUnit="$"
+    [balance]="w.money"
+    emptyText="Tous les cash upgrades sont achetés."
+    [products]="w.products"
+    [worldLogo]="w.logo"
+    (action)="game.buyUpgrade($event)"
+  />
+</ng-template>
+
+<ng-template #angelUpgradesTpl let-w>
+  <app-palier-list
+    [paliers]="w.angelupgrades"
+    actionLabel="Buy !"
+    costUnit="anges"
+    [balance]="w.activeangels"
+    emptyText="Tous les angel upgrades sont achetés."
+    [products]="w.products"
+    [worldLogo]="w.logo"
+    (action)="game.buyAngelUpgrade($event)"
+  />
+</ng-template>
+
+<ng-template #unlocksTpl let-w>
+  <app-unlock-list [products]="w.products" [worldLogo]="w.logo" />
+  <h3 class="section-title">Pour tous les produits</h3>
+  <app-palier-list
+    [paliers]="w.allunlocks"
+    emptyText="Tous les unlocks globaux sont débloqués."
+    [products]="w.products"
+    [worldLogo]="w.logo"
+  />
+</ng-template>
+
+<ng-template #investorsTpl let-w>
+  <app-angels-panel
+    [score]="w.score"
+    [totalangels]="w.totalangels"
+    [activeangels]="w.activeangels"
+    [angelbonus]="w.angelbonus"
+    [angelsEarned]="angelsEarned()"
+    (resetRequested)="onReset()"
+  />
+</ng-template>
+
+<!-- Réglages ; le titre « Paramètres » est masqué dans la fenêtre qui le porte déjà. -->
+<ng-template #settingsTpl let-showTitle>
+  <app-settings-panel [display]="game.display()" (displayChange)="onDisplayChange($event)" [showTitle]="showTitle" />
+</ng-template>
 
 <!-- Couches CRT (D34 : vignette, bande, grille, grain / bruit), rendues par styles.css selon les
      classes crt-* de <app-root>. -->
