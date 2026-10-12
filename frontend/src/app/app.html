@@ -197,6 +197,7 @@
     emptyText="Tous les managers sont engagés."
     [products]="w.products"
     [worldLogo]="w.logo"
+    [blockedNames]="blockedManagers()"
     (action)="game.hireManager($event)"
   />
 </ng-template>
@@ -247,6 +248,7 @@
     [totalangels]="w.totalangels"
     [activeangels]="w.activeangels"
     [angelbonus]="w.angelbonus"
+    [angeldivisor]="w.angeldivisor"
     [angelsEarned]="angelsEarned()"
     (resetRequested)="onReset()"
   />
@@ -261,6 +263,8 @@
     [server]="game.server()"
     [defaultServer]="defaultServer"
     (serverChange)="game.setServer($event)"
+    [angelDivisor]="game.world()?.angeldivisor ?? null"
+    (angelDivisorChange)="game.setAngelDivisor($event)"
   />
 </ng-template>
 

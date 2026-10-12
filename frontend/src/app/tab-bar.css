@@ -16,13 +16,9 @@
    posée par défaut). Marges réduites pour que les 6 onglets tiennent dès ~450 px ; en dessous,
    la pagination Material (flèches) prend le relais, aucun onglet sous 72 px (D26). */
 .tab { cursor: pointer; min-width: 72px; flex-basis: 0; }
-/* Libellés à la taille title-medium du thème (1,35 rem, étape 10.8). Tokens séparés et non le
-   raccourci var(--mat-sys-title-medium) : material-theme.scss ne relève que les tokens -size, le
-   raccourci garde la taille Material par défaut (1 rem ; label-large donnait 0,875 rem = 14 px). */
+/* Libellés en title-medium du thème (1,35 rem, étape 10.8 ; raccourci relevé par D44). */
 .tab-label {
-  font-family: var(--mat-sys-title-medium-font);
-  font-size: var(--mat-sys-title-medium-size);
-  line-height: var(--mat-sys-title-medium-line-height);
+  font: var(--mat-sys-title-medium);
   letter-spacing: 0.06em;
 }
 

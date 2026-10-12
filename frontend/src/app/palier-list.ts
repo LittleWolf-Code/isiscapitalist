@@ -1,7 +1,8 @@
 // Liste de paliers d'une fenêtre (managers, cash upgrades, angel upgrades, all unlocks) :
 // purement présentationnelle. Les paliers NON débloqués viennent d'abord, comme le demande le
 // sujet (F-18, F-25, F-27, F-31) : logo, nom, produit ciblé, effet, coût / seuil et bouton
-// d'action actif seulement si le solde suffit. Les paliers débloqués suivent, barrés, avec la
+// d'action actif seulement si le solde suffit (et, pour un manager, si son produit est possédé,
+// D42). Les paliers débloqués suivent, barrés, avec la
 // mention `doneLabel` à la place du bouton (D40). Sans `actionLabel` la liste n'a pas de bouton
 // (all unlocks).
 import { Component, computed, input, output } from '@angular/core';
@@ -41,6 +42,9 @@ export class PalierList {
   readonly worldLogo = input<string>('');
   // Rendu Pip-Boy des icônes (D35), relayé à chaque GameIcon.
   readonly pixelIcons = input(true);
+  // Noms des paliers dont le bouton reste grisé quel que soit le solde : managers dont le produit
+  // n'a aucun exemplaire (D42). La liste reste agnostique des produits, App calcule les noms.
+  readonly blockedNames = input<readonly string[]>([]);
 
   // Émis avec le palier cliqué.
   readonly action = output<PalierData>();
@@ -73,9 +77,10 @@ export class PalierList {
 
   protected readonly trackByName = (_index: number, palier: PalierData): string => palier.name;
 
-  // Même condition que le serveur : solde strictement inférieur au seuil → refus.
+  // Mêmes conditions que le serveur : palier bloqué (D42) ou solde strictement inférieur au
+  // seuil → refus.
   protected canAfford(palier: PalierData): boolean {
     const balance = this.balance();
-    return balance !== null && balance >= palier.seuil;
+    return balance !== null && balance >= palier.seuil && !this.blockedNames().includes(palier.name);
   }
 }

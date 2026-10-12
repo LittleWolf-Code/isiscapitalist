@@ -13,6 +13,9 @@ export const origworld: World = {
   totalangels: 0,
   activeangels: 0,
   angelbonus: 2,
+  // Diviseur du score dans la formule des anges (D43) : 10¹⁵ = formule du sujet. Réglable par
+  // compte (changerFormuleAnges) pour accélérer une démonstration.
+  angeldivisor: 1e15,
   lastupdate: 0,
   products: [
     {

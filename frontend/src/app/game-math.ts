@@ -251,18 +251,42 @@ export function productionProgress(
 // du sujet), même plafond que le serveur.
 export const MAX_INT32 = 2_147_483_647;
 
-// Anges acquis depuis le début de la partie (RG-09) : floor(150 × √(score / 10¹⁵)), plafonné à
-// MAX_INT32. Même formule que backend/src/world-engine.ts.
-export function totalAngelsFor(score: number): number {
-  return Math.min(MAX_INT32, Math.floor(150 * Math.sqrt(Math.max(0, score) / 1e15)));
+// Diviseur du score de la formule du sujet (RG-09) ; un compte peut en choisir un autre (D43).
+export const SUBJECT_ANGEL_DIVISOR = 1e15;
+
+// Anges acquis depuis le début de la partie (RG-09) : floor(150 × √(score / diviseur)), plafonné
+// à MAX_INT32. Même formule que backend/src/world-engine.ts.
+export function totalAngelsFor(score: number, divisor: number = SUBJECT_ANGEL_DIVISOR): number {
+  return Math.min(MAX_INT32, Math.floor(150 * Math.sqrt(Math.max(0, score) / divisor)));
 }
 
 // Anges SUPPLÉMENTAIRES qu'un reset rapporterait maintenant (RG-09, fenêtre Investors et badge) :
-// totalAngelsFor(score) − totalangels, borné à 0. Le serveur recalcule au reset.
+// totalAngelsFor(score, angeldivisor) − totalangels, borné à 0. Le serveur recalcule au reset.
 export function angelsEarned(
-  world: Pick<World, 'score' | 'totalangels'>,
+  world: Pick<World, 'score' | 'totalangels' | 'angeldivisor'>,
 ): number {
-  return Math.max(0, totalAngelsFor(world.score) - world.totalangels);
+  return Math.max(0, totalAngelsFor(world.score, world.angeldivisor) - world.totalangels);
+}
+
+// Formules proposées dans Paramètres → Démonstration (D43), dans l'ordre des boutons. « Démo » :
+// 150 anges à 10⁶ de score ; « Express » : 150 anges à 10³, quelques secondes de jeu.
+export const ANGEL_FORMULAS: readonly { divisor: number; label: string }[] = [
+  { divisor: SUBJECT_ANGEL_DIVISOR, label: 'Sujet' },
+  { divisor: 1e6, label: 'Démo' },
+  { divisor: 1e3, label: 'Express' },
+];
+
+const SUPERSCRIPT_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+
+// Formule lisible du compte : « 150 × √(score / 10¹⁵) » (puissance de 10 en exposant, sinon le
+// nombre tel quel).
+export function angelFormulaLabel(divisor: number): string {
+  const exponent = Math.log10(divisor);
+  const text =
+    Number.isInteger(exponent) && exponent > 0
+      ? '10' + [...String(exponent)].map((d) => SUPERSCRIPT_DIGITS[Number(d)]).join('')
+      : String(divisor);
+  return `150 × √(score / ${text})`;
 }
 
 // Nombre de paliers encore verrouillés que `balance` permet d'acheter (badges du bandeau gauche,
@@ -272,6 +296,16 @@ export function affordableCount(
   balance: number,
 ): number {
   return paliers.filter((p) => !p.unlocked && balance >= p.seuil).length;
+}
+
+// Managers non engagés dont le produit cible n'a encore aucun exemplaire (D42) : le serveur
+// refuse de les engager, leur bouton est grisé et ils ne comptent pas dans le badge.
+export function blockedManagerNames(
+  world: Pick<World, 'managers' | 'products'>,
+): string[] {
+  return world.managers
+    .filter((m) => !m.unlocked && world.products.find((p) => p.id === m.idcible)?.quantite === 0)
+    .map((m) => m.name);
 }
 
 // Prochain palier à atteindre : le palier VERROUILLÉ de plus petit seuil, ou null si tout est

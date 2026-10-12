@@ -6,6 +6,7 @@ import {
   buyUpgrade,
   checkAllUnlocks,
   checkProductUnlocks,
+  isValidAngelDivisor,
   resetWorld,
 } from './world-engine.js';
 
@@ -71,10 +72,9 @@ export class GraphQlResolver {
     return product;
   }
 
-  // Engage un manager (B-11, F-19) : seule condition, l'argent (`seuil`) ; débite, passe
-  // `unlocked` et `managerUnlocked` du produit cible à true. Aucun bonus appliqué (ratio/typeratio
-  // des managers sont décoratifs, D13). Plus de refus à 0 exemplaire (D24 retirée, D36) : un
-  // client conforme au sujet n'en sait rien et divergerait du serveur.
+  // Engage un manager (B-11, F-19) : exige au moins un exemplaire du produit cible (D42, écart
+  // au sujet), puis l'argent (`seuil`) ; débite, passe `unlocked` et `managerUnlocked` du produit
+  // cible à true. Aucun bonus appliqué (ratio/typeratio des managers sont décoratifs, D13).
   @Mutation()
   engagerManager(
     @Args('user') user: string,
@@ -87,6 +87,13 @@ export class GraphQlResolver {
       throw new Error(`Le manager ${name} est déjà engagé`);
     }
     const product = this.service.findProduct(world, manager.idcible);
+    // Quantité avant argent : « pas assez d'argent » enverrait sur une fausse piste un joueur qui
+    // ne possède pas encore le produit.
+    if (product.quantite === 0) {
+      throw new Error(
+        `Aucun exemplaire de ${product.name} : achetez le produit avant d'engager son manager`,
+      );
+    }
     if (world.money < manager.seuil) {
       throw new Error("Pas assez d'argent");
     }
@@ -137,5 +144,24 @@ export class GraphQlResolver {
     const fresh = resetWorld(world);
     this.service.saveWorld(user, fresh);
     return fresh;
+  }
+
+  // Formule des anges du compte (D43, ajout au sujet pour les démonstrations) : remplace le
+  // diviseur de 150 × √(score / diviseur). updateWorld d'abord, comme toute mutation. Les anges
+  // déjà acquis ne bougent pas : seuls les anges gagnés au prochain reset changent (revenir au
+  // diviseur du sujet après une démo donne donc 0 ange tant que le score ne rattrape pas).
+  @Mutation()
+  changerFormuleAnges(
+    @Args('user') user: string,
+    @Args('diviseur') diviseur: number,
+  ): World {
+    if (!isValidAngelDivisor(diviseur)) {
+      throw new Error('Le diviseur doit être un nombre strictement positif');
+    }
+    const world = this.service.readUserWorld(user);
+    this.service.updateWorld(world);
+    world.angeldivisor = diviseur;
+    this.service.saveWorld(user, world);
+    return world;
   }
 }

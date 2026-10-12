@@ -11,6 +11,7 @@ import {
   buyUpgrade,
   checkAllUnlocks,
   checkProductUnlocks,
+  isValidAngelDivisor,
   MAX_INT32,
   productionGain,
   resetWorld,
@@ -662,6 +663,29 @@ describe('angelsEarned', () => {
     expect(angelsEarned(playedWorld(1000, 300, 300))).toBe(0);
   });
 
+  // D43 : diviseur de la formule choisi par compte (démo). 10⁶ → 150 anges dès 10⁶ de score.
+  it('totalAngelsFor avec diviseur : 10⁶ / 10⁶ → 150, 4·10³ / 10³ → 300', () => {
+    expect(totalAngelsFor(1e6, 1e6)).toBe(150);
+    expect(totalAngelsFor(4e3, 1e3)).toBe(300);
+    expect(totalAngelsFor(1e15, 1e15)).toBe(totalAngelsFor(1e15));
+  });
+
+  it('angelsEarned suit world.angeldivisor', () => {
+    const world = playedWorld(4e6, 100, 100);
+    expect(angelsEarned(world)).toBe(0);
+    world.angeldivisor = 1e6;
+    expect(angelsEarned(world)).toBe(200);
+  });
+
+  it('isValidAngelDivisor : fini et strictement positif', () => {
+    expect(isValidAngelDivisor(1e15)).toBe(true);
+    expect(isValidAngelDivisor(0.5)).toBe(true);
+    expect(isValidAngelDivisor(0)).toBe(false);
+    expect(isValidAngelDivisor(-1e6)).toBe(false);
+    expect(isValidAngelDivisor(Number.POSITIVE_INFINITY)).toBe(false);
+    expect(isValidAngelDivisor(Number.NaN)).toBe(false);
+  });
+
   describe('resetWorld', () => {
     it('exemple 1 : score 4·10¹⁵, 0 ange → 300/300, money 0, produits et paliers réinitialisés', () => {
       const old = playedWorld(4e15, 0, 0);
@@ -681,6 +705,15 @@ describe('angelsEarned', () => {
       expect(fresh.managers.every((m) => !m.unlocked)).toBe(true);
       expect(fresh.upgrades.every((u) => !u.unlocked)).toBe(true);
       expect(fresh.angelupgrades.every((u) => !u.unlocked)).toBe(true);
+    });
+
+    it('conserve le diviseur de la formule des anges du compte (D43)', () => {
+      const old = playedWorld(4e6, 0, 0);
+      old.angeldivisor = 1e6;
+      const fresh = resetWorld(old, 20_000);
+      expect(fresh.totalangels).toBe(300);
+      expect(fresh.angeldivisor).toBe(1e6);
+      expect(origworld.angeldivisor).toBe(1e15);
     });
 
     it('second reset immédiat → 0 gagné, anges inchangés', () => {

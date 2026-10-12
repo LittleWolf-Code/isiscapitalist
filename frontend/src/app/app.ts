@@ -23,7 +23,7 @@ import { AngelsPanel } from './angels-panel';
 import { BigvaluePipe } from './bigvalue.pipe';
 import { DisplaySettings } from './display-settings';
 import { GameIcon } from './game-icon';
-import { affordableCount, angelsEarned } from './game-math';
+import { affordableCount, angelsEarned, blockedManagerNames } from './game-math';
 import { GameService, Multiplier } from './game.service';
 import { Modal } from './modal';
 import { PalierList } from './palier-list';
@@ -118,14 +118,23 @@ export class App {
     return world ? angelsEarned(world) : 0;
   });
 
+  // Managers impossibles à engager faute d'exemplaire de leur produit (D42).
+  protected readonly blockedManagers = computed(() => {
+    const world = this.world();
+    return world ? blockedManagerNames(world) : [];
+  });
+
   // Badges du bandeau gauche (F-21, F-27, F-31) : nombre d'éléments achetables maintenant.
   protected readonly badges = computed<Record<GameWindow, number>>(() => {
     const world = this.world();
+    const blocked = this.blockedManagers();
     return {
       unlocks: 0,
       upgrades: world ? affordableCount(world.upgrades, world.money) : 0,
       angelupgrades: world ? affordableCount(world.angelupgrades, world.activeangels) : 0,
-      managers: world ? affordableCount(world.managers, world.money) : 0,
+      managers: world
+        ? affordableCount(world.managers.filter((m) => !blocked.includes(m.name)), world.money)
+        : 0,
       investors: this.angelsEarned(),
       settings: 0,
     };

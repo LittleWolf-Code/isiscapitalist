@@ -42,3 +42,10 @@ mutation ResetWorld($user: String!) {
     activeangels
   }
 }
+
+# Formule des anges du compte (D43, ajout au sujet pour les démonstrations).
+mutation ChangerFormuleAnges($user: String!, $diviseur: Float!) {
+  changerFormuleAnges(user: $user, diviseur: $diviseur) {
+    angeldivisor
+  }
+}

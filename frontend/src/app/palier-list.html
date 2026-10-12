@@ -46,7 +46,8 @@
           @if (palier.unlocked) {
             <span class="done-label">{{ doneLabel() }}</span>
           } @else if (actionLabel()) {
-            <!-- Actif seulement si le solde suffit (F-18 : « sélectionnable » si l'argent suffit). -->
+            <!-- Actif seulement si le solde suffit (F-18 : « sélectionnable » si l'argent suffit) et
+                 si le palier n'est pas dans blockedNames (D42). -->
             <button matButton="filled" type="button" [disabled]="!canAfford(palier)" (click)="action.emit(palier)">
               {{ actionLabel() }}
             </button>

@@ -32,7 +32,8 @@
 
       <div class="product-gain">
         <mat-progress-bar mode="determinate" [value]="progress()" aria-label="Production en cours" />
-        <span class="bar-label" [innerHTML]="gain() | bigvalue"></span>
+        <!-- Span intérieur : un seul élément de grille, l'exposant reste sur la ligne (D44). -->
+        <span class="bar-label"><span [innerHTML]="gain() | bigvalue"></span></span>
       </div>
 
       <div class="product-buy">

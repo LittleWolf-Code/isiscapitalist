@@ -11,6 +11,7 @@ import { AngelsPanel } from './angels-panel';
       [totalangels]="100"
       [activeangels]="60"
       [angelbonus]="2"
+      [angeldivisor]="1e15"
       [angelsEarned]="earned()"
       (resetRequested)="resets = resets + 1"
     />
@@ -38,6 +39,7 @@ describe('AngelsPanel (fenêtre Investors, F-29)', () => {
       'Total des anges=100',
       'Bonus par ange=2 %',
       'Score=4.000 × 1015',
+      'Anges acquis=150 × √(score / 10¹⁵)',
     ]);
   });
 

@@ -2,6 +2,8 @@
 # Copie de docs/reference/schema.graphql — un seul écart : lastupdate: Float! (D6). Le sujet le type
 # String! (backend.pdf) ou Int! (frontend), un horodatage en ms dépasse Int (ambiguïté A1 du cahier).
 # Les écarts D20 (basculerManager) et D27 (anges en Float) ont été retirés (D36).
+# Ajout D43 (démo) : World.angeldivisor et la mutation changerFormuleAnges, diviseur du score
+# dans la formule des anges propre à chaque compte (10¹⁵ par défaut, celui du sujet).
 
 enum RatioType {
   gain
@@ -41,6 +43,7 @@ type World {
   totalangels: Int!
   activeangels: Int!
   angelbonus: Int!
+  angeldivisor: Float!
   lastupdate: Float!
   products: [Product!]!
   allunlocks: [Palier!]!
@@ -60,4 +63,5 @@ type Mutation {
   acheterCashUpgrade(user: String!, name: String!): Palier
   acheterAngelUpgrade(user: String!, name: String!): Palier
   resetWorld(user: String!): World
+  changerFormuleAnges(user: String!, diviseur: Float!): World
 }

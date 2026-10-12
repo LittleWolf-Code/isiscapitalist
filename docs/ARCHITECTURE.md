@@ -41,7 +41,7 @@ Responsabilités :
 | `src/schema.graphql` | Contrat GraphQL (fourni) |
 | `src/graphql.ts` | Types TS générés (`World`, `Product`, `Palier`, `RatioType`) |
 | `src/origworld.ts` | État initial du jeu (données) |
-| `src/resolver.ts` | 1 query + 6 mutations, orchestration uniquement |
+| `src/resolver.ts` | 1 query + 6 mutations du sujet + `changerFormuleAnges` (D43), orchestration uniquement |
 | `src/app.service.ts` | Persistance (`readUserWorld`, `saveWorld`, nom de fichier encodé) et recherches communes |
 | `src/world-engine.ts` | Règles du jeu en fonctions pures (`advanceProduction`, `updateWorld`, `applyBonus`, unlocks, `buyUpgrade`, anges, `resetWorld`), D10 |
 | `src/main.ts` | Bootstrap : static `public/`, CORS, port 3000 |

@@ -23,7 +23,11 @@ export class AppService {
   readUserWorld(user: string): World {
     try {
       const data = fs.readFileSync(this.worldPath(user));
-      return JSON.parse(data.toString());
+      const world = JSON.parse(data.toString()) as World;
+      // Mondes sauvegardés avant D43 : pas de diviseur → celui du sujet (le champ est non nul
+      // dans le schéma, son absence ferait échouer getWorld).
+      world.angeldivisor ??= origworld.angeldivisor;
+      return world;
     } catch (e: unknown) {
       console.log((e as Error).message);
       return structuredClone(origworld);

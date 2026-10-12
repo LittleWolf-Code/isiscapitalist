@@ -117,4 +117,28 @@
       <button matButton="outlined" class="default-server" type="button" (click)="resetServer()">Défaut</button>
     </div>
   </div>
+
+  <!-- Formule des anges du COMPTE (D43) : gardée par le serveur dans le monde du joueur, pas en
+       localStorage. Sert aux démonstrations (anges en quelques minutes) ; « Sujet » = RG-09. -->
+  @if (angelDivisor() !== null) {
+    <div class="settings-list demo-settings pip-frame">
+      <h3 class="section-title">Démonstration</h3>
+      <div class="setting-row">
+        <span class="setting-label">Formule des anges</span>
+        <mat-button-toggle-group
+          class="angel-formula"
+          name="angelFormula"
+          aria-label="Formule des anges"
+          hideSingleSelectionIndicator
+          [value]="angelDivisor()"
+          (change)="onAngelDivisorChange($event.value)"
+        >
+          @for (f of angelFormulas; track f.divisor) {
+            <mat-button-toggle [value]="f.divisor">{{ f.label }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+      <p class="hint">{{ angelFormula() }} — réglage du compte, gardé au reset. Les anges déjà acquis ne changent pas.</p>
+    </div>
+  }
 </section>

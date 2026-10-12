@@ -3,6 +3,7 @@
 // Palette tonale générée par `ng generate @angular/material:theme-color` (seed #1aff80,
 // neutre #0b3d21) dans `_theme-colors.scss` ; les tokens système monochromes sont imposés
 // via $overrides (noms dans node_modules/@angular/material/core/tokens/m3/_md-sys-*.scss).
+@use 'sass:map';
 @use '@angular/material' as mat;
 @use './theme-colors' as pip;
 
@@ -15,6 +16,39 @@ $pip-surface-low: #02180b;
 $pip-surface: #041a0d;
 $pip-surface-high: #062211;
 $pip-surface-highest: #082a15;
+
+// VT323 paraît ~20 % plus petite que Roboto : tailles du corps relevées ici plutôt que par des
+// font-size dans les composants.
+$pip-type-sizes: (
+  body-small: 0.95rem,
+  body-medium: 1.1rem,
+  body-large: 1.25rem,
+  label-small: 0.9rem,
+  label-medium: 1rem,
+  label-large: 1.15rem,
+  title-small: 1.15rem,
+  title-medium: 1.35rem,
+  title-large: 1.7rem,
+);
+
+// Pour chaque rôle, le token -size (lu par les composants Material) et le raccourci
+// `font: var(--mat-sys-<rôle>)` (lu par nos CSS) : mat.theme émet le raccourci avec la taille
+// Material par défaut si on ne le surcharge pas aussi (D44). Il est recomposé à partir des
+// tokens séparés, pour suivre la graisse, l'interligne et la police du thème.
+@function pip-typescale($sizes) {
+  $tokens: ();
+  @each $role, $size in $sizes {
+    $tokens: map.merge(
+      $tokens,
+      (
+        #{$role}-size: $size,
+        $role: var(--mat-sys-#{$role}-weight) var(--mat-sys-#{$role}-size) #{'/'}
+          var(--mat-sys-#{$role}-line-height) var(--mat-sys-#{$role}-font),
+      )
+    );
+  }
+  @return $tokens;
+}
 
 html {
   height: 100%;
@@ -35,7 +69,7 @@ html {
       ),
       density: 0,
     ),
-    $overrides: (
+    $overrides: map.merge(pip-typescale($pip-type-sizes), (
       // Fond et relief.
       surface: $pip-black,
       background: $pip-black,
@@ -77,30 +111,21 @@ html {
       // Fond des états sélectionnés (chips sélectionnés Material ; les toggles — teinte de
       // l'écran Paramètres — sont traités par button-toggle-overrides, D31).
       secondary-container: $pip-surface-high,
-      // Angles droits partout.
-      corner-extra-small: 0,
-      corner-extra-small-top: 0,
-      corner-small: 0,
-      corner-medium: 0,
-      corner-large: 0,
-      corner-large-top: 0,
-      corner-large-start: 0,
-      corner-large-end: 0,
-      corner-extra-large: 0,
-      corner-extra-large-top: 0,
-      corner-full: 0,
-      // VT323 paraît ~20 % plus petite que Roboto : tailles du corps relevées ici plutôt que
-      // par des font-size dans les composants.
-      body-small-size: 0.95rem,
-      body-medium-size: 1.1rem,
-      body-large-size: 1.25rem,
-      label-small-size: 0.9rem,
-      label-medium-size: 1rem,
-      label-large-size: 1.15rem,
-      title-small-size: 1.15rem,
-      title-medium-size: 1.35rem,
-      title-large-size: 1.7rem,
-    )
+      // Angles droits partout. En px et non `0` : Material place ces tokens dans des calculs
+      // (`max(16px, <coin> + 4px)` du retrait des champs outline), qu'un nombre sans unité
+      // invalide (D45).
+      corner-extra-small: 0px,
+      corner-extra-small-top: 0px,
+      corner-small: 0px,
+      corner-medium: 0px,
+      corner-large: 0px,
+      corner-large-top: 0px,
+      corner-large-start: 0px,
+      corner-large-end: 0px,
+      corner-extra-large: 0px,
+      corner-extra-large-top: 0px,
+      corner-full: 0px,
+    ))
   );
 
   // Piste et indicateur seraient tous deux verts : la barre de production doit rester lisible.

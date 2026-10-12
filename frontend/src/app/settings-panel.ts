@@ -1,8 +1,9 @@
 // Écran Paramètres : réglages de l'écran cathodique (D22, élargis en D34) liés en two-way
 // (un seul model DisplaySettings) au signal `display` de GameService par App, et adresse du
 // serveur (F-34, D41 : saisie validée ici, appliquée par GameService.setServer via
-// `serverChange`). Purement présentationnel (aucune injection) : importe le modèle de
-// display-settings.ts et les fonctions pures de server.ts, pas le service.
+// `serverChange`), et formule des anges du compte (D43, démonstration : appliquée par
+// GameService.setAngelDivisor via `angelDivisorChange`). Purement présentationnel (aucune injection) : importe le modèle de
+// display-settings.ts et les fonctions pures de server.ts / game-math.ts, pas le service.
 import { Component, computed, input, linkedSignal, model, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -11,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { DEFAULT_DISPLAY, DisplaySettings, Layout, Tint } from './display-settings';
+import { ANGEL_FORMULAS, angelFormulaLabel } from './game-math';
 import { normalizeServerUrl } from './server';
 
 export const SERVER_ERROR = "L'adresse doit commencer par http:// ou https://";
@@ -54,6 +56,15 @@ export class SettingsPanel {
   readonly defaultServer = input.required<string>();
   readonly httpsPage = input(globalThis.location?.protocol === 'https:');
   readonly serverChange = output<string>();
+  // Diviseur de la formule des anges du compte (D43) ; null tant qu'aucun monde n'est chargé
+  // (le cadre Démonstration est alors masqué). Émis : le diviseur choisi.
+  readonly angelDivisor = input<number | null>(null);
+  readonly angelDivisorChange = output<number>();
+  protected readonly angelFormulas = ANGEL_FORMULAS;
+  protected readonly angelFormula = computed(() => {
+    const divisor = this.angelDivisor();
+    return divisor === null ? '' : angelFormulaLabel(divisor);
+  });
 
   // Saisie en cours : repart de l'adresse appliquée chaque fois que celle-ci change.
   protected readonly serverDraft = linkedSignal(() => this.server());
@@ -90,6 +101,12 @@ export class SettingsPanel {
   // Réglages d'affichage seulement : l'adresse du serveur a son propre bouton « Défaut ».
   protected reset(): void {
     this.display.set({ ...DEFAULT_DISPLAY });
+  }
+
+  protected onAngelDivisorChange(value: number): void {
+    if (value !== this.angelDivisor()) {
+      this.angelDivisorChange.emit(value);
+    }
   }
 
   protected onServerInput(value: string): void {

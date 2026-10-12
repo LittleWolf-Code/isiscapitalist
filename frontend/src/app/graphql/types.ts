@@ -15,6 +15,7 @@ export type Mutation = {
   acheterAngelUpgrade: Maybe<Palier>;
   acheterCashUpgrade: Maybe<Palier>;
   acheterQtProduit: Maybe<Product>;
+  changerFormuleAnges: Maybe<World>;
   engagerManager: Maybe<Palier>;
   lancerProductionProduit: Maybe<Product>;
   resetWorld: Maybe<World>;
@@ -36,6 +37,12 @@ export type MutationAcheterCashUpgradeArgs = {
 export type MutationAcheterQtProduitArgs = {
   id: Scalars['Int']['input'];
   quantite: Scalars['Int']['input'];
+  user: Scalars['String']['input'];
+};
+
+
+export type MutationChangerFormuleAngesArgs = {
+  diviseur: Scalars['Float']['input'];
   user: Scalars['String']['input'];
 };
 
@@ -103,6 +110,7 @@ export type World = {
   activeangels: Scalars['Int']['output'];
   allunlocks: Array<Palier>;
   angelbonus: Scalars['Int']['output'];
+  angeldivisor: Scalars['Float']['output'];
   angelupgrades: Array<Palier>;
   lastupdate: Scalars['Float']['output'];
   logo: Scalars['String']['output'];

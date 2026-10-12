@@ -8,6 +8,8 @@
     <dd>{{ angelbonus() }} %</dd>
     <dt>Score</dt>
     <dd [innerHTML]="score() | bigvalue"></dd>
+    <dt>Anges acquis</dt>
+    <dd class="formula">{{ formula() }}</dd>
   </dl>
 
   <!-- Anges à réclamer par un reset, sur le bouton lui-même (fig. 11 « To Claim with Restart »). -->

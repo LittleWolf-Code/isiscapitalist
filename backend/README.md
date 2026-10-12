@@ -39,10 +39,11 @@ Les erreurs métier arrivent dans `errors[0].message` (en français).
 | `getWorld` | Lit (et crée) le monde du joueur | `query { getWorld(user: "lucas") { name money score products { id name cout quantite timeleft managerUnlocked } } }` |
 | `acheterQtProduit` | Achète `quantite` exemplaires (coût géométrique), déclenche les unlocks | `mutation { acheterQtProduit(user: "lucas", id: 1, quantite: 1) { id quantite cout } }` |
 | `lancerProductionProduit` | Lance une production (`timeleft = vitesse`) | `mutation { lancerProductionProduit(user: "lucas", id: 1) { id timeleft } }` |
-| `engagerManager` | Engage un manager (production automatique du produit cible) | `mutation { engagerManager(user: "lucas", name: "Cappy") { name unlocked } }` |
+| `engagerManager` | Engage un manager (production automatique du produit cible) ; refusé tant que le produit n'a aucun exemplaire (D42) | `mutation { engagerManager(user: "lucas", name: "Cappy") { name unlocked } }` |
 | `acheterCashUpgrade` | Achète un upgrade payé en argent | `mutation { acheterCashUpgrade(user: "lucas", name: "Affiche Nuka-Cola") { name unlocked } }` |
 | `acheterAngelUpgrade` | Achète un upgrade payé en anges actifs | `mutation { acheterAngelUpgrade(user: "lucas", name: "Fortune Finder") { name unlocked } }` |
-| `resetWorld` | Reset « prestige » : anges gagnés `150 × √(score / 10¹⁵)` − déjà gagnés, monde initial | `mutation { resetWorld(user: "lucas") { score totalangels activeangels money } }` |
+| `resetWorld` | Reset « prestige » : anges gagnés `150 × √(score / angeldivisor)` − déjà gagnés (10¹⁵ par défaut), monde initial | `mutation { resetWorld(user: "lucas") { score totalangels activeangels money } }` |
+| `changerFormuleAnges` | Hors sujet (D43) : diviseur de la formule des anges du compte, pour les démos | `mutation { changerFormuleAnges(user: "lucas", diviseur: 1000) { angeldivisor } }` |
 
 Le monde initial (`src/origworld.ts`, « Nuka Capitalist ») démarre à 0 $ avec un exemplaire de
 `Nuka-Cola` : lancer une production puis rappeler `getWorld` après 500 ms pour voir l'argent arriver.
@@ -69,7 +70,7 @@ npm run test:e2e     # test HTTP → Apollo → resolver → fichier, sur un jou
 
 ```
 src/schema.graphql   schéma fourni      src/origworld.ts     monde initial
-src/resolver.ts      query + 6 mutations src/app.service.ts   lecture/écriture des mondes
+src/resolver.ts      query + 7 mutations src/app.service.ts   lecture/écriture des mondes
 src/world-engine.ts  règles du jeu (fonctions pures, testées)
 public/icones/       images             userworlds/          un JSON par joueur
 ```

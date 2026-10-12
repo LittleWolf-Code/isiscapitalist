@@ -28,7 +28,7 @@ Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`
 
 - **Phases 0 à 10 de `docs/ROADMAP.md` cochées.** La phase 10 a mis l'application en conformité
   avec le cahier des charges (D36) ; la dernière recette est `docs/RECETTE.md`.
-- **Backend** : schéma du sujet (seul écart `lastupdate: Float!`, D6), 6 mutations, moteur en
+- **Backend** : schéma du sujet (seul écart `lastupdate: Float!`, D6), 6 mutations du sujet + `changerFormuleAnges` (D43), moteur en
   fonctions pures (`world-engine.ts`, D10), anges `150 × √(score / 10¹⁵)`, pseudo encodé avant de
   devenir un nom de fichier, monde « Nuka Capitalist » (`docs/THEME.md`), simulation
   d'équilibrage `backend/scripts/simulate-balance.mjs`.
@@ -40,6 +40,12 @@ Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`
   d'onglets en bas de la phase 9 (D37) ; la disposition du sujet reste celle par défaut.
   Étape 10.8 : achats barrés en fin de liste et dernier palier sur la carte produit (D40),
   adresse du serveur modifiable dans Paramètres et notifications teintées (D41).
+  Étape 10.9 : un manager ne s'engage qu'avec au moins un exemplaire de son produit (D42, écart
+  au sujet, refusé aussi par le serveur).
+  Étape 10.10 : formule des anges réglable **par compte** pour les démonstrations (D43,
+  `World.angeldivisor`, Paramètres → « Démonstration » : Sujet 10¹⁵ / Démo 10⁶ / Express 10³).
+  Étape 10.11 : les raccourcis `font: var(--mat-sys-…)` suivent les tailles relevées du thème (D44).
+  Étape 10.12 : coins du thème en `0px` (D45), le champ « Your ID » retrouve ses marges.
   Détail : `frontend/CLAUDE.md`.
 - Les décisions D14, D15, D19, D20, D23 à D31 décrivent la phase 9 et sont **remplacées** (D36) ;
   les relire seulement pour l'historique.

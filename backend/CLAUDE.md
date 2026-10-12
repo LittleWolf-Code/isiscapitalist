@@ -21,7 +21,7 @@ backend/
     ├── app.module.ts      # GraphQLModule.forRoot + providers [AppService, GraphQlResolver]
     ├── app.service.ts     # persistance (readUserWorld, saveWorld, nom de fichier encodé) + recherches
     ├── world-engine.ts    # règles en fonctions pures (advanceProduction, updateWorld, bonus, unlocks, anges, reset)
-    ├── resolver.ts        # @Resolver('World') : getWorld + les 6 mutations du sujet
+    ├── resolver.ts        # @Resolver('World') : getWorld + les 6 mutations du sujet + changerFormuleAnges (D43)
     └── main.ts            # NestExpressApplication, useStaticAssets(public), enableCors, port 3000
 ```
 

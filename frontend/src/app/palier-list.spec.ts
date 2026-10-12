@@ -21,6 +21,7 @@ const world = makeWorld();
       emptyText="Tous les managers sont engagés."
       [products]="products"
       [worldLogo]="'icones/world.png'"
+      [blockedNames]="blocked()"
       (action)="clicked.push($event)"
     />
   `,
@@ -32,6 +33,7 @@ class Host {
   readonly costUnit = signal<CostUnit>('$');
   readonly balance = signal<number | null>(1000);
   readonly showEffect = signal(false);
+  readonly blocked = signal<readonly string[]>([]);
   readonly products: readonly ProductData[] = world.products;
   readonly clicked: PalierData[] = [];
 }
@@ -104,6 +106,17 @@ describe('PalierList', () => {
     expect(buttons().map((b) => b.disabled)).toEqual([false, true]);
     buttons()[0].click();
     expect(host.clicked.map((p) => p.name)).toEqual(['Manager 1']);
+  });
+
+  it('palier dans blockedNames : bouton grisé malgré le solde, ligne non mise en avant (D42)', async () => {
+    const { buttons, host, fixture, rows } = await render();
+    host.balance.set(20000);
+    host.blocked.set(['Manager 2', 'Inconnu']);
+    await fixture.whenStable();
+    expect(buttons().map((b) => b.disabled)).toEqual([false, true]);
+    expect(rows().map((r) => r.classList.contains('affordable'))).toEqual([true, false]);
+    buttons()[1].click();
+    expect(host.clicked).toEqual([]);
   });
 
   it('upgrades (F-27) : colonne effet en toutes lettres, cible Global, coût en puissance de dix', async () => {

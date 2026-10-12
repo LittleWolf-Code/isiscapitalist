@@ -104,19 +104,22 @@ describe('World GraphQL API (e2e)', () => {
     expect(readFile().managers[0].unlocked).toBe(false);
   });
 
-  it("engagerManager n'exige que l'argent, même si le produit n'a aucun exemplaire (D36)", async () => {
+  it("engagerManager refuse si le produit cible n'a aucun exemplaire (D42)", async () => {
     // Le deuxième manager cible le produit 2, à quantite 0 dans un monde neuf.
     writeFile({ ...readFile(), money: 20000 });
+    const product2 = origworld.products[1];
     const res = await gql(
       `mutation { engagerManager(user: "${user}", name: "${manager2.name}") { name unlocked } }`,
     ).expect(200);
 
-    expect(res.body.errors).toBeUndefined();
-    expect(res.body.data.engagerManager.unlocked).toBe(true);
+    expect(res.body.data.engagerManager).toBeNull();
+    expect(res.body.errors[0].message).toBe(
+      `Aucun exemplaire de ${product2.name} : achetez le produit avant d'engager son manager`,
+    );
     const saved = readFile();
-    expect(saved.money).toBe(20000 - manager2.seuil);
-    expect(saved.managers[1].unlocked).toBe(true);
-    expect(saved.products[1].managerUnlocked).toBe(true);
+    expect(saved.money).toBe(20000);
+    expect(saved.managers[1].unlocked).toBe(false);
+    expect(saved.products[1].managerUnlocked).toBe(false);
   });
 
   it('lancerProductionProduit affecte vitesse à timeleft, même à 0 exemplaire (B-10)', async () => {
@@ -177,5 +180,48 @@ describe('World GraphQL API (e2e)', () => {
     expect(saved.activeangels).toBe(300);
     expect(saved.products[0].quantite).toBe(1);
     expect(saved.managers.every((m) => !m.unlocked)).toBe(true);
+  });
+
+  it('changerFormuleAnges change le diviseur du compte, gardé au reset (D43)', async () => {
+    const res = await gql(
+      `mutation { changerFormuleAnges(user: "${user}", diviseur: 1000000) { angeldivisor totalangels } }`,
+    ).expect(200);
+    expect(res.body.errors).toBeUndefined();
+    expect(res.body.data.changerFormuleAnges.angeldivisor).toBe(1e6);
+    expect(readFile().angeldivisor).toBe(1e6);
+
+    // Score 4·10⁶ avec le diviseur 10⁶ → 300 anges acquis, dont 0 déjà distribué.
+    const before = readFile();
+    before.score = 4e6;
+    before.totalangels = 0;
+    before.activeangels = 0;
+    writeFile(before);
+    const reset = await gql(
+      `mutation { resetWorld(user: "${user}") { totalangels activeangels angeldivisor } }`,
+    ).expect(200);
+    expect(reset.body.data.resetWorld).toEqual({
+      totalangels: 300,
+      activeangels: 300,
+      angeldivisor: 1e6,
+    });
+  });
+
+  it('changerFormuleAnges refuse un diviseur nul ou négatif', async () => {
+    const res = await gql(
+      `mutation { changerFormuleAnges(user: "${user}", diviseur: 0) { angeldivisor } }`,
+    ).expect(200);
+    expect(res.body.errors[0].message).toBe(
+      'Le diviseur doit être un nombre strictement positif',
+    );
+    expect(readFile().angeldivisor).toBe(1e6);
+  });
+
+  it("un monde sauvegardé sans angeldivisor (avant D43) reçoit celui du sujet", async () => {
+    const old = readFile() as Partial<World>;
+    delete old.angeldivisor;
+    writeFile(old as World);
+    const res = await gql(`query { getWorld(user: "${user}") { angeldivisor } }`).expect(200);
+    expect(res.body.errors).toBeUndefined();
+    expect(res.body.data.getWorld.angeldivisor).toBe(1e15);
   });
 });

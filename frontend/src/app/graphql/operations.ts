@@ -55,6 +55,14 @@ export type ResetWorldMutationVariables = Exact<{
 
 export type ResetWorldMutationData = { resetWorld: { money: number, score: number, totalangels: number, activeangels: number } | null };
 
+export type ChangerFormuleAngesMutationVariables = Exact<{
+  user: string;
+  diviseur: number;
+}>;
+
+
+export type ChangerFormuleAngesMutationData = { changerFormuleAnges: { angeldivisor: number } | null };
+
 export type PalierFieldsFragment = { name: string, logo: string, seuil: number, idcible: number, ratio: number, typeratio: Types.RatioType, unlocked: boolean };
 
 export type GetWorldQueryVariables = Exact<{
@@ -62,7 +70,7 @@ export type GetWorldQueryVariables = Exact<{
 }>;
 
 
-export type GetWorldQueryData = { getWorld: { name: string, logo: string, money: number, score: number, totalangels: number, activeangels: number, angelbonus: number, lastupdate: number, products: Array<{ id: number, name: string, logo: string, cout: number, croissance: number, revenu: number, vitesse: number, quantite: number, timeleft: number, managerUnlocked: boolean, paliers: Array<PalierFieldsFragment> }>, allunlocks: Array<PalierFieldsFragment>, upgrades: Array<PalierFieldsFragment>, angelupgrades: Array<PalierFieldsFragment>, managers: Array<PalierFieldsFragment> } | null };
+export type GetWorldQueryData = { getWorld: { name: string, logo: string, money: number, score: number, totalangels: number, activeangels: number, angelbonus: number, angeldivisor: number, lastupdate: number, products: Array<{ id: number, name: string, logo: string, cout: number, croissance: number, revenu: number, vitesse: number, quantite: number, timeleft: number, managerUnlocked: boolean, paliers: Array<PalierFieldsFragment> }>, allunlocks: Array<PalierFieldsFragment>, upgrades: Array<PalierFieldsFragment>, angelupgrades: Array<PalierFieldsFragment>, managers: Array<PalierFieldsFragment> } | null };
 
 export const PalierFieldsFragmentDoc = gql`
     fragment PalierFields on Palier {
@@ -171,6 +179,21 @@ export function gqlResetWorldMutation(variables: ResetWorldMutationVariables): {
   };
 }
 
+export const CHANGER_FORMULE_ANGES_MUTATION = gql`
+    mutation ChangerFormuleAnges($user: String!, $diviseur: Float!) {
+  changerFormuleAnges(user: $user, diviseur: $diviseur) {
+    angeldivisor
+  }
+}
+    ` as DocumentNode<ChangerFormuleAngesMutationData, ChangerFormuleAngesMutationVariables>;
+
+export function gqlChangerFormuleAngesMutation(variables: ChangerFormuleAngesMutationVariables): { mutation: typeof CHANGER_FORMULE_ANGES_MUTATION, variables: typeof variables } {
+  return {
+    mutation: CHANGER_FORMULE_ANGES_MUTATION,
+    variables
+  };
+}
+
 export const GET_WORLD_QUERY = gql`
     query GetWorld($user: String!) {
   getWorld(user: $user) {
@@ -181,6 +204,7 @@ export const GET_WORLD_QUERY = gql`
     totalangels
     activeangels
     angelbonus
+    angeldivisor
     lastupdate
     products {
       id

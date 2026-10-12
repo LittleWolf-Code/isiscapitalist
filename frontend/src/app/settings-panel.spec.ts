@@ -14,6 +14,8 @@ import { MIXED_CONTENT_HINT, SERVER_ERROR, SettingsPanel } from './settings-pane
       defaultServer="http://localhost:3000/"
       [httpsPage]="httpsPage()"
       (serverChange)="emitted.push($event); server.set($event)"
+      [angelDivisor]="angelDivisor()"
+      (angelDivisorChange)="divisors.push($event); angelDivisor.set($event)"
     />
   `,
 })
@@ -23,6 +25,9 @@ class Host {
   readonly server = signal('http://localhost:3000/');
   readonly httpsPage = signal(false);
   readonly emitted: string[] = [];
+  // Pas de monde chargé par défaut : le cadre Démonstration est masqué.
+  readonly angelDivisor = signal<number | null>(null);
+  readonly divisors: number[] = [];
 }
 
 const TOGGLE_ORDER = [
@@ -151,6 +156,34 @@ describe('SettingsPanel', () => {
     expect(fixture.componentInstance.display()).toEqual(DEFAULT_DISPLAY);
     expect(tintButtons(el)[0].classList.contains('mat-button-toggle-checked')).toBe(true);
     expect(sliders(el)[2].value).toBe('50');
+  });
+
+  describe('formule des anges du compte (D43)', () => {
+    function formulaButtons(el: HTMLElement): HTMLElement[] {
+      return Array.from(el.querySelectorAll<HTMLElement>('.angel-formula mat-button-toggle'));
+    }
+
+    it('cadre masqué sans monde', async () => {
+      const fixture = TestBed.createComponent(Host);
+      await fixture.whenStable();
+      expect(fixture.nativeElement.querySelector('.demo-settings')).toBeNull();
+    });
+
+    it('« Sujet » coché pour 10¹⁵, clic « Express » → 1000 émis, formule affichée', async () => {
+      const fixture = TestBed.createComponent(Host);
+      fixture.componentInstance.angelDivisor.set(1e15);
+      await fixture.whenStable();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.demo-settings h3')?.textContent?.trim()).toBe('Démonstration');
+      expect(formulaButtons(el).map((b) => b.textContent?.trim())).toEqual(['Sujet', 'Démo', 'Express']);
+      expect(formulaButtons(el)[0].classList.contains('mat-button-toggle-checked')).toBe(true);
+      expect(el.querySelector('.demo-settings .hint')?.textContent).toContain('150 × √(score / 10¹⁵)');
+      formulaButtons(el)[2].querySelector<HTMLButtonElement>('button')!.click();
+      await fixture.whenStable();
+      expect(fixture.componentInstance.divisors).toEqual([1e3]);
+      expect(formulaButtons(el)[2].classList.contains('mat-button-toggle-checked')).toBe(true);
+      expect(el.querySelector('.demo-settings .hint')?.textContent).toContain('150 × √(score / 10³)');
+    });
   });
 
   describe('adresse du serveur (F-34, D41)', () => {

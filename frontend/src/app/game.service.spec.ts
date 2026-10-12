@@ -242,6 +242,18 @@ describe('GameService', () => {
       });
     });
 
+    it('hireManager sur un produit sans exemplaire : ignoré (D42)', async () => {
+      const world = makeWorld();
+      world.money = 20000;
+      setup(world);
+      game.hireManager(game.world()!.managers[1]);
+      expect(game.world()!.money).toBe(20000);
+      expect(game.world()!.managers[1].unlocked).toBe(false);
+      expect(game.world()!.products[1].managerUnlocked).toBe(false);
+      await flush();
+      expect(stub.sent).toEqual([]);
+    });
+
     it('hireManager sans assez d’argent : ignoré', async () => {
       setup();
       game.hireManager(game.world()!.managers[0]);
@@ -277,6 +289,30 @@ describe('GameService', () => {
         operation: 'AcheterAngelUpgrade',
         variables: { user: game.user(), name: 'Angel Upgrade 1' },
       });
+    });
+
+    it('setAngelDivisor (D43) : monde local mis à jour, message, mutation ChangerFormuleAnges', async () => {
+      const world = makeWorld();
+      world.score = 4e6;
+      setup(world);
+      game.setAngelDivisor(1e6);
+      expect(game.world()!.angeldivisor).toBe(1e6);
+      expect(game.snackmessage()).toBe('Formule des anges : 150 × √(score / 10⁶)');
+      await flush();
+      expect(stub.sent[0]).toEqual({
+        operation: 'ChangerFormuleAnges',
+        variables: { user: game.user(), diviseur: 1e6 },
+      });
+    });
+
+    it('setAngelDivisor : diviseur inchangé ou invalide → rien', async () => {
+      setup();
+      game.setAngelDivisor(1e15);
+      game.setAngelDivisor(0);
+      game.setAngelDivisor(-5);
+      await flush();
+      expect(game.world()!.angeldivisor).toBe(1e15);
+      expect(stub.sent).toEqual([]);
     });
 
     it('reset : mutation resetWorld, puis rechargement du monde et message', async () => {

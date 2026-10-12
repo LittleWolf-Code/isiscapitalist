@@ -2,10 +2,12 @@ import { BigvaluePipe } from './bigvalue.pipe';
 import {
   advanceProduction,
   affordableCount,
+  angelFormulaLabel,
   angelsEarned,
   applyBonus,
   applyUnlocks,
   bigValue,
+  blockedManagerNames,
   bonusLabel,
   buyCost,
   FAST_CYCLE_MS,
@@ -160,10 +162,26 @@ describe('angelsEarned / totalAngelsFor', () => {
   });
 
   it('anges supplémentaires = total − déjà gagnés, jamais négatif', () => {
-    expect(angelsEarned({ score: 0, totalangels: 0 })).toBe(0);
-    expect(angelsEarned({ score: 4e15, totalangels: 100 })).toBe(200);
-    expect(angelsEarned({ score: 4e15, totalangels: 300 })).toBe(0);
-    expect(angelsEarned({ score: 8_019_386, totalangels: 160_387 })).toBe(0);
+    const subject = { angeldivisor: 1e15 };
+    expect(angelsEarned({ ...subject, score: 0, totalangels: 0 })).toBe(0);
+    expect(angelsEarned({ ...subject, score: 4e15, totalangels: 100 })).toBe(200);
+    expect(angelsEarned({ ...subject, score: 4e15, totalangels: 300 })).toBe(0);
+    expect(angelsEarned({ ...subject, score: 8_019_386, totalangels: 160_387 })).toBe(0);
+  });
+
+  // D43 : diviseur choisi par compte (démo), mêmes cas que world-engine.spec.ts.
+  it('diviseur du compte : 10⁶ / 10⁶ → 150, 4·10³ / 10³ → 300 ; angelsEarned le suit', () => {
+    expect(totalAngelsFor(1e6, 1e6)).toBe(150);
+    expect(totalAngelsFor(4e3, 1e3)).toBe(300);
+    expect(angelsEarned({ score: 4e6, totalangels: 100, angeldivisor: 1e15 })).toBe(0);
+    expect(angelsEarned({ score: 4e6, totalangels: 100, angeldivisor: 1e6 })).toBe(200);
+  });
+
+  it('angelFormulaLabel : puissance de 10 en exposant, sinon le nombre', () => {
+    expect(angelFormulaLabel(1e15)).toBe('150 × √(score / 10¹⁵)');
+    expect(angelFormulaLabel(1e6)).toBe('150 × √(score / 10⁶)');
+    expect(angelFormulaLabel(1e3)).toBe('150 × √(score / 10³)');
+    expect(angelFormulaLabel(5000)).toBe('150 × √(score / 5000)');
   });
 });
 
@@ -281,6 +299,25 @@ describe('bonusLabel / affordableCount', () => {
     expect(affordableCount(paliers, 999)).toBe(0);
     expect(affordableCount(paliers, 1000)).toBe(1);
     expect(affordableCount(paliers, 1e6)).toBe(2);
+  });
+});
+
+// Monde de test : Item 1 à 1 exemplaire (Manager 1), Item 2 à 0 (Manager 2).
+describe('blockedManagerNames (D42)', () => {
+  it('monde neuf : seul le manager du produit sans exemplaire est bloqué', () => {
+    expect(blockedManagerNames(makeWorld())).toEqual(['Manager 2']);
+  });
+
+  it('un exemplaire du produit débloque son manager', () => {
+    const world = makeWorld();
+    const products = world.products.map((p) => (p.id === 2 ? { ...p, quantite: 1 } : p));
+    expect(blockedManagerNames({ ...world, products })).toEqual([]);
+  });
+
+  it('un manager déjà engagé n’est pas listé', () => {
+    const world = makeWorld();
+    const managers = world.managers.map((m) => ({ ...m, unlocked: true }));
+    expect(blockedManagerNames({ ...world, managers })).toEqual([]);
   });
 });
 

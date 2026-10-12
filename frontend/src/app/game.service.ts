@@ -13,9 +13,11 @@ import {
   ProductData,
   WorldData,
   advanceProduction,
+  angelFormulaLabel,
   angelsEarned,
   applyBonus,
   applyUnlocks,
+  blockedManagerNames,
   bonusLabel,
   buyCost,
   productionGain,
@@ -25,6 +27,7 @@ import {
   ACHETER_ANGEL_UPGRADE_MUTATION,
   ACHETER_CASH_UPGRADE_MUTATION,
   ACHETER_QT_PRODUIT_MUTATION,
+  CHANGER_FORMULE_ANGES_MUTATION,
   ENGAGER_MANAGER_MUTATION,
   GET_WORLD_QUERY,
   LANCER_PRODUCTION_PRODUIT_MUTATION,
@@ -143,6 +146,10 @@ export class GameService {
   private readonly resetWorldMutation = this.apollo.signal.mutation(RESET_WORLD_MUTATION, {
     fetchPolicy: 'no-cache',
   });
+  private readonly changerFormuleAnges = this.apollo.signal.mutation(
+    CHANGER_FORMULE_ANGES_MUTATION,
+    { fetchPolicy: 'no-cache' },
+  );
 
   // Instant du dernier passage de calcScore (performance.now, F-11).
   private lastTick = performance.now();
@@ -260,12 +267,19 @@ export class GameService {
     );
   }
 
-  // Engagement d'un manager (F-19, F-22) : argent vérifié puis débité, manager et produit
-  // débloqués, production lancée immédiatement si le produit était au repos.
+  // Engagement d'un manager (F-19, F-22) : produit cible possédé (D42) et argent vérifiés, argent
+  // débité, manager et produit débloqués, production lancée immédiatement si le produit était au
+  // repos.
   hireManager(manager: PalierData): void {
     const world = this.world();
     const current = world?.managers.find((m) => m.name === manager.name);
-    if (!world || !current || current.unlocked || world.money < current.seuil) {
+    if (
+      !world ||
+      !current ||
+      current.unlocked ||
+      blockedManagerNames(world).includes(current.name) ||
+      world.money < current.seuil
+    ) {
       return;
     }
     const hired: WorldData = {
@@ -334,6 +348,21 @@ export class GameService {
       this.snackmessage.set(`Monde remis à zéro : ${earned} ange(s) gagné(s)`);
       this.refreshWorld();
     }
+  }
+
+  // Formule des anges du compte (Paramètres → Démonstration, D43) : appliquée au monde local
+  // (anges à réclamer, badge Investors) puis transmise ; le serveur la garde dans le monde du
+  // joueur, reset compris. Diviseur invalide ou inchangé, ou pas de monde : rien ne se passe.
+  setAngelDivisor(divisor: number): void {
+    const world = this.world();
+    if (!world || !(Number.isFinite(divisor) && divisor > 0) || divisor === world.angeldivisor) {
+      return;
+    }
+    this.world.set({ ...world, angeldivisor: divisor });
+    this.snackmessage.set(`Formule des anges : ${angelFormulaLabel(divisor)}`);
+    void this.send('le changement de formule des anges', (user) =>
+      this.changerFormuleAnges.mutate({ variables: { user, diviseur: divisor } }),
+    );
   }
 
   // Validation du pseudo par Entrée (F-23) : mémorisé (clé `username`), la partie bascule sur ce

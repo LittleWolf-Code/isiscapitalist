@@ -194,6 +194,15 @@ contredisent aucune exigence (thème cathodique, écran Paramètres).
       (managers Armes et Nuke, 6 paliers, upgrades 1 et 2), upgrade 2 sur les Armes.
 - [x] 10.8 Retours joueur (D40, D41) : adresse du serveur dans Paramètres, achats barrés,
       palier sur la carte, onglets 1,35 rem, teinte des notifications.
+- [x] 10.9 Engager un manager exige un exemplaire du produit cible (D42, règle D24 rétablie) :
+      refus serveur, bouton « Hire ! » grisé et manager exclu du badge côté client.
+- [x] 10.10 Formule des anges réglable par compte pour les démonstrations (D43) :
+      `World.angeldivisor` + `changerFormuleAnges`, cadre « Démonstration » dans Paramètres
+      (Sujet 10¹⁵ / Démo 10⁶ / Express 10³), formule affichée dans Investors.
+- [x] 10.11 Raccourcis `font: var(--mat-sys-…)` aux tailles relevées du thème (D44) : surcharge
+      centrale dans `material-theme.scss`, exposant du gain gardé dans la barre de production.
+- [x] 10.12 Coins du thème en `0px` au lieu de `0` (D45) : retrait du champ « Your ID »
+      (`outline`) rétabli, texte et libellé décollés du contour.
 
 ## Exemples de requêtes playground (à réutiliser pour tester)
 
@@ -211,4 +220,6 @@ mutation { acheterCashUpgrade(user: "lucas", name: "Affiche Nuka-Cola") { name u
 mutation { acheterAngelUpgrade(user: "lucas", name: "Fortune Finder") { name unlocked } }
 
 mutation { resetWorld(user: "lucas") { score totalangels activeangels money } }
+
+mutation { changerFormuleAnges(user: "lucas", diviseur: 1000) { angeldivisor } }
 ```

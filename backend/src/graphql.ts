@@ -46,6 +46,7 @@ export class World {
     totalangels: number;
     activeangels: number;
     angelbonus: number;
+    angeldivisor: number;
     lastupdate: number;
     products: Product[];
     allunlocks: Palier[];
@@ -70,6 +71,8 @@ export abstract class IMutation {
     abstract acheterAngelUpgrade(user: string, name: string): Nullable<Palier> | Promise<Nullable<Palier>>;
 
     abstract resetWorld(user: string): Nullable<World> | Promise<Nullable<World>>;
+
+    abstract changerFormuleAnges(user: string, diviseur: number): Nullable<World> | Promise<Nullable<World>>;
 }
 
 type Nullable<T> = T | null;

@@ -78,8 +78,10 @@ déposer dans `backend/test/` — voir ROADMAP étape 7).
 
 - Trouver `manager` dans `world.managers` par `name` (sinon erreur), puis `product` par `manager.idcible`.
 - Refuser si `manager.unlocked` est déjà `true` (« déjà engagé »).
-- Coût : `manager.seuil` en argent (sujet frontend) → vérifier et déduire de `money`. C'est la
-  seule condition (la règle D24 « au moins un exemplaire » et la pause D20 ont été retirées, D36).
+- Refuser si `product.quantite == 0` (« Aucun exemplaire de … », D42, écart au sujet ; vérifié
+  avant l'argent).
+- Coût : `manager.seuil` en argent (sujet frontend) → vérifier et déduire de `money` (la pause
+  D20 reste retirée, D36).
 - `product.managerUnlocked = true`, `manager.unlocked = true`.
 - Retourne le `Palier` manager.
 
@@ -119,6 +121,9 @@ Cible : `idcible == 0` → tous les produits ; `idcible > 0` → le produit d'id
    (jamais remis à zéro), `totalangels` ce qui a déjà été distribué : la différence est ce que la
    partie en cours rapporte. Exemples : 10¹⁵ → 150 ; 4·10¹⁵ avec 100 déjà gagnés → 200 ; premier
    ange vers 4,45·10¹⁰.
+   Le diviseur 10¹⁵ est celui du sujet ; chaque compte peut le changer (`world.angeldivisor`,
+   mutation `changerFormuleAnges`, Paramètres → Démonstration) pour une démonstration, D43 :
+   `gagnes = floor(150 × √(score / angeldivisor)) − totalangels`. Il survit au reset.
 2. `totalangels += gagnes`, `activeangels += gagnes`.
 3. Nouveau monde = `structuredClone(origworld)` avec `score`, `totalangels`, `activeangels`
    repris ; `money = 0`, `lastupdate = now`.

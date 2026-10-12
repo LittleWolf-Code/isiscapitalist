@@ -27,6 +27,7 @@ export function makeWorld(): WorldData {
     totalangels: 0,
     activeangels: 0,
     angelbonus: 2,
+    angeldivisor: 1e15,
     lastupdate: 0,
     products: [
       {

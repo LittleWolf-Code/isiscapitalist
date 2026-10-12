@@ -973,6 +973,8 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
   spec modifié (les hauteurs ne se mesurent pas en jsdom). **Hors périmètre** : les barres
   d'`UnlockList` et toute autre `mat-progress-bar`, la taille de l'icône, des boutons, du nom et
   du chip, les tokens de `material-theme.scss`.
+- **Amendement** : depuis D44, le raccourci body-large suit la taille relevée du thème : texte
+  de la barre et du chrono à 20 px (1,25 rem) ; barres et chrono restent à 24 px.
 
 ## D34 — Frontend : réglages CRT réalistes (vignette, grille, grain, bande, bruit, teinte, curseurs, reset)
 
@@ -1281,3 +1283,154 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
   Material par défaut (1 rem). La barre d'onglets utilise donc les tokens séparés ; ses libellés
   passent de 14 px (raccourci `label-large`) à 21,6 px, et la pagination apparaît sous ~650 px
   au lieu de ~500 px. Les autres `font: var(--mat-sys-…)` du projet ont le même décalage.
+- **Amendement** : décalage corrigé dans le thème par D44 ; la barre d'onglets utilise de nouveau
+  le raccourci, au même rendu.
+
+## D42 — Engager un manager exige de nouveau un exemplaire du produit cible
+
+- **Contexte** (12/10/2026) : demande du joueur, « ne pas pouvoir acheter de manager pour un objet
+  qu'on n'a pas acheté ». D36 avait retiré la règle D24 pour coller au sujet : dans un monde neuf,
+  on pouvait engager le manager d'un produit à `quantite: 0` et payer pour une barre qui tourne à
+  gain nul.
+- **Décision** : règle D24 rétablie aux deux niveaux, **écart assumé au sujet** (B-11, F-19 ne
+  la prévoient pas).
+  - **Backend** : dans `engagerManager`, après « déjà engagé » et avant « pas assez d'argent »,
+    `product.quantite === 0` → `Aucun exemplaire de <produit> : achetez le produit avant
+    d'engager son manager`. Rien n'est débité.
+  - **Frontend** : fonction pure `blockedManagerNames(world)` (`game-math.ts`) = managers non
+    engagés dont le produit cible est à 0 ; `App.blockedManagers` la passe à la seule
+    `PalierList` des managers par l'input `blockedNames` (bouton « Hire ! » grisé, ligne non mise
+    en avant) et l'exclut du badge Managers (F-21) ; `GameService.hireManager` ignore l'action
+    comme quand l'argent manque.
+- **Conséquences** : un client d'un autre groupe, écrit d'après le sujet, se voit refuser
+  l'engagement sur notre serveur tant qu'il n'a pas acheté le produit (il recharge son monde) —
+  c'est la raison du retrait en D36, acceptée ici. `updateWorld` n'est pas touché ; un monde
+  `userworlds/` déjà engagé à 0 exemplaire reste tel quel. Upgrades et angel upgrades inchangés.
+
+## D43 — Formule des anges réglable par compte (démonstration)
+
+- **Contexte** (12/10/2026) : avec la formule du sujet `150 × √(score / 10¹⁵)`, le premier ange
+  arrive vers 4,45·10¹⁰ de score, hors de portée d'une démonstration de quelques minutes ; il
+  fallait éditer le fichier `userworlds/` pour montrer le reset et les angel upgrades.
+- **Décision** : le diviseur du score devient une donnée **du compte**, **écart assumé au
+  schéma du sujet** (ajouts seulement, aucun champ du sujet modifié).
+  - **Schéma** (backend et frontend) : `World.angeldivisor: Float!` (10¹⁵ dans `origworld`) et
+    `changerFormuleAnges(user: String!, diviseur: Float!): World`.
+  - **Backend** : `totalAngelsFor(score, divisor = SUBJECT_ANGEL_DIVISOR)`, `angelsEarned` lit
+    `world.angeldivisor` ; `resetWorld` le recopie dans le nouveau monde (réglage du compte, pas
+    de la partie). La mutation suit read → updateWorld → save et refuse un diviseur nul, négatif
+    ou non fini (`Le diviseur doit être un nombre strictement positif`). `readUserWorld` donne
+    10¹⁵ aux mondes sauvegardés avant D43 (le champ est non nul).
+  - **Frontend** : mêmes fonctions dans `game-math.ts` (+ `ANGEL_FORMULAS`, `angelFormulaLabel`) ;
+    Paramètres → cadre « Démonstration » (affiché quand un monde est chargé) avec trois choix :
+    **Sujet** (10¹⁵), **Démo** (10⁶ : 150 anges à 10⁶ de score), **Express** (10³ : 150 anges à
+    10³). `GameService.setAngelDivisor` l'applique au monde local puis envoie la mutation. La
+    fenêtre Investors affiche la formule en vigueur.
+- **Conséquences** : les anges déjà acquis ne bougent pas quand on change de formule ; revenir à
+  « Sujet » après une démo donne 0 ange au reset tant que le score ne rattrape pas `totalangels`
+  (borné à 0, comme pour les mondes de D20). Un client écrit d'après le sujet ignore le champ et
+  la mutation : rien ne change pour lui. N'importe quel diviseur positif peut être posé depuis le
+  playground ; l'interface ne propose que les trois préréglages.
+
+## D44 — Raccourcis `--mat-sys-<rôle>` alignés sur les tailles relevées du thème
+
+- **Contexte** (12/10/2026, constat de l'étape 10.8, D41 « À savoir ») : `material-theme.scss`
+  relève les tokens `-size` de neuf rôles (body, label, title : VT323 paraît ~20 % plus petite que
+  Roboto), mais `mat.theme` émet aussi pour chaque rôle un raccourci `--mat-sys-<rôle>`
+  (« graisse taille / interligne police ») calculé avec la taille Material par défaut. Les
+  composants Material lisent les tokens séparés et étaient agrandis ; nos 23 règles
+  `font: var(--mat-sys-…)` lisent le raccourci et ne l'étaient pas (title-medium 16 px au lieu de
+  21,6, label-large 14 au lieu de 18,4, body-large 16 au lieu de 20…). D25 et D33 avaient choisi
+  leurs rôles d'après ce décalage ; la barre d'onglets de 10.8 le contournait par les tokens séparés.
+- **Décision** :
+  1. **Correction centrale** dans `material-theme.scss` : map `$pip-type-sizes` (les neuf tailles,
+     valeurs inchangées) et fonction `pip-typescale()` qui en tire, pour chaque rôle, le token
+     `<rôle>-size` et le raccourci `<rôle>`, fusionnés dans les `$overrides` de `mat.theme`. Les
+     raccourcis sont des clés acceptées : `system-level-typography`
+     (`@angular/material/core/tokens/_system.scss`) émet chaque clé de `md-sys-typescale-values`
+     par `map.get($overrides, $name) or $value`. Le raccourci est recomposé à partir des tokens
+     séparés, `var(--mat-sys-<rôle>-weight) var(--mat-sys-<rôle>-size) / var(--mat-sys-<rôle>-line-height)
+     var(--mat-sys-<rôle>-font)` : une seule source par taille, et il suit la graisse,
+     l'interligne et la police du thème. Interlignes Material conservés (1,5 rem pour body-large
+     à 1,25 rem, 1,75 rem pour title-large à 1,7 rem…). headline / display ne sont pas relevés,
+     leurs raccourcis étaient déjà cohérents. Aucun composant Material utilisé ne lit les
+     raccourcis (seuls `grid-list` et `typography-hierarchy`, absents du projet) : seules nos
+     règles changent.
+  2. **Les 23 occurrences prennent la taille relevée**, sans exception :
+     - `app.css` : `.money .label` body-large 16 → 20 px ; `.user-field` body-medium 14 → 17,6
+       (texte saisi compris : le raccourci posé sur l'hôte du `mat-form-field` l'emporte sur le
+       token du champ) ; `.stat` body-medium 14 → 17,6 ; `.section-title`, `.topbar .world-name`,
+       `.stat dd` title-medium 16 → 21,6 ; `.brand` title-large 22 → 27,2. `.world-name`
+       (headline-small) et `.money` (headline-medium) inchangés.
+     - `product-card.css` : `.quantite` label-large 14 → 18,4 ; `.bar-label` et `.product-timer`
+       body-large 16 → 20 (point 3).
+     - `palier-list.css` : `.done-label` label-large 14 → 18,4, la taille du bouton « Hire ! » /
+       « Buy ! » qu'elle remplace ; `.empty` body-large 16 → 20.
+     - `settings-panel.css` : `.section-title` title-medium 16 → 21,6 ; `.setting-label`
+       body-medium 14 → 17,6, comme les libellés des `mat-slide-toggle` ; `.hint` body-small
+       12 → 15,2.
+     - `angels-panel.css` : `.stats` et `.claim` body-large 16 → 20 ; `.earned` (headline-small)
+       inchangé. `unlock-list.css` : `.progression .muted` body-small 12 → 15,2.
+     - `tab-bar.css` : pastille label-small 11 → 14,4, la taille que Material donne déjà aux
+       pastilles du bandeau gauche ; `.tab-label` revient au raccourci
+       `font: var(--mat-sys-title-medium)`, même rendu qu'en 10.8 (21,6 / 24 px).
+     - `styles.css` : `.pip-title` title-large 22 → 27,2.
+  3. **Barre de production et chrono à 20 px** (D33 disait 16 px). Le ratio « 16 px dans 24 px »
+     de D33 portait sur la taille nominale ; VT323 est une police pixel dont les chiffres font
+     10 px de haut à 16 px et 11 px à 20 px (`measureText`) : la barre de 24 px reste aérée, seule
+     la largeur grandit (+25 %, le `min-width: 10ch` du chrono suit). Garder 16 px aurait demandé
+     `label-medium` (relevé à 1 rem), sans rapport de rôle, ou un `font-size` en dur.
+  4. **Bug préexistant corrigé au passage** : `.bar-label` est en `display: grid`, et le HTML de
+     `bigvalue` (« 1.664 × 10<sup>6</sup> ») y formait deux éléments de grille sur deux rangées :
+     l'exposant tombait sous la barre (17 px sous le chiffre, quelle que soit la taille).
+     `product-card.html` enveloppe le contenu dans un `span` : un seul élément de grille,
+     l'exposant reste sur la ligne (0 → 17 px dans les 24 px de la barre).
+- **Conséquences** : vérifié dans la preview avec l'user `verif-d42` (monde édité : 1,2 × 10¹⁵ $,
+  quantités jusqu'à 1234, deux managers, paliers et un upgrade débloqués), dispositions du sujet
+  et « onglets », à 1280 et 450 px, page puis chaque fenêtre / onglet : `scrollWidth` du document
+  = sa largeur, aucun élément rogné (`overflow: hidden` dépassé) ni hors écran. En « Max » à
+  450 px, libellé d'achat de 139 px dans un bouton de 194 px ; chrono avec 3 px de marge de
+  chaque côté ; pastille d'onglet 15 px de texte dans 16 px. Inchangés (largeurs identiques en
+  réinjectant les anciens raccourcis) : le défilement horizontal des tableaux des fenêtres à
+  450 px (`overflow-x: auto` de `.palier-list` / `.unlock-list`) et la pagination de la barre
+  d'onglets sous ~650 px (D41). À 450 px, le titre « Managers make you feel better ! » passe sur
+  deux lignes. title-large (27,2 px : titres de fenêtres, `.brand`) dépasse désormais
+  headline-small (24 px : nom du monde, anges à réclamer) ; hiérarchie acceptée, les headline ne
+  sont pas relevés. `npx ng test --watch=false` : 202 tests verts (14 fichiers), aucun spec
+  modifié ; `npm run build` passe. Constaté, sans rapport et laissé à part : les coins `0` sans
+  unité du thème invalident le `max(16px, … + 4px)` du retrait des champs `outline` (texte du
+  champ « Your ID » collé au bord gauche), corrigé par D45.
+
+## D45 — Coins du thème en `0px` : retrait des champs `outline` rétabli
+
+- **Contexte** (12/10/2026, constaté pendant D44) : les `$overrides` de `mat.theme` fixaient les
+  onze tokens `corner-*` à `0` sans unité (« angles droits partout », D22). Material place
+  certains de ces tokens dans des fonctions mathématiques : neuf règles, toutes du champ
+  `outline` sauf deux du FAB (absent du projet). `.mdc-text-field--outlined` a
+  `padding-left / right: max(16px, <coin> + 4px)`, le segment d'en-tête du contour
+  `width: max(12px, <coin>)`, l'encoche et le libellé flottant
+  `max-width: min(…, calc(100% - max(12px, <coin>) * 2))`. Un `0` sans unité est un `<number>` :
+  `0 + 4px` et `max(12px, 0)` sont invalides au calcul et la propriété retombe à sa valeur
+  initiale. Champ « Your ID » (seul champ `outline`, en-tête des deux dispositions) : marges
+  intérieures 0 / 0, texte collé aux deux bords du contour, segment d'en-tête réduit à son bord
+  (1 px), libellé flottant à 5 px du bord. Le champ « Adresse du serveur » (`fill`) n'utilise
+  pas ces règles et avait déjà ses 16 px.
+- **Décision** : les onze tokens passent à `0px` dans `material-theme.scss`, avec un commentaire
+  qui en donne la raison. Les `border-radius` gardent la même valeur et le même rendu ; seuls les
+  calculs redeviennent valides. Pas de surcharge du token du champ
+  (`--mat-form-field-outlined-container-shape`) : la cause est dans le thème, et tout autre
+  composant qui calcule avec un coin en profite.
+- **Conséquences** : vérifié dans la preview (user `verif-d42`), dispositions du sujet et
+  « onglets », à 450 et 1280 px : champ « Your ID » avec des marges de 16 / 16 px, texte à 16 px
+  des deux bords, segment d'en-tête de 12 px, libellé flottant aligné sur le texte (x = 16 px)
+  dans une encoche bornée (`min(100%, 100% - 24px)`) ; la zone de saisie perd 32 px (160 px sur
+  192), « verif-d42 » y tient. Page puis chaque fenêtre / onglet : aucun débordement ni élément
+  rogné. Les `border-radius` non nuls de la page, des fenêtres Paramètres / Managers / Investors et
+  de la snack-bar (« Vault Boy engagé… ») sont les seuls ronds voulus (icônes `.round` et
+  `.icon-button` à 50 %, vignette `.crt-overlay`, ondulation des `mat-slide-toggle`) et des
+  rayons écrits en dur par Material, indépendants des tokens de coin et déjà là avant : chip
+  « manager » à 8 px (`chip-container-shape-radius`), bulle de valeur du `mat-slider` en goutte
+  (`50% 50% 50% 0`), 4 px en haut de `.mdc-text-field` (invisible en `outline`, sans fond ni
+  bordure). Laissés tels quels ; un `mat.chips-overrides` rendrait le chip carré si on le
+  souhaite. `npx ng test --watch=false` : 208 tests verts (14 fichiers) ; `npm run build` passe,
+  `--mat-sys-corner-*: 0px` dans le CSS produit.

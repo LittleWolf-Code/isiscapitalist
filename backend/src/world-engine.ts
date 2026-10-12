@@ -2,7 +2,7 @@
 // AppService et le resolver. Testables avec vitest sans instancier Nest (voir docs/DECISIONS.md, D10).
 // Phase 3 : buyCost. Phase 4 : updateWorld. Phase 5 : applyBonus, checkProductUnlocks, checkAllUnlocks.
 // Phase 6 : buyUpgrade. Phase 7 : angelsEarned, resetWorld. Phase 10 : advanceProduction,
-// totalAngelsFor (conformité au sujet, D36).
+// totalAngelsFor (conformité au sujet, D36). D43 : diviseur de la formule des anges par compte.
 import { Palier, Product, RatioType, World } from './graphql.js';
 import { origworld } from './origworld.js';
 
@@ -190,25 +190,39 @@ export function buyUpgrade(
 // type les anges en `Int!` : au-delà, getWorld échouerait entièrement (D36).
 export const MAX_INT32 = 2_147_483_647;
 
+// Diviseur du score de la formule du sujet (RG-09). Un compte peut en choisir un autre (D43,
+// `world.angeldivisor`) pour qu'une démonstration atteigne les anges en quelques minutes.
+export const SUBJECT_ANGEL_DIVISOR = 1e15;
+
 // Anges acquis depuis le début de la partie (RG-09, formule imposée par le sujet frontend) :
-//   150 × √(score / 10¹⁵), arrondi à l'entier inférieur (les anges sont typés Int), plafonné à
-// MAX_INT32 (atteint seulement au-delà d'un score de ~2·10²⁹).
-export function totalAngelsFor(score: number): number {
-  return Math.min(MAX_INT32, Math.floor(150 * Math.sqrt(Math.max(0, score) / 1e15)));
+//   150 × √(score / diviseur), arrondi à l'entier inférieur (les anges sont typés Int), plafonné à
+// MAX_INT32 (atteint seulement au-delà d'un score de ~2·10²⁹ avec le diviseur du sujet).
+export function totalAngelsFor(
+  score: number,
+  divisor: number = SUBJECT_ANGEL_DIVISOR,
+): number {
+  return Math.min(MAX_INT32, Math.floor(150 * Math.sqrt(Math.max(0, score) / divisor)));
 }
 
 // Anges SUPPLÉMENTAIRES gagnés si le joueur faisait un reset maintenant (RG-09, remplace la
-// formule linéaire de D20) : totalAngelsFor(score) − totalangels, borné à 0. `score` cumule tout
-// l'argent gagné depuis le tout début (jamais remis à zéro), `totalangels` tout ce qui a déjà été
-// distribué : la différence est ce que la partie en cours a rapporté. 1 ange dès 4,45·10¹⁰ de
-// score, 150 anges à 10¹⁵.
+// formule linéaire de D20) : totalAngelsFor(score, angeldivisor) − totalangels, borné à 0.
+// `score` cumule tout l'argent gagné depuis le tout début (jamais remis à zéro), `totalangels`
+// tout ce qui a déjà été distribué : la différence est ce que la partie en cours a rapporté.
+// Diviseur du sujet : 1 ange dès 4,45·10¹⁰ de score, 150 anges à 10¹⁵.
 export function angelsEarned(world: World): number {
-  return Math.max(0, totalAngelsFor(world.score) - world.totalangels);
+  return Math.max(0, totalAngelsFor(world.score, world.angeldivisor) - world.totalangels);
+}
+
+// Diviseur accepté par changerFormuleAnges (D43) : nombre fini strictement positif. Un diviseur
+// nul ou négatif rendrait la racine infinie ou NaN.
+export function isValidAngelDivisor(divisor: number): boolean {
+  return Number.isFinite(divisor) && divisor > 0;
 }
 
 // Reset (sujet §6.5, GAME-RULES.md §Reset) : retourne un NOUVEAU monde, clone profond
 // d'origworld (D3 — un spread partagerait les tableaux de produits avec origworld, et le premier
-// achat après reset le corromprait), dans lequel ne survivent que `score` et les anges.
+// achat après reset le corromprait), dans lequel ne survivent que `score`, les anges et le
+// diviseur choisi pour la formule des anges (D43, réglage du compte et non de la partie).
 // `activeangels += gagnés` (et non `= totalangels`) : les anges déjà dépensés en angelupgrades
 // restent dépensés. L'ancien monde n'est pas muté : l'appelant doit sauvegarder le retour.
 // Comme updateWorld, `now` est injecté pour les tests.
@@ -218,6 +232,7 @@ export function resetWorld(world: World, now: number = Date.now()): World {
   fresh.score = world.score;
   fresh.totalangels = world.totalangels + earned;
   fresh.activeangels = world.activeangels + earned;
+  fresh.angeldivisor = world.angeldivisor;
   fresh.money = 0;
   fresh.lastupdate = now;
   return fresh;
