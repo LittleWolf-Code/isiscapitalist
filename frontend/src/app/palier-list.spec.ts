@@ -15,6 +15,7 @@ const world = makeWorld();
       [paliers]="paliers()"
       [actionLabel]="actionLabel()"
       [doneLabel]="doneLabel()"
+      [showDone]="showDone()"
       [costUnit]="costUnit()"
       [balance]="balance()"
       [showEffect]="showEffect()"
@@ -30,6 +31,7 @@ class Host {
   readonly paliers = signal<readonly PalierData[]>(world.managers);
   readonly actionLabel = signal<string | null>('Hire !');
   readonly doneLabel = signal<string | null>('Engagé');
+  readonly showDone = signal(true);
   readonly costUnit = signal<CostUnit>('$');
   readonly balance = signal<number | null>(1000);
   readonly showEffect = signal(false);
@@ -83,6 +85,18 @@ describe('PalierList', () => {
     expect(done.querySelector('button')).toBeNull();
     expect(done.querySelector('.done-label')?.textContent?.trim()).toBe('Engagé');
     expect(buttons().map((b) => b.textContent!.trim())).toEqual(['Hire !']);
+  });
+
+  it('showDone faux : paliers débloqués non listés, message seul quand tout est débloqué (D47)', async () => {
+    const { host, fixture, el, rows } = await render();
+    host.showDone.set(false);
+    host.paliers.set([{ ...world.managers[0], unlocked: true }, world.managers[1]]);
+    await fixture.whenStable();
+    expect(rows().map((r) => r.querySelector('td.name')!.textContent!.trim())).toEqual(['Manager 2']);
+    host.paliers.set(world.managers.map((m) => ({ ...m, unlocked: true })));
+    await fixture.whenStable();
+    expect(el.querySelector('.empty')?.textContent?.trim()).toBe('Tous les managers sont engagés.');
+    expect(el.querySelector('table')).toBeNull();
   });
 
   it('tout débloqué → message au-dessus du tableau barré', async () => {

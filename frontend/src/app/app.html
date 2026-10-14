@@ -28,7 +28,7 @@
     }
   </mat-toolbar>
 
-  <app-tab-bar [active]="tab()" [badges]="tabBadges()" (select)="tab.set($event)">
+  <app-tab-bar [active]="tab()" [badges]="tabBadges()" (select)="selectTab($event)">
     <main class="screen">
       @if (tab() === 'settings') {
         <ng-container *ngTemplateOutlet="settingsTpl; context: { $implicit: true }" />
@@ -168,7 +168,7 @@
       <mat-label>Your ID</mat-label>
       <input matInput type="text" [formField]="game.loginForm.name" (keydown.enter)="game.commitName()" />
     </mat-form-field>
-    <button matButton="outlined" type="button" class="refresh" (click)="game.refreshWorld()">Refresh</button>
+    <button matButton="outlined" type="button" class="refresh" (click)="refresh()">Refresh</button>
   </div>
 </ng-template>
 
@@ -190,7 +190,7 @@
   <app-palier-list
     [paliers]="w.managers"
     actionLabel="Hire !"
-    doneLabel="Engagé"
+    [showDone]="false"
     costUnit="$"
     [balance]="w.money"
     [showEffect]="false"

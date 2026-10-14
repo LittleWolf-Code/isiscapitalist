@@ -123,9 +123,9 @@ describe('ProductCard (F-07)', () => {
     expect(bar()).toBe('75');
   });
 
-  it('temps restant à côté du bouton d’achat : durée d’un cycle au repos, timeleft en cours', async () => {
+  it('temps restant à côté du bouton d’achat : timeleft en cours, 0 au repos (D47)', async () => {
     const { text, host, fixture } = await render();
-    expect(text('.product-buy .product-timer')).toBe('00:00:00.5');
+    expect(text('.product-buy .product-timer')).toBe('00:00:00.0');
     host.product.set({ ...item1, vitesse: 61_000, timeleft: 1_250 });
     await fixture.whenStable();
     expect(text('.product-buy .product-timer')).toBe('00:00:01.3');

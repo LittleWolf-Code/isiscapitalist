@@ -34,6 +34,7 @@ import {
   RESET_WORLD_MUTATION,
 } from './graphql';
 import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY, normalizeServerUrl } from './server';
+import { SoundService } from './sound.service';
 
 export type { PalierData, ProductData, WorldData } from './game-math';
 
@@ -94,6 +95,8 @@ function storeUsername(name: string): void {
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly apollo = inject(Apollo);
+  // Effets sonores (D46), joués quand une action locale réussit.
+  readonly sound = inject(SoundService);
 
   // Adresse du backend (server.ts) : images = server() + logo ; modifiable par setServer (D41).
   readonly server = SERVER;
@@ -172,6 +175,7 @@ export class GameService {
 
     effect(() => {
       const display = this.display();
+      this.sound.configure(display.sound, display.soundLevel);
       try {
         localStorage.setItem(DISPLAY_STORAGE_KEY, JSON.stringify(display));
       } catch {
@@ -196,10 +200,14 @@ export class GameService {
     }
     const done: [ProductData, number][] = [];
     let changed = false;
+    // Une production lancée à la main vient de finir : un seul son par passage. Les productions
+    // des managers restent muettes (en boucle, elles sonneraient plusieurs fois par seconde).
+    let manualDone = false;
     const products = world.products.map((p) => {
       const { timeleft, produced } = advanceProduction(p, elapsed);
       if (produced > 0) {
         done.push([p, produced]);
+        manualDone ||= !p.managerUnlocked;
       }
       if (timeleft === p.timeleft) {
         return p;
@@ -212,6 +220,9 @@ export class GameService {
     }
     for (const [product, qt] of done) {
       this.productionDone(product, qt);
+    }
+    if (manualDone) {
+      this.sound.play('production_done');
     }
   }
 
@@ -234,13 +245,15 @@ export class GameService {
       return;
     }
     this.world.set(replaceProduct(world, current.id, (p) => ({ ...p, timeleft: p.vitesse })));
+    this.sound.play('production_start');
     void this.send('le lancement de la production', (user) =>
       this.lancerProductionProduit.mutate({ variables: { user, id: current.id } }),
     );
   }
 
   // Achat de `qt` exemplaires (F-15) : quantité, coût du prochain exemplaire et argent mis à jour,
-  // unlocks du produit puis allunlocks appliqués (F-26), message éphémère, mutation.
+  // unlocks du produit puis allunlocks appliqués (F-26), message éphémère à chaque achat (paliers
+  // débloqués compris, D47), mutation.
   buyProduct(qt: number, product: ProductData): void {
     const world = this.world();
     const current = world?.products.find((p) => p.id === product.id);
@@ -258,9 +271,14 @@ export class GameService {
     }));
     const { world: next, unlocked } = applyUnlocks(bought, current.id);
     this.world.set(next);
+    this.sound.play(unlocked.length > 0 ? 'palier' : 'buy');
+    const purchase = `Achat : ${qt} × ${current.name}`;
     if (unlocked.length > 0) {
       const list = unlocked.map((p) => `${p.name} (${bonusLabel(p)})`).join(', ');
-      this.snackmessage.set(`Palier${unlocked.length > 1 ? 's' : ''} débloqué${unlocked.length > 1 ? 's' : ''} : ${list}`);
+      const plural = unlocked.length > 1 ? 's' : '';
+      this.snackmessage.set(`${purchase} — palier${plural} débloqué${plural} : ${list}`);
+    } else {
+      this.snackmessage.set(purchase);
     }
     void this.send("l'achat du produit", (user) =>
       this.acheterQtProduit.mutate({ variables: { user, id: current.id, quantite: qt } }),
@@ -295,6 +313,8 @@ export class GameService {
       })),
     );
     const product = world.products.find((p) => p.id === current.idcible);
+    // sfx_buy en attendant sfx_manager (brief sonore).
+    this.sound.play('buy');
     this.snackmessage.set(`${current.name} engagé : ${product?.name ?? 'le produit'} est automatisé`);
     void this.send("l'engagement du manager", (user) =>
       this.engagerManager.mutate({ variables: { user, name: current.name } }),
@@ -314,6 +334,8 @@ export class GameService {
       upgrades: world.upgrades.map((u) => (u === current ? { ...u, unlocked: true } : u)),
     };
     this.world.set(applyBonus(bought, current));
+    // sfx_buy en attendant sfx_upgrade (brief sonore).
+    this.sound.play('buy');
     this.snackmessage.set(`Upgrade acheté : ${current.name} (${bonusLabel(current)})`);
     void this.send("l'achat de l'upgrade", (user) =>
       this.acheterCashUpgrade.mutate({ variables: { user, name: current.name } }),
@@ -334,6 +356,8 @@ export class GameService {
       angelupgrades: world.angelupgrades.map((u) => (u === current ? { ...u, unlocked: true } : u)),
     };
     this.world.set(applyBonus(bought, current));
+    // sfx_buy en attendant sfx_angel_upgrade (brief sonore).
+    this.sound.play('buy');
     this.snackmessage.set(`Angel upgrade acheté : ${current.name} (${bonusLabel(current)})`);
     void this.send("l'achat de l'angel upgrade", (user) =>
       this.acheterAngelUpgrade.mutate({ variables: { user, name: current.name } }),
@@ -376,8 +400,20 @@ export class GameService {
     this.user.set(field);
   }
 
-  // Bouton Refresh (F-24) : relit le monde sur le serveur. Une erreur réseau est déjà signalée
-  // par l'effet sur worldQuery.error().
+  // Bouton Refresh (F-24) : recharge le monde du pseudo saisi dans le champ, même sans Entrée
+  // (D47). Pseudo changé → commitName, dont le changement de variables relance getWorld ; pseudo
+  // inchangé ou vide → relecture du monde courant.
+  refresh(): void {
+    const field = this.loginForm.name().value().trim();
+    if (field && field !== this.user()) {
+      this.commitName();
+    } else {
+      this.refreshWorld();
+    }
+  }
+
+  // Relit le monde sur le serveur. Une erreur réseau est déjà signalée par l'effet sur
+  // worldQuery.error().
   refreshWorld(): void {
     this.worldQuery.refetch().catch(() => undefined);
   }

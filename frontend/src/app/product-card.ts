@@ -65,11 +65,9 @@ export class ProductCard {
   );
   // Barre de production en % (0-100), suit timeleft que calcScore fait avancer toutes les 100 ms.
   protected readonly progress = computed(() => productionProgress(this.product()));
-  // Temps restant de la production en cours, ou durée d'un cycle au repos.
-  protected readonly remaining = computed(() => {
-    const { vitesse, timeleft } = this.product();
-    return timeleft > 0 ? timeleft : vitesse;
-  });
+  // Temps restant de la production (timeleft) : décroît pendant la production et retombe à 0
+  // quand elle se termine (grille d'évaluation, D47).
+  protected readonly remaining = computed(() => this.product().timeleft);
   // Dernier palier atteint du produit (plus grand seuil débloqué, D40) : nom en sous-titre et
   // image de l'icône. null avant le premier palier, et de nouveau après un reset. Les allunlocks
   // (communs à tous les produits) n'en font pas partie.

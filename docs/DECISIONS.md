@@ -1232,6 +1232,9 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
 
 ## D40 — Achats barrés en fin de liste, dernier palier sur la carte produit
 
+> **Remplacée par D47 pour la fenêtre Managers** (managers engagés retirés de la liste, comme le
+> demande la grille d'évaluation) ; inchangée pour les upgrades et les allunlocks.
+
 - **Contexte** : retours du joueur (étape 10.8, prompt `docs/prompts/settings-server-purchased-paliers-snack-tint.md`).
   Un manager engagé ou un upgrade acheté disparaissait de sa fenêtre, comme le demande le sujet
   (F-18, F-25, F-27, F-31 : lister ce qui n'est **pas encore** débloqué) ; le joueur veut garder
@@ -1434,3 +1437,70 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
   bordure). Laissés tels quels ; un `mat.chips-overrides` rendrait le chip carré si on le
   souhaite. `npx ng test --watch=false` : 208 tests verts (14 fichiers) ; `npm run build` passe,
   `--mat-sys-corner-*: 0px` dans le CSS produit.
+
+## D46 — Effets sonores (premier lot du brief sonore)
+
+- **Contexte** (12/10/2026) : un brief sonore « Nuka Capitalist » (20 effets, 3 musiques) a été
+  rédigé pour un artiste ; il a livré un premier lot de 5 MP3 (44,1 kHz, stéréo, 0,1 à 1,3 s) :
+  `sfx_production_start`, `sfx_production_done`, `sfx_buy`, `sfx_palier`, `sfx_ui_click`. Les
+  sons ne figurent pas dans le sujet : ajout au cahier des charges, côté frontend seulement.
+- **Décision** :
+  - Fichiers dans `frontend/public/sons/`, servis avec le front (`ng serve`, puis Nginx avec le
+    build : la règle `/` les couvre, rien à changer dans `deploy/`). Pas sur le backend : ce ne
+    sont pas des données du monde comme les `logo`.
+  - `SoundService` (`sound.service.ts`) joue les sons par la **Web Audio API** (aucune
+    dépendance) : un son peut se superposer à lui-même lors de clics rapides, ce que ne permet
+    pas un `<audio>` unique. Chargement paresseux (un `fetch` par son, gardé), contexte audio
+    créé au premier son, qui suit un clic (règle d'autoplay des navigateurs). Sans
+    `AudioContext` (jsdom des specs) ou fichier absent : silence sans erreur.
+  - Réglages `sound` (actif par défaut) et `soundLevel` (50) ajoutés à `DisplaySettings` : même
+    clé JSON `isiscapitalist.display`, même panneau, même « Réinitialiser les réglages ».
+    Section « Son » entre Animations et Serveur.
+  - Déclencheurs : `GameService` pour les événements de jeu (seulement quand l'action locale
+    réussit) — `startProduction` → `production_start` ; fin d'une production **manuelle** dans
+    `calcScore` → `production_done` (un seul son par passage ; les productions des managers sont
+    muettes, sinon plusieurs sons par seconde) ; `buyProduct` → `palier` si un palier est
+    débloqué, sinon `buy` ; `hireManager`, `buyUpgrade`, `buyAngelUpgrade` → `buy` **en
+    attendant** `sfx_manager`, `sfx_upgrade`, `sfx_angel_upgrade`. `App` pour l'interface :
+    `ui_click` sur le multiplicateur, l'ouverture / fermeture des fenêtres, Refresh et les onglets.
+- **Conséquences** : les 15 sons restants du brief (dont `sfx_denied`, `sfx_reset`,
+  `sfx_production_auto`) et les musiques s'ajouteront à `SOUND_FILES` et aux déclencheurs ;
+  `sfx_production_auto` devra être limité (≈ 1 toutes les 2 s). Vérifié dans la preview : les
+  trois sons joués se chargent (200), aucune erreur console, section « Son » affichée.
+  `npx ng test --watch=false` : 217 tests verts (15 fichiers) ; `npx ng build` passe et copie
+  `sons/` dans `dist/`.
+
+## D47 — Mise en conformité avec la grille d'évaluation fonctionnelle
+
+- **Contexte** (14/10/2026) : la grille d'évaluation du projet
+  (`docs/grille évaluation fonctionnelle.pdf`, 7 sections, 25 sous-critères) a été confrontée à
+  l'application. Quatre sous-critères n'étaient pas tenus à la lettre :
+  1. *Pseudo → Refresh* : « le bouton Refresh recharge le monde avec le nouveau pseudo ». Refresh
+     relisait le monde du pseudo **déjà validé** par Entrée ; un pseudo tapé puis Refresh
+     rechargeait l'ancienne partie.
+  2. *Feedback → SnackBar* : « tous les événements critiques (achat, …) affichent un message ».
+     L'achat d'un produit n'en affichait un que s'il débloquait un palier.
+  3. *Managers → Affichage modal* : la fenêtre doit lister « uniquement les managers non
+     débloqués ». D40 y gardait les managers engagés, barrés en fin de liste.
+  4. *Production → Temps restant* : `timeleft` « passe à 0 quand la production est terminée ». Le
+     champ revenait bien à 0, mais le minuteur affichait au repos la durée d'un cycle (`vitesse`).
+- **Décision** :
+  1. `GameService.refresh()` (bouton Refresh) : si le champ contient un pseudo non vide différent
+     de `user`, `commitName()` (mémorisé, le changement de variables relance `getWorld`) ; sinon
+     `refreshWorld()`. Entrée garde son comportement.
+  2. `buyProduct` pose toujours un message : « Achat : <n> × <produit> », suivi de
+     « — palier(s) débloqué(s) : … » si l'achat en débloque.
+  3. `PalierList` reçoit l'input `showDone` (vrai par défaut) ; la fenêtre Managers passe
+     `[showDone]="false"` : un manager engagé disparaît, « Tous les managers sont engagés. » reste
+     seul quand il n'y en a plus. **D40 est remplacée pour les managers seulement** : cash
+     upgrades, angel upgrades et allunlocks gardent leurs lignes barrées (la grille ne l'exige que
+     pour les managers).
+  4. `ProductCard.remaining` = `timeleft` : le minuteur décroît pendant la production et affiche
+     `00:00:00.0` au repos.
+- **Points de la grille laissés tels quels** (à expliquer à l'évaluation) : après un reset, le
+  premier produit revient à 1 exemplaire et non à 0 (c'est `origworld`, sans quoi le joueur à 0 $
+  ne pourrait rien faire) ; un manager ne s'engage qu'avec un exemplaire de son produit (D42).
+- **Conséquences** : `npx ng test --watch=false` : 221 tests verts (15 fichiers, +4) ;
+  `npx ng build` passe. Vérifié dans la preview avec un joueur jetable (supprimé ensuite) :
+  pseudo tapé puis Refresh sans Entrée → monde du nouveau pseudo ; minuteurs à 0 au repos,
+  0,4 s pendant une production de Nuka-Cola puis 0 ; achat → « Achat : 1 × Nuka-Cola ».

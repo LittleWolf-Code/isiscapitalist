@@ -181,16 +181,30 @@ export class App {
 
   // Clic sur le multiplicateur du sujet : position suivante du cycle.
   protected cycleQtmulti(): void {
+    this.game.sound.play('ui_click');
     const index = QT_CYCLE.indexOf(this.qtmulti());
     this.qtmulti.set(QT_CYCLE[(index + 1) % QT_CYCLE.length]);
   }
 
   protected open(window: GameWindow): void {
+    this.game.sound.play('ui_click');
     this.modal.set(window);
   }
 
   protected close(): void {
+    this.game.sound.play('ui_click');
     this.modal.set(null);
+  }
+
+  // Disposition 'onglets' : changement d'onglet.
+  protected selectTab(tab: Tab): void {
+    this.game.sound.play('ui_click');
+    this.tab.set(tab);
+  }
+
+  protected refresh(): void {
+    this.game.sound.play('ui_click');
+    this.game.refresh();
   }
 
   // Réglages modifiés dans Paramètres. Changer de disposition garde le joueur sur ses réglages :

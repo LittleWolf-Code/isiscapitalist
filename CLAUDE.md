@@ -20,11 +20,12 @@ toute décision antérieure (D36). **Toujours lire `docs/` avant de coder** :
 | `docs/ROADMAP.md` | Plan de travail par étapes avec cases à cocher — **la source de vérité de l'avancement** |
 | `docs/DECISIONS.md` | Décisions techniques prises (et pourquoi) |
 | `docs/THEME.md` | Thème « Nuka Capitalist » : casting des mascottes, lexique Fallout, cases restantes |
+| `docs/grille évaluation fonctionnelle.pdf` | Grille de notation fonctionnelle du projet (7 sections, 25 sous-critères) ; écarts traités en D47 |
 | `docs/reference/` | Schéma GraphQL fourni + squelette `origworld` (à copier, pas à inventer) |
 
 Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`backend/CLAUDE.md`, `frontend/CLAUDE.md`).
 
-## État actuel (05/10/2026)
+## État actuel (14/10/2026)
 
 - **Phases 0 à 10 de `docs/ROADMAP.md` cochées.** La phase 10 a mis l'application en conformité
   avec le cahier des charges (D36) ; la dernière recette est `docs/RECETTE.md`.
@@ -46,6 +47,10 @@ Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`
   `World.angeldivisor`, Paramètres → « Démonstration » : Sujet 10¹⁵ / Démo 10⁶ / Express 10³).
   Étape 10.11 : les raccourcis `font: var(--mat-sys-…)` suivent les tailles relevées du thème (D44).
   Étape 10.12 : coins du thème en `0px` (D45), le champ « Your ID » retrouve ses marges.
+  Étape 10.13 : effets sonores (D46, `SoundService`, `frontend/public/sons/`, Paramètres → « Son »),
+  premier lot de 5 sons du brief sonore.
+  Étape 10.14 : conformité à la grille d'évaluation (D47) — Refresh avec le pseudo saisi,
+  message à chaque achat, fenêtre Managers sans les engagés, minuteur à 0 au repos.
   Détail : `frontend/CLAUDE.md`.
 - Les décisions D14, D15, D19, D20, D23 à D31 décrivent la phase 9 et sont **remplacées** (D36) ;
   les relire seulement pour l'historique.

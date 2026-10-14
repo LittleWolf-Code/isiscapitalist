@@ -60,6 +60,17 @@ describe('normalizeDisplay — disposition', () => {
   });
 });
 
+// Effets sonores (D46) : actifs à 50 % par défaut, mêmes règles que les autres champs.
+describe('normalizeDisplay — son', () => {
+  it('défaut actif à 50 ; valeurs valides conservées ; mauvais type → défaut ; volume borné', () => {
+    expect(DEFAULT_DISPLAY.sound).toBe(true);
+    expect(DEFAULT_DISPLAY.soundLevel).toBe(50);
+    expect(normalizeDisplay({ sound: false, soundLevel: 20 })).toMatchObject({ sound: false, soundLevel: 20 });
+    expect(normalizeDisplay({ sound: 'off', soundLevel: '20' })).toMatchObject({ sound: true, soundLevel: 50 });
+    expect(normalizeDisplay({ soundLevel: 140 }).soundLevel).toBe(100);
+  });
+});
+
 describe('readStoredFlag', () => {
   beforeEach(clearStorage);
 

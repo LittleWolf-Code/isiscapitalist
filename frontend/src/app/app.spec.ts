@@ -131,9 +131,9 @@ describe('App (mise en page du sujet, F-04 → F-06)', () => {
     hire.click();
     await fixture.whenStable();
     expect(game.world()!.managers[0].unlocked).toBe(true);
-    // Manager engagé : toujours listé, en dernier et barré (D40).
-    expect(Array.from(modal.querySelectorAll('td.name')).map((td) => td.textContent!.trim())).toEqual(['Manager 2', 'Manager 1']);
-    expect(modal.querySelector('tr.done .done-label')?.textContent?.trim()).toBe('Engagé');
+    // Manager engagé : retiré de la fenêtre, qui ne liste que les non engagés (D47).
+    expect(Array.from(modal.querySelectorAll('td.name')).map((td) => td.textContent!.trim())).toEqual(['Manager 2']);
+    expect(modal.querySelector('tr.done')).toBeNull();
     (modal.querySelector('button.closebutton') as HTMLButtonElement).click();
     await fixture.whenStable();
     expect(el.querySelector('app-modal')).toBeNull();
@@ -167,13 +167,13 @@ describe('App (mise en page du sujet, F-04 → F-06)', () => {
     confirmSpy.mockRestore();
   });
 
-  it('Paramètres s’ouvre même sans monde, avec 8 interrupteurs et 3 curseurs', async () => {
+  it('Paramètres s’ouvre même sans monde, avec 9 interrupteurs et 4 curseurs', async () => {
     const { el, fixture, menu } = await render();
     menu('settings').click();
     await fixture.whenStable();
     expect(el.querySelector('app-modal h2')?.textContent?.trim()).toBe('Paramètres');
-    expect(el.querySelectorAll('app-settings-panel mat-slide-toggle').length).toBe(8);
-    expect(el.querySelectorAll('app-settings-panel mat-slider').length).toBe(3);
+    expect(el.querySelectorAll('app-settings-panel mat-slide-toggle').length).toBe(9);
+    expect(el.querySelectorAll('app-settings-panel mat-slider').length).toBe(4);
   });
 
   it('message éphémère : chaque snackmessage ouvre un snack-bar (F-20)', async () => {

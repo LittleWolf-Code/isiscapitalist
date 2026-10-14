@@ -112,6 +112,24 @@ describe('GameService', () => {
       game.refreshWorld();
       expect(stub.refetches()).toBe(1);
     });
+
+    it('refresh : pseudo saisi sans Entrée → bascule sur ce pseudo (D47)', () => {
+      setup();
+      game.loginForm.name().value.set(' dave ');
+      game.refresh();
+      expect(game.user()).toBe('dave');
+      expect(localStorage.getItem(USERNAME_STORAGE_KEY)).toBe('dave');
+    });
+
+    it('refresh : pseudo inchangé ou vide → relit le monde courant', () => {
+      setup();
+      const user = game.user();
+      game.refresh();
+      game.loginForm.name().value.set('  ');
+      game.refresh();
+      expect(game.user()).toBe(user);
+      expect(stub.refetches()).toBe(2);
+    });
   });
 
   describe('monde', () => {
@@ -209,11 +227,19 @@ describe('GameService', () => {
       expect(after.products[0].cout).toBeCloseTo(4 * Math.pow(1.07, 24), 9);
       expect(after.money).toBeCloseTo(1000 - (4 * (Math.pow(1.07, 24) - 1)) / 0.07, 9);
       expect(after.products[0].vitesse).toBe(250);
-      expect(game.snackmessage()).toBe('Palier débloqué : Unlock 1.1 (vitesse ×2)');
+      expect(game.snackmessage()).toBe('Achat : 24 × Item 1 — palier débloqué : Unlock 1.1 (vitesse ×2)');
       await flush();
       expect(stub.sent).toEqual([
         { operation: 'AcheterQtProduit', variables: { user: game.user(), id: 1, quantite: 24 } },
       ]);
+    });
+
+    it('buyProduct sans palier : message d’achat seul (D47)', () => {
+      const world = makeWorld();
+      world.money = 1000;
+      setup(world);
+      game.buyProduct(2, game.world()!.products[0]);
+      expect(game.snackmessage()).toBe('Achat : 2 × Item 1');
     });
 
     it('buyProduct trop cher : rien ne change, rien n’est envoyé', async () => {
@@ -334,6 +360,53 @@ describe('GameService', () => {
         "Erreur de transmission serveur pour l'achat du produit : Pas assez d'argent",
       );
       expect(stub.refetches()).toBe(1);
+    });
+  });
+
+  describe('effets sonores (D46)', () => {
+    function soundSpy() {
+      return vi.spyOn(game.sound, 'play').mockImplementation(() => undefined);
+    }
+
+    it('startProduction → production_start ; production manuelle terminée → production_done', () => {
+      setup();
+      const play = soundSpy();
+      game.startProduction(game.world()!.products[0]);
+      expect(play).toHaveBeenLastCalledWith('production_start');
+      game.calcScore(10_600);
+      expect(play).toHaveBeenLastCalledWith('production_done');
+      expect(play).toHaveBeenCalledTimes(2);
+    });
+
+    it('productions des managers : aucun son', () => {
+      const world = makeWorld();
+      world.products[0].managerUnlocked = true;
+      setup(world);
+      const play = soundSpy();
+      game.calcScore(12_000);
+      expect(game.world()!.money).toBeGreaterThan(0);
+      expect(play).not.toHaveBeenCalled();
+    });
+
+    it('buyProduct → buy, ou palier quand un palier est débloqué ; achat refusé → rien', () => {
+      const world = makeWorld();
+      world.money = 1000;
+      setup(world);
+      const play = soundSpy();
+      game.buyProduct(1, game.world()!.products[0]);
+      expect(play).toHaveBeenLastCalledWith('buy');
+      game.buyProduct(23, game.world()!.products[0]); // 25 exemplaires : palier
+      expect(play).toHaveBeenLastCalledWith('palier');
+      game.buyProduct(1e6, game.world()!.products[0]); // trop cher
+      expect(play).toHaveBeenCalledTimes(2);
+    });
+
+    it('réglages Son transmis au SoundService', () => {
+      setup();
+      const configure = vi.spyOn(game.sound, 'configure');
+      game.display.set({ ...DEFAULT_DISPLAY, sound: false, soundLevel: 30 });
+      TestBed.tick();
+      expect(configure).toHaveBeenLastCalledWith(false, 30);
     });
   });
 

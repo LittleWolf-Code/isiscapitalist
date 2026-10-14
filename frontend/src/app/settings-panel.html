@@ -4,7 +4,7 @@
   }
 
   <!-- Ordre des mat-slide-toggle figé (les specs comptent dessus) : Vignette, Grille, Grain,
-       Scanlines, Halo, Scintillement, Bande, Bruit. Un curseur est désactivé quand son toggle
+       Scanlines, Halo, Scintillement, Bande, Bruit, Effets sonores. Un curseur est désactivé quand son toggle
        est off mais garde sa valeur. -->
   <div class="settings-list pip-frame">
     <h3 class="section-title">Écran</h3>
@@ -83,6 +83,17 @@
       Bruit animé
     </mat-slide-toggle>
     <p class="hint">Animations : ignorées si votre système réduit les animations.</p>
+
+    <!-- Effets sonores (D46) : interrupteur + volume, dans le même modèle que l'écran. -->
+    <h3 class="section-title">Son</h3>
+    <div class="setting-row">
+      <mat-slide-toggle class="setting" [checked]="display().sound" (change)="patch({ sound: $event.checked })">
+        Effets sonores
+      </mat-slide-toggle>
+      <mat-slider class="level" min="0" max="100" step="5" discrete [displayWith]="percent" [disabled]="!display().sound">
+        <input matSliderThumb aria-label="Volume des effets sonores" [value]="display().soundLevel" (valueChange)="patch({ soundLevel: $event })" />
+      </mat-slider>
+    </div>
 
     <button matButton="outlined" class="reset" type="button" (click)="reset()">Réinitialiser les réglages</button>
   </div>

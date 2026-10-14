@@ -39,6 +39,7 @@ const TOGGLE_ORDER = [
   'Scintillement',
   'Bande de balayage',
   'Bruit animé',
+  'Effets sonores',
 ];
 
 describe('SettingsPanel', () => {
@@ -62,23 +63,24 @@ describe('SettingsPanel', () => {
     return Array.from(el.querySelectorAll<HTMLElement>('.layout mat-button-toggle'));
   }
 
-  it('affiche le titre, 4 sections, 8 interrupteurs dans l\'ordre, 3 curseurs et 4 teintes', async () => {
+  it('affiche le titre, 5 sections, 9 interrupteurs dans l\'ordre, 4 curseurs et 4 teintes', async () => {
     const fixture = TestBed.createComponent(Host);
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('h2')?.textContent?.trim()).toBe('Paramètres');
-    expect(Array.from(el.querySelectorAll('h3')).map((h) => h.textContent?.trim())).toEqual(['Écran', 'Lumière', 'Animations', 'Serveur']);
+    expect(Array.from(el.querySelectorAll('h3')).map((h) => h.textContent?.trim())).toEqual(['Écran', 'Lumière', 'Animations', 'Son', 'Serveur']);
     expect(toggles(el).map((t) => t.textContent?.trim())).toEqual(TOGGLE_ORDER);
-    // Défauts : statiques on, animés off.
+    // Défauts : statiques on, animés off, son on.
     expect(buttons(el).map((b) => b.getAttribute('aria-checked'))).toEqual([
-      'true', 'true', 'true', 'true', 'true', 'false', 'false', 'false',
+      'true', 'true', 'true', 'true', 'true', 'false', 'false', 'false', 'true',
     ]);
     expect(sliders(el).map((s) => s.getAttribute('aria-label'))).toEqual([
       'Intensité de la vignette',
       'Intensité des scanlines',
       'Intensité du halo',
+      'Volume des effets sonores',
     ]);
-    expect(sliders(el).map((s) => s.value)).toEqual(['50', '50', '50']);
+    expect(sliders(el).map((s) => s.value)).toEqual(['50', '50', '50', '50']);
     expect(tintButtons(el).map((t) => t.textContent?.trim())).toEqual(['Vert', 'Ambre', 'Bleu', 'Blanc']);
     expect(tintButtons(el)[0].classList.contains('mat-button-toggle-checked')).toBe(true);
     expect(el.textContent).toContain('ignorées si votre système réduit les animations');

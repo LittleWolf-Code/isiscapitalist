@@ -203,6 +203,11 @@ contredisent aucune exigence (thème cathodique, écran Paramètres).
       centrale dans `material-theme.scss`, exposant du gain gardé dans la barre de production.
 - [x] 10.12 Coins du thème en `0px` au lieu de `0` (D45) : retrait du champ « Your ID »
       (`outline`) rétabli, texte et libellé décollés du contour.
+- [x] 10.13 Effets sonores, premier lot du brief sonore (D46) : `SoundService` (Web Audio),
+      5 sons dans `frontend/public/sons/`, section « Son » de Paramètres (interrupteur + volume).
+- [x] 10.14 Conformité à la grille d'évaluation fonctionnelle (D47) : Refresh avec le pseudo
+      saisi, message à chaque achat de produit, fenêtre Managers sans les managers engagés,
+      minuteur du produit à 0 au repos.
 
 ## Exemples de requêtes playground (à réutiliser pour tester)
 

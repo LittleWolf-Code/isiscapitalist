@@ -25,6 +25,9 @@ export interface DisplaySettings {
   noise: boolean;
   tint: Tint;
   layout: Layout;
+  // Effets sonores (D46) : rangés ici pour partager la clé JSON et le panneau Paramètres.
+  sound: boolean;
+  soundLevel: number; // 0-100
 }
 
 // Défauts : tout ce qui est statique est actif, tout ce qui est animé est inactif, curseurs à
@@ -43,6 +46,8 @@ export const DEFAULT_DISPLAY: DisplaySettings = {
   noise: false,
   tint: 'green',
   layout: 'sujet',
+  sound: true,
+  soundLevel: 50,
 };
 
 // Une seule clé JSON (D34) à la place des trois clés 'on' / 'off' de D22, lues une fois en
@@ -100,6 +105,8 @@ export function normalizeDisplay(raw: unknown): DisplaySettings {
     layout: (LAYOUTS as readonly unknown[]).includes(layout)
       ? (layout as Layout)
       : DEFAULT_DISPLAY.layout,
+    sound: pickBoolean(source, 'sound'),
+    soundLevel: pickLevel(source, 'soundLevel'),
   };
 }
 
