@@ -20,7 +20,6 @@ query GetWorld($user: String!) {
     totalangels
     activeangels
     angelbonus
-    angeldivisor
     lastupdate
     products {
       id
@@ -49,5 +48,14 @@ query GetWorld($user: String!) {
     managers {
       ...PalierFields
     }
+  }
+}
+
+# Diviseur de la formule des anges du compte (D43), lu à part (D49) : un serveur au schéma du
+# sujet ne connaît pas `angeldivisor` et refuserait GetWorld tout entier s'il en faisait partie.
+# Requête facultative : en erreur, le client garde la formule du sujet (10¹⁵).
+query GetAngelDivisor($user: String!) {
+  getWorld(user: $user) {
+    angeldivisor
   }
 }

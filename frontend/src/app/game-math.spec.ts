@@ -162,19 +162,19 @@ describe('angelsEarned / totalAngelsFor', () => {
   });
 
   it('anges supplémentaires = total − déjà gagnés, jamais négatif', () => {
-    const subject = { angeldivisor: 1e15 };
-    expect(angelsEarned({ ...subject, score: 0, totalangels: 0 })).toBe(0);
-    expect(angelsEarned({ ...subject, score: 4e15, totalangels: 100 })).toBe(200);
-    expect(angelsEarned({ ...subject, score: 4e15, totalangels: 300 })).toBe(0);
-    expect(angelsEarned({ ...subject, score: 8_019_386, totalangels: 160_387 })).toBe(0);
+    // Diviseur omis : celui du sujet (10¹⁵).
+    expect(angelsEarned({ score: 0, totalangels: 0 })).toBe(0);
+    expect(angelsEarned({ score: 4e15, totalangels: 100 })).toBe(200);
+    expect(angelsEarned({ score: 4e15, totalangels: 300 })).toBe(0);
+    expect(angelsEarned({ score: 8_019_386, totalangels: 160_387 })).toBe(0);
   });
 
   // D43 : diviseur choisi par compte (démo), mêmes cas que world-engine.spec.ts.
   it('diviseur du compte : 10⁶ / 10⁶ → 150, 4·10³ / 10³ → 300 ; angelsEarned le suit', () => {
     expect(totalAngelsFor(1e6, 1e6)).toBe(150);
     expect(totalAngelsFor(4e3, 1e3)).toBe(300);
-    expect(angelsEarned({ score: 4e6, totalangels: 100, angeldivisor: 1e15 })).toBe(0);
-    expect(angelsEarned({ score: 4e6, totalangels: 100, angeldivisor: 1e6 })).toBe(200);
+    expect(angelsEarned({ score: 4e6, totalangels: 100 }, 1e15)).toBe(0);
+    expect(angelsEarned({ score: 4e6, totalangels: 100 }, 1e6)).toBe(200);
   });
 
   it('angelFormulaLabel : puissance de 10 en exposant, sinon le nombre', () => {

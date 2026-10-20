@@ -13,14 +13,15 @@ toute décision antérieure (D36). **Toujours lire `docs/` avant de coder** :
 | Fichier | Contenu |
 |---|---|
 | `docs/CAHIER-DES-CHARGES.md` | Exigences numérotées tirées des deux sujets (`backend.pdf` + `frontendangularsignal.pdf`) |
-| `docs/RECETTE.md` | Dernière recette de l'application contre le cahier des charges (05/10/2026, après la phase 10) |
+| `docs/RECETTE.md` | Recette contre le cahier des charges (05/10/2026, après la phase 10) et contre la grille d'évaluation (14/10/2026 : 26 / 26 après l'étape 10.15) |
 | `docs/SPEC-backend.md` | Sujet du TP backend (schéma GraphQL, étapes, contraintes) |
 | `docs/GAME-RULES.md` | Règles métier du jeu (production, unlocks, upgrades, anges, reset, formules) |
 | `docs/ARCHITECTURE.md` | Organisation des fichiers, flux de données, stockage |
 | `docs/ROADMAP.md` | Plan de travail par étapes avec cases à cocher — **la source de vérité de l'avancement** |
 | `docs/DECISIONS.md` | Décisions techniques prises (et pourquoi) |
 | `docs/THEME.md` | Thème « Nuka Capitalist » : casting des mascottes, lexique Fallout, cases restantes |
-| `docs/grille évaluation fonctionnelle.pdf` | Grille de notation fonctionnelle du projet (7 sections, 25 sous-critères) ; écarts traités en D47 |
+| `docs/grille évaluation fonctionnelle.pdf` | Grille de notation fonctionnelle du projet (8 sections, 26 sous-critères) ; écarts traités en D47 |
+| `docs/PROTOCOLE-DEMO.md` | Démonstration pas à pas des 26 sous-critères de la grille (préparation, déroulé, parades) |
 | `docs/reference/` | Schéma GraphQL fourni + squelette `origworld` (à copier, pas à inventer) |
 
 Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`backend/CLAUDE.md`, `frontend/CLAUDE.md`).
@@ -51,6 +52,11 @@ Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`
   premier lot de 5 sons du brief sonore.
   Étape 10.14 : conformité à la grille d'évaluation (D47) — Refresh avec le pseudo saisi,
   message à chaque achat, fenêtre Managers sans les engagés, minuteur à 0 au repos.
+  Étape 10.15 : le client ne prend plus d'avance sur le serveur (D48, défaut G-D1 de la recette) :
+  l'argent ne recule plus au Refresh.
+  Étape 10.16 : jouable sur le serveur d'un autre groupe (D49) — `GetWorld` au schéma du sujet,
+  diviseur des anges lu par une requête facultative, `/graphql` final retiré de l'adresse.
+  Étape 10.17 : une fenêtre ne se ferme que sur un clic commencé et fini sur le fond (D50).
   Détail : `frontend/CLAUDE.md`.
 - Les décisions D14, D15, D19, D20, D23 à D31 décrivent la phase 9 et sont **remplacées** (D36) ;
   les relire seulement pour l'historique.

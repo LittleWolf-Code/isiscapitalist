@@ -67,9 +67,9 @@ describe('GameService', () => {
       providers: [GameService, { provide: Apollo, useValue: stub.apollo }],
     });
     game = TestBed.inject(GameService);
-    // Base de temps de calcScore posée avant le chargement du monde (aucun produit n'avance).
-    game.calcScore(10_000);
     stub.data.set({ getWorld: world });
+    // Base de temps de calcScore : premier passage après le chargement, qui n'avance rien (D48).
+    game.calcScore(10_000);
   }
 
   beforeEach(() => {
@@ -190,9 +190,67 @@ describe('GameService', () => {
     it('la boucle tourne toute seule toutes les 100 ms', () => {
       const world = makeWorld();
       world.products[0].timeleft = 500;
+      // Horloge simulée amenée au-delà de la base de temps de setup (10 000), qui ne recule pas.
+      vi.advanceTimersByTime(10_000);
       setup(world);
       vi.advanceTimersByTime(300);
       expect(game.world()!.products[0].timeleft).toBeLessThan(500);
+    });
+
+    it('monde rechargé entre deux passages : le passage suivant n’avance rien (D48)', () => {
+      const world = makeWorld();
+      world.products[0].timeleft = 300;
+      setup(world);
+      game.calcScore(10_200);
+      expect(game.world()!.products[0].timeleft).toBe(100);
+      const reloaded = makeWorld();
+      reloaded.products[0].timeleft = 300;
+      stub.data.set({ getWorld: reloaded });
+      game.calcScore(10_300);
+      expect(game.world()!.products[0].timeleft).toBe(300);
+      game.calcScore(10_400);
+      expect(game.world()!.products[0].timeleft).toBe(200);
+    });
+
+    it('instant antérieur au passage précédent : ignoré, la base de temps ne recule pas', () => {
+      const world = makeWorld();
+      world.products[0].timeleft = 300;
+      setup(world);
+      game.calcScore(9_000);
+      game.calcScore(10_100);
+      expect(game.world()!.products[0].timeleft).toBe(200);
+    });
+
+    // Défaut G-D1 (D48) : le temps écoulé avant une action n'est pas décompté de la production
+    // qu'elle lance, sinon le client prend de l'avance sur le serveur et l'argent recule au
+    // Refresh.
+    it('startProduction entre deux passages : seul le temps écoulé depuis l’action compte', () => {
+      setup();
+      vi.spyOn(performance, 'now').mockReturnValue(10_060);
+      game.startProduction(game.world()!.products[0]);
+      game.calcScore(10_100);
+      expect(game.world()!.products[0].timeleft).toBe(460);
+    });
+
+    it('hireManager entre deux passages : la boucle part de l’engagement', () => {
+      const world = makeWorld();
+      world.money = 1500;
+      setup(world);
+      vi.spyOn(performance, 'now').mockReturnValue(10_060);
+      game.hireManager(game.world()!.managers[0]);
+      game.calcScore(10_100);
+      expect(game.world()!.products[0].timeleft).toBe(460);
+    });
+
+    it('action : la production en cours est d’abord avancée et créditée', () => {
+      const world = makeWorld();
+      world.money = 1000;
+      world.products[0].timeleft = 50;
+      setup(world);
+      vi.spyOn(performance, 'now').mockReturnValue(10_060);
+      game.buyProduct(1, game.world()!.products[0]);
+      expect(game.world()!.money).toBe(1000 + 1 - 4);
+      expect(game.world()!.products[0].timeleft).toBe(0);
     });
   });
 
@@ -317,12 +375,13 @@ describe('GameService', () => {
       });
     });
 
-    it('setAngelDivisor (D43) : monde local mis à jour, message, mutation ChangerFormuleAnges', async () => {
+    it('setAngelDivisor (D43) : diviseur local mis à jour, message, mutation ChangerFormuleAnges', async () => {
       const world = makeWorld();
       world.score = 4e6;
       setup(world);
       game.setAngelDivisor(1e6);
-      expect(game.world()!.angeldivisor).toBe(1e6);
+      expect(game.angeldivisor()).toBe(1e6);
+      expect(game.effectiveAngelDivisor()).toBe(1e6);
       expect(game.snackmessage()).toBe('Formule des anges : 150 × √(score / 10⁶)');
       await flush();
       expect(stub.sent[0]).toEqual({
@@ -337,8 +396,31 @@ describe('GameService', () => {
       game.setAngelDivisor(0);
       game.setAngelDivisor(-5);
       await flush();
-      expect(game.world()!.angeldivisor).toBe(1e15);
+      expect(game.angeldivisor()).toBe(1e15);
       expect(stub.sent).toEqual([]);
+    });
+
+    // D49 : un serveur au schéma du sujet refuse GetAngelDivisor ; le monde se charge quand même.
+    it('serveur sans angeldivisor : diviseur null, formule du sujet, setAngelDivisor sans effet', async () => {
+      const world = makeWorld();
+      world.score = 4e15;
+      setup(world);
+      stub.divisorError.set(new Error('Cannot query field "angeldivisor" on type "World".'));
+      expect(game.world()?.name).toBe('World');
+      expect(game.angeldivisor()).toBeNull();
+      expect(game.effectiveAngelDivisor()).toBe(1e15);
+      game.setAngelDivisor(1e6);
+      await flush();
+      expect(game.effectiveAngelDivisor()).toBe(1e15);
+      expect(stub.sent).toEqual([]);
+      expect(game.snackmessage()).toBe('');
+    });
+
+    it('refreshWorld relit aussi le diviseur des anges (D49)', () => {
+      setup();
+      game.refreshWorld();
+      expect(stub.refetches()).toBe(1);
+      expect(stub.divisorRefetches()).toBe(1);
     });
 
     it('reset : mutation resetWorld, puis rechargement du monde et message', async () => {

@@ -27,7 +27,6 @@ export function makeWorld(): WorldData {
     totalangels: 0,
     activeangels: 0,
     angelbonus: 2,
-    angeldivisor: 1e15,
     lastupdate: 0,
     products: [
       {
@@ -82,36 +81,60 @@ export interface SentMutation {
   readonly variables: Record<string, unknown>;
 }
 
+function operationName(document: DocumentNode): string {
+  const definition = document.definitions[0] as { name?: { value: string } };
+  return definition.name?.value ?? '?';
+}
+
 // Doublure d'Apollo : `signal.query` rend des signaux pilotables (data / error) et compte les
 // refetch ; `signal.mutation` enregistre chaque appel et peut échouer sur demande (`failNext`).
 export function stubApollo(world?: WorldData) {
   const data = signal<{ getWorld: WorldData } | undefined>(world ? { getWorld: world } : undefined);
   const error = signal<unknown>(undefined);
+  // GetAngelDivisor (D49) : réponse de notre serveur par défaut (formule du sujet) ; `divisorError`
+  // simule un serveur au schéma du sujet, qui refuse la requête.
+  const divisorData = signal<{ getWorld: { angeldivisor: number } } | undefined>({
+    getWorld: { angeldivisor: 1e15 },
+  });
+  const divisorError = signal<unknown>(undefined);
+  let divisorRefetches = 0;
   const sent: SentMutation[] = [];
   let refetches = 0;
   let failure: unknown = null;
   return {
     data,
     error,
+    divisorData,
+    divisorError,
     sent,
     refetches: () => refetches,
+    divisorRefetches: () => divisorRefetches,
     failNext(reason: unknown): void {
       failure = reason;
     },
     apollo: {
       signal: {
-        query: () => ({
-          data,
-          error,
-          refetch: () => {
-            refetches++;
-            return Promise.resolve();
-          },
-        }),
+        query: (options: { query: DocumentNode }) =>
+          operationName(options.query) === 'GetAngelDivisor'
+            ? {
+                data: divisorData,
+                error: divisorError,
+                refetch: () => {
+                  divisorRefetches++;
+                  return Promise.resolve();
+                },
+              }
+            : {
+                data,
+                error,
+                refetch: () => {
+                  refetches++;
+                  return Promise.resolve();
+                },
+              },
         mutation: (document: DocumentNode) => ({
           mutate: (options: { variables: Record<string, unknown> }) => {
-            const definition = document.definitions[0] as { name?: { value: string } };
-            sent.push({ operation: definition.name?.value ?? '?', variables: options.variables });
+            sent.push({ operation: operationName(document), variables: options.variables });
             if (failure !== null) {
               const reason = failure;
               failure = null;

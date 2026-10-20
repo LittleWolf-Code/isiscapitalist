@@ -70,7 +70,14 @@ export type GetWorldQueryVariables = Exact<{
 }>;
 
 
-export type GetWorldQueryData = { getWorld: { name: string, logo: string, money: number, score: number, totalangels: number, activeangels: number, angelbonus: number, angeldivisor: number, lastupdate: number, products: Array<{ id: number, name: string, logo: string, cout: number, croissance: number, revenu: number, vitesse: number, quantite: number, timeleft: number, managerUnlocked: boolean, paliers: Array<PalierFieldsFragment> }>, allunlocks: Array<PalierFieldsFragment>, upgrades: Array<PalierFieldsFragment>, angelupgrades: Array<PalierFieldsFragment>, managers: Array<PalierFieldsFragment> } | null };
+export type GetWorldQueryData = { getWorld: { name: string, logo: string, money: number, score: number, totalangels: number, activeangels: number, angelbonus: number, lastupdate: number, products: Array<{ id: number, name: string, logo: string, cout: number, croissance: number, revenu: number, vitesse: number, quantite: number, timeleft: number, managerUnlocked: boolean, paliers: Array<PalierFieldsFragment> }>, allunlocks: Array<PalierFieldsFragment>, upgrades: Array<PalierFieldsFragment>, angelupgrades: Array<PalierFieldsFragment>, managers: Array<PalierFieldsFragment> } | null };
+
+export type GetAngelDivisorQueryVariables = Exact<{
+  user: string;
+}>;
+
+
+export type GetAngelDivisorQueryData = { getWorld: { angeldivisor: number } | null };
 
 export const PalierFieldsFragmentDoc = gql`
     fragment PalierFields on Palier {
@@ -204,7 +211,6 @@ export const GET_WORLD_QUERY = gql`
     totalangels
     activeangels
     angelbonus
-    angeldivisor
     lastupdate
     products {
       id
@@ -242,6 +248,23 @@ export function gqlGetWorldQuery(variables: () => GetWorldQueryVariables | null)
 export function gqlGetWorldQuery(variables: any): any {
   return {
     query: GET_WORLD_QUERY,
+    variables
+  };
+}
+
+export const GET_ANGEL_DIVISOR_QUERY = gql`
+    query GetAngelDivisor($user: String!) {
+  getWorld(user: $user) {
+    angeldivisor
+  }
+}
+    ` as DocumentNode<GetAngelDivisorQueryData, GetAngelDivisorQueryVariables>;
+
+export function gqlGetAngelDivisorQuery(variables: GetAngelDivisorQueryVariables): { query: typeof GET_ANGEL_DIVISOR_QUERY, variables: typeof variables };
+export function gqlGetAngelDivisorQuery(variables: () => GetAngelDivisorQueryVariables | null): { query: typeof GET_ANGEL_DIVISOR_QUERY, variables: typeof variables };
+export function gqlGetAngelDivisorQuery(variables: any): any {
+  return {
+    query: GET_ANGEL_DIVISOR_QUERY,
     variables
   };
 }

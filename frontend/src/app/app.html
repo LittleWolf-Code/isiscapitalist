@@ -248,7 +248,7 @@
     [totalangels]="w.totalangels"
     [activeangels]="w.activeangels"
     [angelbonus]="w.angelbonus"
-    [angeldivisor]="w.angeldivisor"
+    [angeldivisor]="game.effectiveAngelDivisor()"
     [angelsEarned]="angelsEarned()"
     (resetRequested)="onReset()"
   />
@@ -263,7 +263,7 @@
     [server]="game.server()"
     [defaultServer]="defaultServer"
     (serverChange)="game.setServer($event)"
-    [angelDivisor]="game.world()?.angeldivisor ?? null"
+    [angelDivisor]="game.world() ? game.angeldivisor() : null"
     (angelDivisorChange)="game.setAngelDivisor($event)"
   />
 </ng-template>

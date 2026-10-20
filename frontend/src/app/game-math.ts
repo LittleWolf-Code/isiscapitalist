@@ -263,9 +263,10 @@ export function totalAngelsFor(score: number, divisor: number = SUBJECT_ANGEL_DI
 // Anges SUPPLÉMENTAIRES qu'un reset rapporterait maintenant (RG-09, fenêtre Investors et badge) :
 // totalAngelsFor(score, angeldivisor) − totalangels, borné à 0. Le serveur recalcule au reset.
 export function angelsEarned(
-  world: Pick<World, 'score' | 'totalangels' | 'angeldivisor'>,
+  world: Pick<World, 'score' | 'totalangels'>,
+  divisor: number = SUBJECT_ANGEL_DIVISOR,
 ): number {
-  return Math.max(0, totalAngelsFor(world.score, world.angeldivisor) - world.totalangels);
+  return Math.max(0, totalAngelsFor(world.score, divisor) - world.totalangels);
 }
 
 // Formules proposées dans Paramètres → Démonstration (D43), dans l'ordre des boutons. « Démo » :

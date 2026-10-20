@@ -15,6 +15,10 @@ describe('server.ts (F-34, D41)', () => {
     ['http://localhost:3000', 'http://localhost:3000/'],
     ['https://autre-groupe.fr/api', 'https://autre-groupe.fr/api/'],
     ['https://autre-groupe.fr/api/?x=1#top', 'https://autre-groupe.fr/api/'],
+    // Adresse de l'endpoint collée telle quelle (D49) : « graphql » final retiré.
+    ['https://isiscapitalist.chl.connected-health.fr/graphql', 'https://isiscapitalist.chl.connected-health.fr/'],
+    ['https://autre-groupe.fr/api/graphql/', 'https://autre-groupe.fr/api/'],
+    ['https://autre-groupe.fr/mygraphql', 'https://autre-groupe.fr/mygraphql/'],
     ['localhost:3000', null],
     ['ftp://x.fr', null],
     ['', null],

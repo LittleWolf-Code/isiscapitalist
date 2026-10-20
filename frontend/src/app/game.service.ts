@@ -4,13 +4,14 @@
 // mutation du sujet ; le monde n'est relu (getWorld) qu'au démarrage, au changement de pseudo, sur
 // Refresh, après un reset et après un échec de transmission — le serveur fait foi (NF-03).
 // Seul fichier qui injecte Apollo : les composants sont présentationnels.
-import { DestroyRef, Injectable, effect, inject, linkedSignal, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, linkedSignal, signal } from '@angular/core';
 import { form } from '@angular/forms/signals';
 import { Apollo, CombinedGraphQLErrors } from '@apollo-orbit/angular';
 import { DISPLAY_STORAGE_KEY, DisplaySettings, readStoredDisplay } from './display-settings';
 import {
   PalierData,
   ProductData,
+  SUBJECT_ANGEL_DIVISOR,
   WorldData,
   advanceProduction,
   angelFormulaLabel,
@@ -29,6 +30,7 @@ import {
   ACHETER_QT_PRODUIT_MUTATION,
   CHANGER_FORMULE_ANGES_MUTATION,
   ENGAGER_MANAGER_MUTATION,
+  GET_ANGEL_DIVISOR_QUERY,
   GET_WORLD_QUERY,
   LANCER_PRODUCTION_PRODUIT_MUTATION,
   RESET_WORLD_MUTATION,
@@ -128,6 +130,35 @@ export class GameService {
     computation: (world, previous) => world ?? previous?.value,
   });
 
+  // Diviseur de la formule des anges du compte (D43), lu par une requête à part (D49) : GetWorld
+  // reste au schéma du sujet et marche sur le serveur de n'importe quel groupe.
+  private readonly divisorQuery = this.apollo.signal.query({
+    query: GET_ANGEL_DIVISOR_QUERY,
+    fetchPolicy: 'no-cache',
+    variables: () => {
+      const user = this.user();
+      return user ? { user } : null;
+    },
+  });
+
+  // null : serveur au schéma du sujet (requête refusée) ou réponse pas encore reçue ; la formule
+  // du sujet s'applique et le cadre « Démonstration » est masqué. Pendant un rechargement, la
+  // dernière valeur est gardée. Modifié localement par setAngelDivisor.
+  readonly angeldivisor = linkedSignal<
+    { divisor: number | undefined; failed: boolean },
+    number | null
+  >({
+    source: () => ({
+      divisor: this.divisorQuery.data()?.getWorld?.angeldivisor,
+      failed: !!this.divisorQuery.error(),
+    }),
+    computation: ({ divisor, failed }, previous) =>
+      failed ? null : (divisor ?? previous?.value ?? null),
+  });
+
+  // Diviseur appliqué aux calculs d'anges : celui du compte, sinon celui du sujet.
+  readonly effectiveAngelDivisor = computed(() => this.angeldivisor() ?? SUBJECT_ANGEL_DIVISOR);
+
   private readonly acheterQtProduit = this.apollo.signal.mutation(ACHETER_QT_PRODUIT_MUTATION, {
     fetchPolicy: 'no-cache',
   });
@@ -156,6 +187,8 @@ export class GameService {
 
   // Instant du dernier passage de calcScore (performance.now, F-11).
   private lastTick = performance.now();
+  // Dernière réponse de getWorld prise en compte par calcScore (D48).
+  private syncedWorld: unknown = undefined;
 
   constructor() {
     // Pseudo initial (F-23) : mémorisé, migré ou Captain<n>, posé dans le formulaire et validé
@@ -191,11 +224,25 @@ export class GameService {
 
   // Évolution du monde depuis le passage précédent (F-11) : même calcul que updateWorld du
   // serveur (advanceProduction) ; chaque production terminée est créditée par productionDone.
+  // Appelée aussi en tête de chaque action (D48), comme updateWorld avant chaque mutation : le
+  // temps écoulé avant l'action ne doit pas être décompté de la production qu'elle lance. Un
+  // instant antérieur au passage précédent est ignoré (la base de temps ne recule jamais).
   calcScore(now: number = performance.now()): void {
     const elapsed = now - this.lastTick;
+    if (elapsed <= 0) {
+      return;
+    }
     this.lastTick = now;
+    // Monde rechargé depuis le passage précédent (D48) : l'état du serveur date de sa réponse,
+    // arrivée entre les deux passages ; l'avancer de tout l'intervalle donnerait de l'avance au
+    // client, et l'argent reculerait au Refresh suivant. Ce passage n'avance donc rien.
+    const loaded = this.worldQuery.data()?.getWorld;
+    if (loaded !== this.syncedWorld) {
+      this.syncedWorld = loaded;
+      return;
+    }
     const world = this.world();
-    if (!world || elapsed <= 0) {
+    if (!world) {
       return;
     }
     const done: [ProductData, number][] = [];
@@ -239,6 +286,7 @@ export class GameService {
   // Clic sur l'icône d'un produit (F-10, F-17) : lance une production si le produit a au moins
   // un exemplaire, n'est pas automatisé et n'est pas déjà en production.
   startProduction(product: ProductData): void {
+    this.calcScore();
     const world = this.world();
     const current = world?.products.find((p) => p.id === product.id);
     if (!world || !current || current.quantite === 0 || current.managerUnlocked || current.timeleft > 0) {
@@ -255,6 +303,7 @@ export class GameService {
   // unlocks du produit puis allunlocks appliqués (F-26), message éphémère à chaque achat (paliers
   // débloqués compris, D47), mutation.
   buyProduct(qt: number, product: ProductData): void {
+    this.calcScore();
     const world = this.world();
     const current = world?.products.find((p) => p.id === product.id);
     if (!world || !current || qt <= 0) {
@@ -289,6 +338,7 @@ export class GameService {
   // débité, manager et produit débloqués, production lancée immédiatement si le produit était au
   // repos.
   hireManager(manager: PalierData): void {
+    this.calcScore();
     const world = this.world();
     const current = world?.managers.find((m) => m.name === manager.name);
     if (
@@ -323,6 +373,7 @@ export class GameService {
 
   // Achat d'un cash upgrade (F-28) : payé en argent, bonus appliqué comme un unlock.
   buyUpgrade(upgrade: PalierData): void {
+    this.calcScore();
     const world = this.world();
     const current = world?.upgrades.find((u) => u.name === upgrade.name);
     if (!world || !current || current.unlocked || world.money < current.seuil) {
@@ -345,6 +396,7 @@ export class GameService {
   // Achat d'un angel upgrade (F-32) : payé en anges actifs (perdus), type `ange` → angelbonus,
   // sinon gain / vitesse comme un unlock.
   buyAngelUpgrade(upgrade: PalierData): void {
+    this.calcScore();
     const world = this.world();
     const current = world?.angelupgrades.find((u) => u.name === upgrade.name);
     if (!world || !current || current.unlocked || world.activeangels < current.seuil) {
@@ -367,22 +419,28 @@ export class GameService {
   // Reset (F-29) : mutation resetWorld, puis rechargement du monde remis à zéro par le serveur.
   async reset(): Promise<void> {
     const world = this.world();
-    const earned = world ? angelsEarned(world) : 0;
+    const earned = world ? angelsEarned(world, this.effectiveAngelDivisor()) : 0;
     if (await this.send('le reset du monde', (user) => this.resetWorldMutation.mutate({ variables: { user } }))) {
       this.snackmessage.set(`Monde remis à zéro : ${earned} ange(s) gagné(s)`);
       this.refreshWorld();
     }
   }
 
-  // Formule des anges du compte (Paramètres → Démonstration, D43) : appliquée au monde local
+  // Formule des anges du compte (Paramètres → Démonstration, D43) : appliquée localement
   // (anges à réclamer, badge Investors) puis transmise ; le serveur la garde dans le monde du
-  // joueur, reset compris. Diviseur invalide ou inchangé, ou pas de monde : rien ne se passe.
+  // joueur, reset compris. Diviseur invalide ou inchangé, pas de monde, ou serveur qui ne connaît
+  // pas la formule (D49) : rien ne se passe.
   setAngelDivisor(divisor: number): void {
-    const world = this.world();
-    if (!world || !(Number.isFinite(divisor) && divisor > 0) || divisor === world.angeldivisor) {
+    const current = this.angeldivisor();
+    if (
+      !this.world() ||
+      current === null ||
+      !(Number.isFinite(divisor) && divisor > 0) ||
+      divisor === current
+    ) {
       return;
     }
-    this.world.set({ ...world, angeldivisor: divisor });
+    this.angeldivisor.set(divisor);
     this.snackmessage.set(`Formule des anges : ${angelFormulaLabel(divisor)}`);
     void this.send('le changement de formule des anges', (user) =>
       this.changerFormuleAnges.mutate({ variables: { user, diviseur: divisor } }),
@@ -416,6 +474,8 @@ export class GameService {
   // worldQuery.error().
   refreshWorld(): void {
     this.worldQuery.refetch().catch(() => undefined);
+    // Diviseur des anges (D49) : un refus (serveur au schéma du sujet) est attendu, pas signalé.
+    this.divisorQuery.refetch().catch(() => undefined);
   }
 
   // Adresse du serveur choisie dans Paramètres (F-34, D41) : appliquée tout de suite (endpoint

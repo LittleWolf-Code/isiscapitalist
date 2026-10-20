@@ -53,9 +53,22 @@ describe('Modal (fenêtre superposée, F-18)', () => {
 
     fixture.componentInstance.open.set(true);
     await fixture.whenStable();
-    (el.querySelector('.backdrop') as HTMLElement).click();
+    const backdrop = el.querySelector('.backdrop') as HTMLElement;
+    backdrop.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    backdrop.click();
     await fixture.whenStable();
     expect(el.querySelector('app-modal')).toBeNull();
     expect(fixture.componentInstance.closes).toBe(3);
+  });
+
+  // D50 : sélection d'un texte de la fenêtre en glissant jusqu'au fond ; certains navigateurs
+  // envoient alors le « click » au fond, là où le bouton est relâché.
+  it('appui dans la fenêtre puis clic reçu par le fond : la fenêtre reste ouverte', async () => {
+    const { fixture, el } = await render();
+    el.querySelector('.content')!.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    (el.querySelector('.backdrop') as HTMLElement).click();
+    await fixture.whenStable();
+    expect(el.querySelector('app-modal')).not.toBeNull();
+    expect(fixture.componentInstance.closes).toBe(0);
   });
 });

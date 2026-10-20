@@ -1473,7 +1473,7 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
 ## D47 — Mise en conformité avec la grille d'évaluation fonctionnelle
 
 - **Contexte** (14/10/2026) : la grille d'évaluation du projet
-  (`docs/grille évaluation fonctionnelle.pdf`, 7 sections, 25 sous-critères) a été confrontée à
+  (`docs/grille évaluation fonctionnelle.pdf`, 8 sections, 26 sous-critères) a été confrontée à
   l'application. Quatre sous-critères n'étaient pas tenus à la lettre :
   1. *Pseudo → Refresh* : « le bouton Refresh recharge le monde avec le nouveau pseudo ». Refresh
      relisait le monde du pseudo **déjà validé** par Entrée ; un pseudo tapé puis Refresh
@@ -1504,3 +1504,86 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
   `npx ng build` passe. Vérifié dans la preview avec un joueur jetable (supprimé ensuite) :
   pseudo tapé puis Refresh sans Entrée → monde du nouveau pseudo ; minuteurs à 0 au repos,
   0,4 s pendant une production de Nuka-Cola puis 0 ; achat → « Achat : 1 × Nuka-Cola ».
+
+## D48 — Le client ne prend plus d'avance sur le serveur (défaut G-D1)
+
+- **Contexte** (14/10/2026) : la recette contre la grille d'évaluation (`docs/RECETTE.md` § 3)
+  a laissé G-26 « lors du refresh du monde l'argent correspond à la dernière valeur affichée »
+  partiel : après l'engagement d'un manager, le client avait un cycle d'avance sur le serveur et
+  l'argent affiché reculait d'un cycle au Refresh (544 585 → 543 511 $). Deux causes, toutes deux
+  dans `calcScore`, qui avance le monde par pas de 100 ms en décomptant tout le temps écoulé depuis
+  le passage précédent :
+  1. une action faite entre deux passages (`startProduction`, `hireManager`) pose
+     `timeleft = vitesse`, puis le passage suivant décompte aussi le temps écoulé **avant**
+     l'action (jusqu'à 100 ms d'avance) ; le serveur, lui, applique `updateWorld` avant l'action
+     (règle 5) ;
+  2. un monde rechargé par `getWorld` (Refresh, reset, changement de serveur) arrive entre deux
+     passages ; le passage suivant l'avance aussi du temps écoulé avant la réponse.
+- **Décision** :
+  1. Chaque action locale (`startProduction`, `buyProduct`, `hireManager`, `buyUpgrade`,
+     `buyAngelUpgrade`) appelle d'abord `calcScore()`, comme `updateWorld` en tête de chaque
+     mutation : la production en cours est avancée et créditée jusqu'à l'instant de l'action.
+  2. `calcScore` ignore un instant antérieur au passage précédent au lieu d'y recaler sa base de
+     temps (la base ne recule jamais ; les specs, qui pilotent `calcScore` avec une horloge
+     explicite, ne sont pas perturbées par les `performance.now()` des actions).
+  3. `calcScore` retient la dernière réponse de `getWorld` prise en compte (`syncedWorld`) ; le
+     premier passage qui en voit une nouvelle n'avance rien. Le client reste au pire légèrement
+     **en retard** sur le serveur, jamais en avance.
+- **Conséquences** : au Refresh, l'argent ne peut plus que rester égal ou monter (du retard du
+  client), jamais reculer. Reste la latence réseau : le serveur démarre une production à la
+  réception de la mutation, quelques ms en local, quelques dizaines vers le VPS ; le client est
+  alors en avance d'autant, ce qui ne touche qu'un Refresh tombant dans cette fenêtre.
+  Vérifié dans la preview (joueur jetable supprimé ensuite) : après engagement de Cappy, client −
+  serveur = 0 à −2 cycles sur 40 mesures (au lieu de +1 cycle) ; 10 Refresh sans aucun recul.
+  `npx ng test --watch=false` : 226 tests verts (+5) ; `npx ng build` passe.
+
+## D49 — GetWorld au schéma du sujet : le diviseur des anges lu à part
+
+- **Contexte** (14/10/2026) : impossible de jouer sur le serveur d'un autre groupe
+  (`https://isiscapitalist.chl.connected-health.fr/graphql`), alors qu'il répond et que son CORS
+  est ouvert (`Access-Control-Allow-Origin: *`). Cause : depuis D43, `GetWorld` demandait
+  `angeldivisor`, champ absent du schéma du sujet ; ce serveur refusait donc **toute** la requête
+  (« Cannot query field "angeldivisor" on type "World" », `GRAPHQL_VALIDATION_FAILED`) et aucun
+  monde ne se chargeait. Régression de F-34 / API-02 (nos opérations doivent être valides contre le
+  serveur d'un autre groupe) et du critère « Adresse du back » de la grille d'évaluation. Second
+  piège : l'adresse attendue est la racine du serveur, mais on colle volontiers celle de
+  l'endpoint (`…/graphql`) ; l'app appelait alors `…/graphql/graphql` et cherchait les images sous
+  `…/graphql/icones/`.
+- **Décision** :
+  1. `GetWorld` revient **strictement** au schéma du sujet (`angeldivisor` retiré).
+  2. Nouvelle requête facultative `GetAngelDivisor` (`getWorld { angeldivisor }`), lancée avec
+     `GetWorld` et relue avec lui (`refreshWorld`). `GameService.angeldivisor` (`linkedSignal`) :
+     sa valeur, ou `null` si la requête est refusée (serveur au schéma du sujet) ou pas encore
+     reçue ; `effectiveAngelDivisor` = celui du compte, sinon 10¹⁵ du sujet. Un refus n'est pas
+     signalé (il est attendu). `null` masque le cadre « Démonstration » de Paramètres et rend
+     `setAngelDivisor` sans effet : `ChangerFormuleAnges` n'est jamais envoyée à un tel serveur.
+  3. `angelsEarned(world, divisor = 10¹⁵)` reçoit le diviseur en argument (il n'est plus dans
+     `WorldData`).
+  4. `normalizeServerUrl` retire un segment `/graphql` final (`…/graphql` ou `…/graphql/` →
+     racine) ; « mygraphql » n'est pas touché.
+- **Conséquences** : sur notre serveur, deux requêtes `getWorld` au chargement et au Refresh au
+  lieu d'une (la seconde ne lit qu'un nombre ; `getWorld` est idempotent à `lastupdate` près).
+  Validation par introspection du schéma de ce serveur (`validate()` de graphql-js) : `GetWorld`
+  et les 6 mutations du sujet valides, seules `GetAngelDivisor` et `ChangerFormuleAnges`
+  refusées. Vérifié dans la preview : adresse collée avec `/graphql` → racine retenue, monde
+  « A Nice World 2 » chargé (6 produits, images), aucun message d'erreur, cadre Démonstration
+  masqué ; une production lancée donne le même solde au client et au serveur distant. Un joueur de
+  diagnostic, `diag-lucas-1014`, existe désormais sur ce serveur. `npx ng test --watch=false` :
+  231 tests verts (+5).
+
+## D50 — Une fenêtre ne se ferme que sur un clic commencé et fini sur le fond
+
+- **Contexte** (14/10/2026) : retour du joueur. Pour remplacer l'adresse du serveur, il
+  sélectionne tout le texte du champ à la souris en glissant ; le bouton est relâché hors de la
+  fenêtre, sur le fond assombri. La fenêtre Paramètres se fermait aussitôt, avant qu'il puisse
+  coller ; sans monde chargé, rien ne s'affichait derrière. Effacer au clavier fonctionnait.
+  Cause : le fond se fermait sur tout `click` qu'il recevait ; or certains navigateurs envoient le
+  `click` d'un appui-glisser à l'élément où le bouton est relâché. Non reproduit dans la preview
+  (Chromium envoie ce `click` à l'ancêtre commun, `app-modal`, et la fenêtre restait ouverte).
+- **Décision** : `Modal` retient sur son hôte (`pointerdown`) si le dernier appui a commencé sur
+  le fond (`.backdrop`) ; un `click` du fond ne ferme la fenêtre que dans ce cas. Close, Échap et
+  un vrai clic sur le fond ferment comme avant. Même comportement que les dialogues d'Angular
+  Material.
+- **Conséquences** : un glisser parti du fond et relâché dans la fenêtre ne la ferme pas non
+  plus. Spec ajoutée (appui dans la fenêtre puis `click` reçu par le fond → fenêtre ouverte),
+  qui échouait avec l'ancien code ; `npx ng test --watch=false` : 232 tests verts.

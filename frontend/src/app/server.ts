@@ -18,7 +18,10 @@ export const DEFAULT_SERVER = isDevMode()
 export const SERVER_STORAGE_KEY = 'isiscapitalist.server';
 
 // Saisie → adresse utilisable : URL http(s) uniquement, origine + chemin terminé par « / »
-// (requête et ancre ignorées). Toute autre saisie → null. Ne lève jamais.
+// (requête et ancre ignorées). Un « graphql » final est retiré (D49) : l'adresse attendue est la
+// racine du serveur, mais on colle volontiers celle de l'endpoint ; sinon l'app appellerait
+// …/graphql/graphql et chercherait les images sous …/graphql/icones. Toute autre saisie → null.
+// Ne lève jamais.
 export function normalizeServerUrl(raw: string): string | null {
   let url: URL;
   try {
@@ -29,7 +32,8 @@ export function normalizeServerUrl(raw: string): string | null {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return null;
   }
-  const path = url.pathname.endsWith('/') ? url.pathname : url.pathname + '/';
+  const trimmed = url.pathname.replace(/\/graphql\/?$/, '/');
+  const path = trimmed.endsWith('/') ? trimmed : trimmed + '/';
   return url.origin + path;
 }
 

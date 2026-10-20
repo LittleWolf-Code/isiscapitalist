@@ -115,7 +115,7 @@ export class App {
   // Anges supplémentaires qu'un reset rapporterait (fenêtre Investors et son badge).
   protected readonly angelsEarned = computed(() => {
     const world = this.world();
-    return world ? angelsEarned(world) : 0;
+    return world ? angelsEarned(world, this.game.effectiveAngelDivisor()) : 0;
   });
 
   // Managers impossibles à engager faute d'exemplaire de leur produit (D42).

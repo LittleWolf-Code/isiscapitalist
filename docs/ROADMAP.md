@@ -208,6 +208,14 @@ contredisent aucune exigence (thème cathodique, écran Paramètres).
 - [x] 10.14 Conformité à la grille d'évaluation fonctionnelle (D47) : Refresh avec le pseudo
       saisi, message à chaque achat de produit, fenêtre Managers sans les managers engagés,
       minuteur du produit à 0 au repos.
+- [x] 10.15 Le client ne prend plus d'avance sur le serveur (D48, défaut G-D1 de la recette) :
+      `calcScore()` en tête de chaque action, base de temps qui ne recule pas, premier passage
+      après un rechargement sans avance ; l'argent ne recule plus au Refresh.
+- [x] 10.16 Jouer sur le serveur d'un autre groupe (D49) : `GetWorld` au schéma du sujet,
+      diviseur des anges lu à part (`GetAngelDivisor`, facultatif), `/graphql` final retiré de
+      l'adresse saisie.
+- [x] 10.17 Une fenêtre ne se ferme plus quand on sélectionne un texte à la souris en relâchant
+      sur le fond (D50) : seul un clic commencé et fini sur le fond la ferme.
 
 ## Exemples de requêtes playground (à réutiliser pour tester)
 
