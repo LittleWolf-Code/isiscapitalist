@@ -326,7 +326,7 @@ export const origworld: World = {
     },
     {
       name: 'One-Eyed Ike',
-      logo: 'icones/armes.png',
+      logo: 'icones/upgrade-one-eyed-ike.png',
       seuil: 2160000,
       idcible: 4,
       ratio: 3,
@@ -335,7 +335,7 @@ export const origworld: World = {
     },
     {
       name: 'The Mechanist',
-      logo: 'icones/armure.png',
+      logo: 'icones/upgrade-mechanist.png',
       seuil: 26000000,
       idcible: 5,
       ratio: 3,
@@ -353,7 +353,7 @@ export const origworld: World = {
     },
     {
       name: 'Tales of a Junktown Jerky Vendor',
-      logo: 'icones/global.png',
+      logo: 'icones/upgrade-junktown-jerky-vendor.png',
       seuil: 1e6,
       idcible: 0,
       ratio: 2,
@@ -362,7 +362,7 @@ export const origworld: World = {
     },
     {
       name: 'Grognak the Barbarian',
-      logo: 'icones/global.png',
+      logo: 'icones/upgrade-grognak.png',
       seuil: 1e8,
       idcible: 0,
       ratio: 2,
@@ -371,7 +371,7 @@ export const origworld: World = {
     },
     {
       name: 'Guns and Bullets',
-      logo: 'icones/global.png',
+      logo: 'icones/upgrade-guns-and-bullets.png',
       seuil: 1e10,
       idcible: 0,
       ratio: 2,
@@ -380,7 +380,7 @@ export const origworld: World = {
     },
     {
       name: 'Astoundingly Awesome Tales',
-      logo: 'icones/global.png',
+      logo: 'icones/upgrade-awesome-tales.png',
       seuil: 1e12,
       idcible: 0,
       ratio: 2,

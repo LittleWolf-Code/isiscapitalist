@@ -65,9 +65,9 @@ Le `logo` d'un palier peut pointer vers l'image du produit si on ne veut pas 18 
 | Case | Nom dans `origworld.ts` | Image |
 |---|---|---|
 | Upgrade 2 (×3) | **Pinkie Pie** (armée), **cible Armes** (PDF du 05/10, choix de l'utilisateur ; remplace « Doc Phosphate » sur Stimpak, qui n'a plus d'upgrade propre) | `upgrade-pinkie-pie.png` |
-| Upgrade Armes (×3) | **One-Eyed Ike** (hors-la-loi de Dry Rock Gulch) | `armes.png` |
-| Upgrade Armures (×3) | **The Mechanist** | `armure.png` |
-| Upgrades globaux (magazines, ×2) | **Tales of a Junktown Jerky Vendor**, **Grognak the Barbarian**, **Guns and Bullets**, **Astoundingly Awesome Tales** | `global.png` |
+| Upgrade Armes (×3) | **One-Eyed Ike** (hors-la-loi de Dry Rock Gulch) | `upgrade-one-eyed-ike.png` (20/10) |
+| Upgrade Armures (×3) | **The Mechanist** | `upgrade-mechanist.png` (20/10) |
+| Upgrades globaux (magazines, ×2) | **Tales of a Junktown Jerky Vendor**, **Grognak the Barbarian**, **Guns and Bullets**, **Astoundingly Awesome Tales** | `upgrade-junktown-jerky-vendor.png`, `upgrade-grognak.png`, `upgrade-guns-and-bullets.png`, `upgrade-awesome-tales.png` (20/10) |
 | Paliers globaux (lieux) | **Sanctuary** (25), **Diamond City** (50), **Nuka-World** (100) | `global.png` |
 | Upgrades d'anges (perks) | **Fortune Finder** (+1 %), **Cap Collector** (gain ×2), **Troc** (+2 %) | `bobblehead.png` |
 | Logo du monde | nom **Nuka Capitalist** | `world.png` (inchangé) |
@@ -92,6 +92,21 @@ Lexique non appliqué (*proposé*, à confirmer) : argent → bouchons, reset �
   Nuka-Girl est recadrée sur la moitié haute (en pied, illisible dans un rond de 40 à 80 px).
 - Plus référencées par `origworld.ts` (gardées pour les anciennes parties) :
   `manager-vault-boy-gunslinger.png`, `manager-nuka-girl.png`, `upgrade-bottle.png`.
+
+### Images des cash upgrades restants (20/10/2026)
+
+- Les 6 cash upgrades qui reprenaient l'image de leur produit (One-Eyed Ike, The Mechanist) ou
+  `global.png` (les 4 magazines) ont chacun leur image, tirée de Nukapedia (tableau ci-dessous).
+  Choix fait sur un aperçu passé par le rendu Pip-Boy du client (96 × 96, 4 verts, D35), en 64
+  et 40 px.
+- Même méthode que le 05/10 : détourage par remplissage depuis les bords (≥ 180 / ≤ 22 pour le
+  Protectron, ≥ 200 / ≤ 30 pour le casque), recadrage sur les pixels d'alpha > 96, carré
+  512 × 512, marge 8 %.
+- Magazines : couverture **rognée en carré par le haut** (titre + personnage). En entier, les
+  quatre couvertures devenaient des rectangles verts identiques ; rognées, le titre se lit en 64 px.
+- One-Eyed Ike : le wiki n'a de lui que des captures en jeu (décor trop chargé une fois réduit) ;
+  l'image est le Protectron shérif de Nuka-World, même modèle de robot du Far West, au chapeau.
+- Les parties existantes gardent l'ancien `logo` (enregistré dans leur JSON) jusqu'au prochain reset.
 
 ### Images produits et symboles (05/10/2026)
 
@@ -132,10 +147,20 @@ Lexique non appliqué (*proposé*, à confirmer) : argent → bouchons, reset �
 | `upgrade-bottle.png` | `FO4NW Cappy and Bottle (2).png` | Bottle isolé (x 80–555), main de Cappy effacée en haut à droite |
 | `upgrade-vault-girl.png` | `Fo4 Vault Girl.png` | — |
 | `upgrade-sugar-bombs.png` | `Fo4 pre-War Sugar Bombs.png` | — |
+| `upgrade-one-eyed-ike.png` | `ProtectronSheriff-NukaWorld.png` | fond clair détouré |
+| `upgrade-mechanist.png` | `Mechanists helmet.png` | fond blanc détouré, croquis-signature effacé en haut à droite (x 800+, y 0–150) |
+| `upgrade-junktown-jerky-vendor.png` | `Jerky vendor - benefits of child labor.jpg` | couverture entière |
+| `upgrade-grognak.png` | `Grognak Fatherless Cur.png` | carré du haut de la couverture |
+| `upgrade-guns-and-bullets.png` | `Guns and bullets take aim cover.png` | carré du haut de la couverture |
+| `upgrade-awesome-tales.png` | `Fallout4 AwesomeTales4.png` | carré du haut de la couverture |
 
 Alternatives écartées mais disponibles : `FO76 Gunslinger perk.png` (carte de perk, illisible en
 64 px), `Gunslinger.png` (dessin N&B 158 px), `FO76 Vault boy Excited.png` (autre pose pour le
 manager Pip-Boy), `Doctor Orderly in Action.png` (vrai Mister Orderly, capture in-game sombre).
+Pour les cash upgrades (20/10) : `OneEyedIke-NukaWorld.jpg` (capture en jeu), `Drawing of the
+Mechanist.png`, `MechanistPoster2-Automatron.png`, `Tales of a Junktown Jerky Vendor.png` (livre
+de Fallout 3, illisible en vert), `Grognak Blood on the Harp.png`, `Guns and bullets commies
+cover.png`, `Fallout4 AwesomeTales8.png`.
 
 - Format d'affichage : 64 px dans la carte produit, donc 96 px natifs restent nets (`image-rendering:
   pixelated` à prévoir côté frontend pour éviter le lissage à l'agrandissement).
