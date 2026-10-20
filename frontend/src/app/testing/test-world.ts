@@ -4,8 +4,8 @@
 // upgrades et deux managers.
 import { signal } from '@angular/core';
 import { DocumentNode } from 'graphql';
-import { PalierData, WorldData } from './game-math';
-import { RatioType } from './graphql';
+import { PalierData, WorldData } from '../game/game-math';
+import { RatioType } from '../graphql';
 
 export function palier(
   name: string,

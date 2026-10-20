@@ -71,7 +71,7 @@ npm run test:e2e     # test HTTP → Apollo → resolver → fichier, sur un jou
 ```
 src/schema.graphql   schéma fourni      src/origworld.ts     monde initial
 src/resolver.ts      query + 7 mutations src/app.service.ts   lecture/écriture des mondes
-src/world-engine.ts  règles du jeu (fonctions pures, testées)
+src/engine/world-engine.ts  règles du jeu (fonctions pures, testées)
 public/icones/       images             userworlds/          un JSON par joueur
 ```
 

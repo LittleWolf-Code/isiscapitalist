@@ -3,8 +3,8 @@
 // Phase 3 : buyCost. Phase 4 : updateWorld. Phase 5 : applyBonus, checkProductUnlocks, checkAllUnlocks.
 // Phase 6 : buyUpgrade. Phase 7 : angelsEarned, resetWorld. Phase 10 : advanceProduction,
 // totalAngelsFor (conformité au sujet, D36). D43 : diviseur de la formule des anges par compte.
-import { Palier, Product, RatioType, World } from './graphql.js';
-import { origworld } from './origworld.js';
+import { Palier, Product, RatioType, World } from '../graphql.js';
+import { origworld } from '../origworld.js';
 
 // Coût total de q exemplaires d'un produit (formule « hypothèse », D7) :
 // suite géométrique de raison g = croissance à partir de c = cout (prix du prochain exemplaire) :
@@ -30,7 +30,7 @@ export function productionGain(world: World, product: Product): number {
 
 // Avancement de la production d'UN produit sur `elapsed` ms (RG-03) : nouveau `timeleft` et
 // nombre de productions terminées. Fonction pure, recopiée À L'IDENTIQUE dans
-// frontend/src/app/game-math.ts : le sujet demande le même calcul côté client (calcScore) et côté
+// frontend/src/app/game/game-math.ts : le sujet demande le même calcul côté client (calcScore) et côté
 // serveur (updateWorld), sinon les deux scores dérivent (D36).
 export function advanceProduction(
   product: Pick<Product, 'timeleft' | 'vitesse' | 'managerUnlocked'>,

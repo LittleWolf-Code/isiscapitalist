@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Palier, Product, World } from './graphql.js';
 import { origworld } from './origworld.js';
-import { updateWorld } from './world-engine.js';
+import { updateWorld } from './engine/world-engine.js';
 
 @Injectable()
 export class AppService {

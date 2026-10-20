@@ -8,7 +8,7 @@ import {
   checkProductUnlocks,
   isValidAngelDivisor,
   resetWorld,
-} from './world-engine.js';
+} from './engine/world-engine.js';
 
 @Resolver('World')
 export class GraphQlResolver {

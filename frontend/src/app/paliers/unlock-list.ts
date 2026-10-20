@@ -5,9 +5,9 @@
 import { Component, computed, input } from '@angular/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
-import { GameIcon } from './game-icon';
-import { bonusLabel, logoCandidates, nextUnlock } from './game-math';
-import { PalierData, ProductData } from './game.service';
+import { GameIcon } from '../shared/game-icon';
+import { bonusLabel, logoCandidates, nextUnlock } from '../game/game-math';
+import { PalierData, ProductData } from '../game/game.service';
 
 // Une ligne de la table : le produit, son prochain palier (null = tout débloqué) et la
 // progression en % (0-100) pour la mat-progress-bar.

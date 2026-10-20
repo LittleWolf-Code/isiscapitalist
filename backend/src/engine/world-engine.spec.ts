@@ -1,8 +1,8 @@
 // Tests unitaires du moteur (phase 4.3). Fonctions pures : pas de Nest, pas de disque,
 // `now` injecté explicitement (D10). Item 1 d'origworld : quantite 1, revenu 1, vitesse 500.
 import { describe, expect, it } from 'vitest';
-import { origworld } from './origworld.js';
-import { Palier, RatioType, World } from './graphql.js';
+import { origworld } from '../origworld.js';
+import { Palier, RatioType, World } from '../graphql.js';
 import {
   advanceProduction,
   angelsEarned,
@@ -53,7 +53,7 @@ describe('productionGain', () => {
   });
 });
 
-// Phase 10 — avancement d'un produit, partagé avec le client (frontend/src/app/game-math.ts,
+// Phase 10 — avancement d'un produit, partagé avec le client (frontend/src/app/game/game-math.ts,
 // mêmes cas dans game-math.spec.ts).
 describe('advanceProduction', () => {
   const p = (timeleft: number, managerUnlocked = false) => ({

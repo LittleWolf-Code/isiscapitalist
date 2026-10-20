@@ -216,6 +216,8 @@ contredisent aucune exigence (thème cathodique, écran Paramètres).
       l'adresse saisie.
 - [x] 10.17 Une fenêtre ne se ferme plus quand on sélectionne un texte à la souris en relâchant
       sur le fond (D50) : seul un clic commencé et fini sur le fond la ferme.
+- [x] 10.18 Fichiers rangés par fonctionnalité côté frontend, moteur dans `src/engine/` côté
+      backend (D51) ; routeur inutilisé retiré.
 
 ## Exemples de requêtes playground (à réutiliser pour tester)
 

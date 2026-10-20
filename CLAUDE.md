@@ -31,7 +31,7 @@ Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`
 - **Phases 0 à 10 de `docs/ROADMAP.md` cochées.** La phase 10 a mis l'application en conformité
   avec le cahier des charges (D36) ; la dernière recette est `docs/RECETTE.md`.
 - **Backend** : schéma du sujet (seul écart `lastupdate: Float!`, D6), 6 mutations du sujet + `changerFormuleAnges` (D43), moteur en
-  fonctions pures (`world-engine.ts`, D10), anges `150 × √(score / 10¹⁵)`, pseudo encodé avant de
+  fonctions pures (`src/engine/world-engine.ts`, D10), anges `150 × √(score / 10¹⁵)`, pseudo encodé avant de
   devenir un nom de fichier, monde « Nuka Capitalist » (`docs/THEME.md`), simulation
   d'équilibrage `backend/scripts/simulate-balance.mjs`.
 - **Frontend** : client autonome du sujet (boucle `calcScore` 100 ms, actions appliquées
@@ -57,6 +57,9 @@ Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`
   Étape 10.16 : jouable sur le serveur d'un autre groupe (D49) — `GetWorld` au schéma du sujet,
   diviseur des anges lu par une requête facultative, `/graphql` final retiré de l'adresse.
   Étape 10.17 : une fenêtre ne se ferme que sur un clic commencé et fini sur le fond (D50).
+  Étape 10.18 : fichiers du frontend rangés par fonctionnalité (`game/`, `product/`, `paliers/`,
+  `investors/`, `settings/`, `layout/`, `shared/`, `testing/`), moteur du backend dans
+  `src/engine/` ; les fichiers nommés par le sujet ne bougent pas (D51).
   Détail : `frontend/CLAUDE.md`.
 - Les décisions D14, D15, D19, D20, D23 à D31 décrivent la phase 9 et sont **remplacées** (D36) ;
   les relire seulement pour l'historique.

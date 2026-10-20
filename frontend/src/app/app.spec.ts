@@ -3,11 +3,11 @@ import { Apollo } from '@apollo-orbit/angular';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { App } from './app';
-import { DISPLAY_STORAGE_KEY } from './display-settings';
-import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY } from './server';
-import { TAB_STORAGE_KEY } from './tab-bar';
-import { GameService, USERNAME_STORAGE_KEY, WorldData } from './game.service';
-import { makeWorld, stubApollo } from './test-world';
+import { DISPLAY_STORAGE_KEY } from './settings/display-settings';
+import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY } from './settings/server';
+import { TAB_STORAGE_KEY } from './layout/tab-bar';
+import { GameService, USERNAME_STORAGE_KEY, WorldData } from './game/game.service';
+import { makeWorld, stubApollo } from './testing/test-world';
 
 // App avec le vrai GameService, Apollo remplacé par la doublure de test-world.ts (aucun serveur).
 describe('App (mise en page du sujet, F-04 → F-06)', () => {

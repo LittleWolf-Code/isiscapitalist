@@ -1,11 +1,7 @@
 import { ApplicationConfig } from '@angular/core';
-import { provideRouter } from '@angular/router';
 import { provideGraphQL } from './graphql/graphql.provider';
-import { routes } from './app.routes';
 
+// Page unique, sans routeur (F-05) : seul Apollo est fourni.
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideRouter(routes),
-    provideGraphQL()
-  ]
+  providers: [provideGraphQL()],
 };

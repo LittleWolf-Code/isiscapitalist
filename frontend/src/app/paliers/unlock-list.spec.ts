@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { RatioType } from './graphql';
-import { PalierData, ProductData } from './game.service';
+import { RatioType } from '../graphql';
+import { PalierData, ProductData } from '../game/game.service';
 import { UnlockList } from './unlock-list';
 
 // Paliers d'Item 1 dans backend/src/origworld.ts : 25 (vitesse ×2), 50 (gain ×2), 100 (vitesse ×2).

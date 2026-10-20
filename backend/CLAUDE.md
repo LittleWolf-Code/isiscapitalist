@@ -20,12 +20,14 @@ backend/
     ├── origworld.ts       # monde initial « Nuka Capitalist » (6 produits, 6 managers, unlocks, upgrades, angelupgrades)
     ├── app.module.ts      # GraphQLModule.forRoot + providers [AppService, GraphQlResolver]
     ├── app.service.ts     # persistance (readUserWorld, saveWorld, nom de fichier encodé) + recherches
-    ├── world-engine.ts    # règles en fonctions pures (advanceProduction, updateWorld, bonus, unlocks, anges, reset)
+    ├── engine/
+    │   └── world-engine.ts  # règles en fonctions pures (advanceProduction, updateWorld, bonus, unlocks, anges, reset) + spec
     ├── resolver.ts        # @Resolver('World') : getWorld + les 6 mutations du sujet + changerFormuleAnges (D43)
     └── main.ts            # NestExpressApplication, useStaticAssets(public), enableCors, port 3000
 ```
 
-Les règles de `world-engine.ts` sont recopiées à l'identique dans `frontend/src/app/game-math.ts`
+Les fichiers nommés par le sujet (B-02, B-04, B-06) restent à la racine de `src/` ; seul le moteur est
+dans `src/engine/` (D51). Les règles de `engine/world-engine.ts` sont recopiées à l'identique dans `frontend/src/app/game/game-math.ts`
 (client autonome, D36) : modifier l'une impose de modifier l'autre.
 
 ## Conventions

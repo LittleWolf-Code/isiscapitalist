@@ -12,7 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { DEFAULT_DISPLAY, DisplaySettings, Layout, Tint } from './display-settings';
-import { ANGEL_FORMULAS, angelFormulaLabel } from './game-math';
+import { ANGEL_FORMULAS, angelFormulaLabel } from '../game/game-math';
 import { normalizeServerUrl } from './server';
 
 export const SERVER_ERROR = "L'adresse doit commencer par http:// ou https://";

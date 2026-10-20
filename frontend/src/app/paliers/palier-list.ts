@@ -9,10 +9,10 @@
 import { Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
-import { BigvaluePipe } from './bigvalue.pipe';
-import { GameIcon } from './game-icon';
-import { bonusLabel, logoCandidates, targetLabel } from './game-math';
-import { PalierData, ProductData } from './game.service';
+import { BigvaluePipe } from '../shared/bigvalue.pipe';
+import { GameIcon } from '../shared/game-icon';
+import { bonusLabel, logoCandidates, targetLabel } from '../game/game-math';
+import { PalierData, ProductData } from '../game/game.service';
 
 // Unité du seuil affichée à côté du prix : argent, anges, ou rien (seuil = quantité pour les
 // all unlocks).

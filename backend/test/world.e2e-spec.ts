@@ -4,9 +4,9 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AppModule } from './../src/app.module.js';
-import { World } from './../src/graphql.js';
-import { origworld } from './../src/origworld.js';
+import { AppModule } from '../src/app.module.js';
+import { World } from '../src/graphql.js';
+import { origworld } from '../src/origworld.js';
 
 // Test de bout en bout : HTTP → Apollo → resolver → fichier userworlds/<user>-world.json.
 // Un seul AppModule pour toute la suite (beforeAll) : son init régénère src/graphql.ts, inutile de

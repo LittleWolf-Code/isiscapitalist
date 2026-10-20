@@ -1,4 +1,4 @@
-import { BigvaluePipe } from './bigvalue.pipe';
+import { BigvaluePipe } from '../shared/bigvalue.pipe';
 import {
   advanceProduction,
   affordableCount,
@@ -21,9 +21,9 @@ import {
   targetLabel,
   totalAngelsFor,
 } from './game-math';
-import { RatioType } from './graphql';
-import { SecondPipe } from './second.pipe';
-import { makeWorld, palier as makePalier } from './test-world';
+import { RatioType } from '../graphql';
+import { SecondPipe } from '../shared/second.pipe';
+import { makeWorld, palier as makePalier } from '../testing/test-world';
 
 // Valeurs d'Item 1 dans backend/src/origworld.ts (monde neuf).
 const item1 = { cout: 4, croissance: 1.07 };
@@ -145,7 +145,7 @@ describe('formatDuration / SecondPipe', () => {
   });
 });
 
-// Formule du sujet (RG-09), mêmes cas chiffrés que backend/src/world-engine.spec.ts : le badge
+// Formule du sujet (RG-09), mêmes cas chiffrés que backend/src/engine/world-engine.spec.ts : le badge
 // Investors (client) et le résultat de resetWorld (serveur) doivent coïncider.
 describe('angelsEarned / totalAngelsFor', () => {
   it('10¹⁵ → 150, 4·10¹⁵ → 300, 10¹⁷ → 1500', () => {

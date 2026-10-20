@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { GameIcon } from './game-icon';
-import { SERVER } from './server';
+import { SERVER } from '../settings/server';
 import { clearPipboyCache } from './pixel-art';
 
 // Hôte de test : la liste de candidats et le mode Pip-Boy sont des signaux pour les remplacer.

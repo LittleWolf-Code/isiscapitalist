@@ -1,9 +1,9 @@
 // Règles du jeu côté client : fonctions PURES, mêmes noms et mêmes formules que
-// backend/src/world-engine.ts. Le client est autonome (F-11, F-12, D36) : il fait évoluer son
+// backend/src/engine/world-engine.ts. Le client est autonome (F-11, F-12, D36) : il fait évoluer son
 // monde avec ces fonctions entre deux chargements, le serveur refait les mêmes calculs et fait foi
 // au rechargement (NF-03). Les fonctions qui transforment le monde sont IMMUABLES (nouvel objet,
 // jamais de mutation) : le monde est un signal, une mutation en place ne notifierait personne.
-import { GetWorldQueryData, Palier, PalierFieldsFragment, Product, RatioType, World } from './graphql';
+import { GetWorldQueryData, Palier, PalierFieldsFragment, Product, RatioType, World } from '../graphql';
 
 // Types tels que retournés par getWorld (sous-ensemble structurel de World / Product / Palier).
 export type WorldData = NonNullable<GetWorldQueryData['getWorld']>;
@@ -64,7 +64,7 @@ export function productionGain(
 }
 
 // Avancement de la production d'UN produit sur `elapsed` ms (RG-03) : nouveau `timeleft` et
-// nombre de productions terminées. Copie à l'identique de backend/src/world-engine.ts (le sujet
+// nombre de productions terminées. Copie à l'identique de backend/src/engine/world-engine.ts (le sujet
 // demande le même calcul des deux côtés). Sans manager : au plus une production (timeleft 0 =
 // inactif). Avec manager : boucle, un produit inactif est considéré comme venant de démarrer.
 export function advanceProduction(
@@ -255,7 +255,7 @@ export const MAX_INT32 = 2_147_483_647;
 export const SUBJECT_ANGEL_DIVISOR = 1e15;
 
 // Anges acquis depuis le début de la partie (RG-09) : floor(150 × √(score / diviseur)), plafonné
-// à MAX_INT32. Même formule que backend/src/world-engine.ts.
+// à MAX_INT32. Même formule que backend/src/engine/world-engine.ts.
 export function totalAngelsFor(score: number, divisor: number = SUBJECT_ANGEL_DIVISOR): number {
   return Math.min(MAX_INT32, Math.floor(150 * Math.sqrt(Math.max(0, score) / divisor)));
 }

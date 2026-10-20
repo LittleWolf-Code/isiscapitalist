@@ -2,7 +2,7 @@
 // [innerHTML] (« 1.235 × 10<sup>6</sup> »). La mise en forme est dans game-math.ts (bigValue),
 // testée sans Angular.
 import { Pipe, PipeTransform } from '@angular/core';
-import { bigValue } from './game-math';
+import { bigValue } from '../game/game-math';
 
 @Pipe({ name: 'bigvalue' })
 export class BigvaluePipe implements PipeTransform {

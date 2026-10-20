@@ -6,7 +6,7 @@
 // une data URL dans le même <img> ; `pixelIcons` à false → image couleur d'origine.
 import { Component, computed, effect, input, linkedSignal, signal, untracked } from '@angular/core';
 import { pipboyDataUrl } from './pixel-art';
-import { SERVER } from './server';
+import { SERVER } from '../settings/server';
 
 @Component({
   selector: 'app-game-icon',

@@ -43,18 +43,22 @@ Responsabilités :
 | `src/origworld.ts` | État initial du jeu (données) |
 | `src/resolver.ts` | 1 query + 6 mutations du sujet + `changerFormuleAnges` (D43), orchestration uniquement |
 | `src/app.service.ts` | Persistance (`readUserWorld`, `saveWorld`, nom de fichier encodé) et recherches communes |
-| `src/world-engine.ts` | Règles du jeu en fonctions pures (`advanceProduction`, `updateWorld`, `applyBonus`, unlocks, `buyUpgrade`, anges, `resetWorld`), D10 |
+| `src/engine/world-engine.ts` | Règles du jeu en fonctions pures (`advanceProduction`, `updateWorld`, `applyBonus`, unlocks, `buyUpgrade`, anges, `resetWorld`), D10 |
 | `src/main.ts` | Bootstrap : static `public/`, CORS, port 3000 |
 | `public/icones/` | Images référencées par les champs `logo` |
 | `userworlds/` | Données joueurs (ignoré par git) |
 
 Le sujet demande de garder la logique commune dans le service et le code spécifique dans le
-resolver ; les règles sont en fonctions pures dans `world-engine.ts` (D10), testées sans Nest.
+resolver ; les règles sont en fonctions pures dans `engine/world-engine.ts` (D10), testées sans Nest.
+Les fichiers nommés par le sujet (`schema.graphql`, `graphql.ts`, `origworld.ts`, `resolver.ts`,
+`app.service.ts`) restent à la racine de `src/` (B-02, B-04, B-06) ; seul notre moteur est rangé à part (D51).
 
 ## Frontend (sujet `frontendangularsignal.pdf`)
 
 - `src/app/graphql/schema.graphql` = copie du schéma backend ; `queries.graphql` / `mutations.graphql`
-  → `npm run codegen` → `types.ts`, `operations.ts`. Adresse du serveur : `src/app/server.ts` seul.
+  → `npm run codegen` → `types.ts`, `operations.ts`. Adresse du serveur : `src/app/settings/server.ts` seul.
+- Fichiers rangés **par fonctionnalité** (guide de style Angular, D51) : `game/` (état, règles, sons),
+  `product/`, `paliers/`, `investors/`, `settings/`, `layout/`, `shared/`, `graphql/`, `testing/`.
 - `GameService` (seul point de contact Apollo) : `world` = `linkedSignal` de `getWorld` ; boucle
   `calcScore` 100 ms + `productionDone` ; actions appliquées par les fonctions immuables de
   `game-math.ts` (copie des règles du serveur) puis mutation ; message éphémère `snackmessage`.

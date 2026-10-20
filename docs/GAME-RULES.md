@@ -51,7 +51,7 @@ D12). Aucune condition sur la quantité (D36) : à 0 exemplaire la production ne
 ### Évolution temporelle — `updateWorld(world)` (sujet, à concevoir)
 
 Le calcul d'un produit est isolé dans `advanceProduction(product, elapsed)` →
-`{ timeleft, produced }`, recopiée à l'identique dans `frontend/src/app/game-math.ts` : le client
+`{ timeleft, produced }`, recopiée à l'identique dans `frontend/src/app/game/game-math.ts` : le client
 fait le même calcul toutes les 100 ms (`calcScore`, D36).
 
 `elapsed = now - world.lastupdate` (si `lastupdate == 0` → premier accès : `elapsed = 0`).

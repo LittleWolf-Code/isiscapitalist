@@ -4,7 +4,7 @@
 // et on lit ce nombre dans `money`.
 import { describe, expect, it } from 'vitest';
 import { origworld } from '../src/origworld.js';
-import { updateWorld } from '../src/world-engine.js';
+import { updateWorld } from '../src/engine/world-engine.js';
 import { productionSamples } from './production-samples.js';
 
 describe('updateWorld — échantillon officiel (snippet 2522185)', () => {

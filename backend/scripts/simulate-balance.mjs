@@ -16,7 +16,7 @@ import {
   checkProductUnlocks,
   productionGain,
   totalAngelsFor,
-} from '../dist/world-engine.js';
+} from '../dist/engine/world-engine.js';
 import { origworld } from '../dist/origworld.js';
 
 const STEP_MS = 100;

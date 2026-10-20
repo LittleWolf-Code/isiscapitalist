@@ -1,8 +1,8 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Multiplier, ProductData } from './game.service';
+import { Multiplier, ProductData } from '../game/game.service';
 import { ProductCard } from './product-card';
-import { makeWorld } from './test-world';
+import { makeWorld } from '../testing/test-world';
 
 // Produit 1 du monde de test (Item 1 d'origworld : cout 4, croissance 1.07, revenu 1, 500 ms).
 const item1: ProductData = makeWorld().products[0];

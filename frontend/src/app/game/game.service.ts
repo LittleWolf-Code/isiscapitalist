@@ -7,7 +7,7 @@
 import { DestroyRef, Injectable, computed, effect, inject, linkedSignal, signal } from '@angular/core';
 import { form } from '@angular/forms/signals';
 import { Apollo, CombinedGraphQLErrors } from '@apollo-orbit/angular';
-import { DISPLAY_STORAGE_KEY, DisplaySettings, readStoredDisplay } from './display-settings';
+import { DISPLAY_STORAGE_KEY, DisplaySettings, readStoredDisplay } from '../settings/display-settings';
 import {
   PalierData,
   ProductData,
@@ -34,8 +34,8 @@ import {
   GET_WORLD_QUERY,
   LANCER_PRODUCTION_PRODUIT_MUTATION,
   RESET_WORLD_MUTATION,
-} from './graphql';
-import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY, normalizeServerUrl } from './server';
+} from '../graphql';
+import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY, normalizeServerUrl } from '../settings/server';
 import { SoundService } from './sound.service';
 
 export type { PalierData, ProductData, WorldData } from './game-math';

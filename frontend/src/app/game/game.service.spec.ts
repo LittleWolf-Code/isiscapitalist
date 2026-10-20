@@ -6,15 +6,15 @@ import {
   LEGACY_FLICKER_STORAGE_KEY,
   LEGACY_GLOW_STORAGE_KEY,
   LEGACY_SCANLINES_STORAGE_KEY,
-} from './display-settings';
+} from '../settings/display-settings';
 import {
   GameService,
   LEGACY_USER_STORAGE_KEY,
   USERNAME_STORAGE_KEY,
   readStoredUsername,
 } from './game.service';
-import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY } from './server';
-import { makeWorld, stubApollo } from './test-world';
+import { DEFAULT_SERVER, SERVER, SERVER_STORAGE_KEY } from '../settings/server';
+import { makeWorld, stubApollo } from '../testing/test-world';
 
 const KEYS = [
   USERNAME_STORAGE_KEY,

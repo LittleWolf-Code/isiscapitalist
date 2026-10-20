@@ -4,8 +4,8 @@
 // GameService. Les angel upgrades ont leur propre fenêtre.
 import { Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { BigvaluePipe } from './bigvalue.pipe';
-import { angelFormulaLabel } from './game-math';
+import { BigvaluePipe } from '../shared/bigvalue.pipe';
+import { angelFormulaLabel } from '../game/game-math';
 
 @Component({
   selector: 'app-angels-panel',

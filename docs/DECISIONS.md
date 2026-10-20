@@ -1587,3 +1587,31 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
 - **Conséquences** : un glisser parti du fond et relâché dans la fenêtre ne la ferme pas non
   plus. Spec ajoutée (appui dans la fenêtre puis `click` reçu par le fond → fenêtre ouverte),
   qui échouait avec l'ancien code ; `npx ng test --watch=false` : 232 tests verts.
+
+## D51 — Fichiers rangés par fonctionnalité (frontend) et moteur à part (backend)
+
+- **Contexte** (20/10/2026) : demande de l'utilisateur, ranger les fichiers selon les règles de
+  « clean code ». `frontend/src/app` comptait 50 fichiers à plat ; `backend/src`, 11.
+- **Décision** :
+  - **Frontend**, rangé par fonctionnalité comme le recommande le guide de style officiel
+    d'Angular (plutôt que par type : `components/`, `services/`…) : `game/` (`game.service`,
+    `game-math`, `sound.service`), `product/`, `paliers/` (`palier-list`, `unlock-list`),
+    `investors/` (`angels-panel`), `settings/` (`settings-panel`, `display-settings`, `server`),
+    `layout/` (`modal`, `tab-bar`), `shared/` (`game-icon`, `pixel-art`, pipes `bigvalue` et
+    `second`), `testing/` (`test-world`). `graphql/` ne bouge pas (F-01, F-34) ; `app.*` et
+    `app.config.ts` restent à la racine. Chaque composant garde ensemble ses `.ts`, `.html`,
+    `.css` et `.spec.ts`.
+  - Code mort retiré : `app.routes.ts` (tableau de routes vide) et `provideRouter` ; l'application
+    est une page unique sans routeur. Bundle initial : 1,03 Mo → 959 kB.
+  - **Backend** : les fichiers nommés par le sujet restent à la racine de `src/` (`schema.graphql`,
+    `graphql.ts` B-02, `origworld.ts` B-04, `resolver.ts` B-06, `app.service.ts` B-07) ; seul notre
+    moteur de jeu va dans `src/engine/` (`world-engine.ts` et sa spec). Un premier essai qui
+    renommait `resolver.ts` en `app.resolver.ts` et rangeait `origworld.ts` dans `engine/` a été
+    annulé : B-04 et B-06 imposent ces chemins.
+  - Déplacements par `git mv` (historique conservé) ; imports relatifs recalculés ; le script
+    `simulate-balance.mjs` lit `dist/engine/world-engine.js`.
+- **Conséquences** : aucun changement de comportement. Frontend : build OK, 232 tests verts.
+  Backend : build, lint (0 avertissement), 90 tests unitaires, 13 e2e et la simulation
+  d'équilibrage OK. Les chemins des documents historiques (`docs/prompts/`, anciennes décisions,
+  recette) ne sont pas réécrits ; la doc vivante (`CLAUDE.md`, `ARCHITECTURE.md`, `GAME-RULES.md`,
+  README du backend) et les commentaires de code donnent les nouveaux chemins.

@@ -7,11 +7,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { BigvaluePipe } from './bigvalue.pipe';
-import { GameIcon } from './game-icon';
-import { buyCost, maxAffordable, productionGain, productionProgress } from './game-math';
-import { Multiplier, PalierData, ProductData } from './game.service';
-import { SecondPipe } from './second.pipe';
+import { BigvaluePipe } from '../shared/bigvalue.pipe';
+import { GameIcon } from '../shared/game-icon';
+import { buyCost, maxAffordable, productionGain, productionProgress } from '../game/game-math';
+import { Multiplier, PalierData, ProductData } from '../game/game.service';
+import { SecondPipe } from '../shared/second.pipe';
 
 @Component({
   selector: 'app-product-card',

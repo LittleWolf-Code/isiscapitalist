@@ -1,8 +1,8 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { CostUnit, PalierList } from './palier-list';
-import { PalierData, ProductData } from './game.service';
-import { makeWorld } from './test-world';
+import { PalierData, ProductData } from '../game/game.service';
+import { makeWorld } from '../testing/test-world';
 
 const world = makeWorld();
 
