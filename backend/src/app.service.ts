@@ -5,6 +5,35 @@ import { Palier, Product, World } from './graphql.js';
 import { origworld } from './origworld.js';
 import { updateWorld } from './engine/world-engine.js';
 
+// Les images sont de la présentation, pas l'état d'une partie (D52) : à chaque lecture, les `logo`
+// d'un monde sauvegardé reprennent ceux d'origworld — le monde, chaque produit par son id, chaque
+// palier par son nom (celui qui désigne un manager ou un upgrade dans les mutations). Sans cela,
+// une image ajoutée ou changée n'atteignait que les nouveaux joueurs et les parties remises à zéro.
+// Un élément inconnu d'origworld (ancien nom) garde son logo ; origworld n'est que lu.
+function syncLogos(world: World): void {
+  world.logo = origworld.logo;
+  for (const product of world.products ?? []) {
+    const reference = origworld.products.find((p) => p.id === product.id);
+    if (!reference) continue;
+    product.logo = reference.logo;
+    syncPalierLogos(product.paliers, reference.paliers);
+  }
+  syncPalierLogos(world.allunlocks, origworld.allunlocks);
+  syncPalierLogos(world.upgrades, origworld.upgrades);
+  syncPalierLogos(world.angelupgrades, origworld.angelupgrades);
+  syncPalierLogos(world.managers, origworld.managers);
+}
+
+function syncPalierLogos(
+  saved: Palier[] | undefined,
+  reference: Palier[],
+): void {
+  const logos = new Map(reference.map((p) => [p.name, p.logo]));
+  for (const palier of saved ?? []) {
+    palier.logo = logos.get(palier.name) ?? palier.logo;
+  }
+}
+
 @Injectable()
 export class AppService {
   // Chemin du fichier JSON d'un utilisateur : backend/userworlds/<user>-world.json
@@ -27,6 +56,7 @@ export class AppService {
       // Mondes sauvegardés avant D43 : pas de diviseur → celui du sujet (le champ est non nul
       // dans le schéma, son absence ferait échouer getWorld).
       world.angeldivisor ??= origworld.angeldivisor;
+      syncLogos(world);
       return world;
     } catch (e: unknown) {
       console.log((e as Error).message);

@@ -224,4 +224,42 @@ describe('World GraphQL API (e2e)', () => {
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.getWorld.angeldivisor).toBe(1e15);
   });
+
+  it("un monde sauvegardé reprend les logos d'origworld, un élément inconnu garde le sien (D52)", async () => {
+    const old = readFile();
+    old.logo = 'icones/ancien-monde.png';
+    old.products[0].logo = 'icones/item1.png';
+    old.products[0].paliers[0].logo = 'icones/item1.png';
+    old.allunlocks[0].logo = 'icones/all.png';
+    old.upgrades.forEach((u) => (u.logo = 'icones/global.png'));
+    old.angelupgrades[0].logo = 'icones/angel.png';
+    old.managers[0].logo = 'icones/manager1.png';
+    // Palier disparu d'origworld (renommé depuis) : rien à reprendre.
+    old.upgrades[0].name = 'Upgrade retiré du thème';
+    writeFile(old);
+
+    const res = await gql(
+      `query { getWorld(user: "${user}") { logo products { logo paliers { logo } } allunlocks { logo }
+        upgrades { name logo } angelupgrades { logo } managers { logo } } }`,
+    ).expect(200);
+    expect(res.body.errors).toBeUndefined();
+    const world = res.body.data.getWorld;
+    expect(world.logo).toBe(origworld.logo);
+    expect(world.products[0].logo).toBe(origworld.products[0].logo);
+    expect(world.products[0].paliers[0].logo).toBe(
+      origworld.products[0].paliers[0].logo,
+    );
+    expect(world.allunlocks[0].logo).toBe(origworld.allunlocks[0].logo);
+    expect(world.angelupgrades[0].logo).toBe(origworld.angelupgrades[0].logo);
+    expect(world.managers[0].logo).toBe(origworld.managers[0].logo);
+    expect(world.upgrades[0]).toEqual({
+      name: 'Upgrade retiré du thème',
+      logo: 'icones/global.png',
+    });
+    expect(
+      world.upgrades.slice(1).map((u: { logo: string }) => u.logo),
+    ).toEqual(origworld.upgrades.slice(1).map((u) => u.logo));
+    // getWorld sauvegarde : le fichier est corrigé lui aussi.
+    expect(readFile().upgrades[1].logo).toBe(origworld.upgrades[1].logo);
+  });
 });

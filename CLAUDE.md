@@ -60,6 +60,8 @@ Chaque sous-projet a son propre `CLAUDE.md` avec les conventions spécifiques (`
   Étape 10.18 : fichiers du frontend rangés par fonctionnalité (`game/`, `product/`, `paliers/`,
   `investors/`, `settings/`, `layout/`, `shared/`, `testing/`), moteur du backend dans
   `src/engine/` ; les fichiers nommés par le sujet ne bougent pas (D51).
+  Étape 10.19 : images propres des 6 derniers cash upgrades ; au chargement, les logos d'une
+  partie sauvegardée reprennent ceux d'`origworld` (D52).
   Détail : `frontend/CLAUDE.md`.
 - Les décisions D14, D15, D19, D20, D23 à D31 décrivent la phase 9 et sont **remplacées** (D36) ;
   les relire seulement pour l'historique.

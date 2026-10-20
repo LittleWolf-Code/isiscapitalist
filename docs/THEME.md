@@ -106,7 +106,8 @@ Lexique non appliqué (*proposé*, à confirmer) : argent → bouchons, reset �
   quatre couvertures devenaient des rectangles verts identiques ; rognées, le titre se lit en 64 px.
 - One-Eyed Ike : le wiki n'a de lui que des captures en jeu (décor trop chargé une fois réduit) ;
   l'image est le Protectron shérif de Nuka-World, même modèle de robot du Far West, au chapeau.
-- Les parties existantes gardent l'ancien `logo` (enregistré dans leur JSON) jusqu'au prochain reset.
+- Les parties existantes reçoivent les nouvelles images à leur prochaine requête : au chargement,
+  les `logo` d'un monde sauvegardé reprennent ceux d'`origworld` (D52).
 
 ### Images produits et symboles (05/10/2026)
 

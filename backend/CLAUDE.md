@@ -19,7 +19,7 @@ backend/
     ├── graphql.ts         # GÉNÉRÉ au démarrage (World, Product, Palier, RatioType) — ne pas éditer
     ├── origworld.ts       # monde initial « Nuka Capitalist » (6 produits, 6 managers, unlocks, upgrades, angelupgrades)
     ├── app.module.ts      # GraphQLModule.forRoot + providers [AppService, GraphQlResolver]
-    ├── app.service.ts     # persistance (readUserWorld, saveWorld, nom de fichier encodé) + recherches
+    ├── app.service.ts     # persistance (readUserWorld + logos repris d'origworld D52, saveWorld, nom de fichier encodé) + recherches
     ├── engine/
     │   └── world-engine.ts  # règles en fonctions pures (advanceProduction, updateWorld, bonus, unlocks, anges, reset) + spec
     ├── resolver.ts        # @Resolver('World') : getWorld + les 6 mutations du sujet + changerFormuleAnges (D43)

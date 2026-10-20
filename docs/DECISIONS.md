@@ -1615,3 +1615,25 @@ hypothèses en attente de validation (enseignant, sujet frontend, tests fournis)
   d'équilibrage OK. Les chemins des documents historiques (`docs/prompts/`, anciennes décisions,
   recette) ne sont pas réécrits ; la doc vivante (`CLAUDE.md`, `ARCHITECTURE.md`, `GAME-RULES.md`,
   README du backend) et les commentaires de code donnent les nouveaux chemins.
+
+## D52 — Les logos d'un monde sauvegardé suivent `origworld`
+
+- **Contexte** (20/10/2026) : les 6 cash upgrades qui reprenaient l'image de leur produit ou
+  `global.png` (One-Eyed Ike, The Mechanist, les 4 magazines) reçoivent leur propre image
+  (`docs/THEME.md`). Après le déploiement, l'utilisateur ne les voit pas, même en navigation
+  privée : il reprend ses parties (« Alexis », créée le 12/10 ; « demo-neuf-2010 », créée le
+  matin même). Chaque partie enregistre ses `logo` dans son JSON au moment de sa création ; seules
+  une nouvelle partie (« Demo », créée après le déploiement) et une partie remise à zéro
+  reprenaient les nouveaux. Toute image changée n'atteignait donc jamais les joueurs existants.
+- **Décision** : à chaque lecture (`AppService.readUserWorld`, à côté de la migration
+  d'`angeldivisor`), `syncLogos` remplace les `logo` du monde sauvegardé par ceux d'`origworld` :
+  le logo du monde, chaque produit par son `id`, chaque palier (paliers des produits, allunlocks,
+  upgrades, angel upgrades, managers) par son `name`, la clé qui le désigne déjà dans les
+  mutations. Seul `logo` change : noms, seuils, effets et état (`unlocked`, quantités, argent)
+  restent ceux de la partie. Un élément absent d'`origworld` (nom d'un thème antérieur, comme
+  « Bottle » ou « Doc Phosphate ») garde son logo. `origworld` n'est que lu.
+- **Conséquences** : une image ajoutée ou changée dans `origworld.ts` apparaît pour tous les
+  joueurs dès leur prochaine requête, et le fichier est corrigé à la sauvegarde qui suit. Test
+  e2e ajouté (monde aux anciens logos → `getWorld` renvoie ceux d'`origworld`, palier inconnu
+  inchangé, fichier corrigé) : 14 e2e et 90 tests unitaires verts. Vérifié dans la preview sur une
+  copie d'une ancienne partie : les 6 nouvelles images s'affichent dans Cash Upgrades.

@@ -42,7 +42,7 @@ Responsabilités :
 | `src/graphql.ts` | Types TS générés (`World`, `Product`, `Palier`, `RatioType`) |
 | `src/origworld.ts` | État initial du jeu (données) |
 | `src/resolver.ts` | 1 query + 6 mutations du sujet + `changerFormuleAnges` (D43), orchestration uniquement |
-| `src/app.service.ts` | Persistance (`readUserWorld`, `saveWorld`, nom de fichier encodé) et recherches communes |
+| `src/app.service.ts` | Persistance (`readUserWorld`, qui reprend les `logo` d'`origworld` (D52), `saveWorld`, nom de fichier encodé) et recherches communes |
 | `src/engine/world-engine.ts` | Règles du jeu en fonctions pures (`advanceProduction`, `updateWorld`, `applyBonus`, unlocks, `buyUpgrade`, anges, `resetWorld`), D10 |
 | `src/main.ts` | Bootstrap : static `public/`, CORS, port 3000 |
 | `public/icones/` | Images référencées par les champs `logo` |
